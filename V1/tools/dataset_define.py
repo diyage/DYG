@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from torch.utils.data import Dataset, DataLoader
 import torchvision
 import numpy as np
-from tools.cv2_ import CV2
+from UTILS.cv2_ import CV2
 from PIL import Image
 
 
