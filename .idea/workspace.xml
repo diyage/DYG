@@ -2,12 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e7427f2d-e06b-4481-9970-3e7dbbf27a61" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/V1/tmp2.py" beforeDir="false" afterPath="$PROJECT_DIR$/V1/tmp2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/V1/tools/dataset_define.py" beforeDir="false" afterPath="$PROJECT_DIR$/V1/tools/dataset_define.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/V1/tools/predictor.py" beforeDir="false" afterPath="$PROJECT_DIR$/V1/tools/predictor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/cv2_.py" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/UTILS/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/cv2_.py" beforeDir="false" afterPath="$PROJECT_DIR$/UTILS/cv2_.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -39,10 +36,12 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="py" value="548" />
+          <entry key="txt" value="16" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
+          <entry key="PLAIN_TEXT" value="16" />
           <entry key="Python" value="548" />
         </counts>
       </usages-collector>
@@ -262,10 +261,18 @@
       <option name="presentableId" value="Default" />
       <updated>1657246633801</updated>
     </task>
+    <task id="LOCAL-00001" summary="2022-07-08-10:54">
+      <created>1657248898253</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1657248898253</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
+    <frame x="-8" y="-8" width="1382" height="744" extended-state="7" />
     <layout>
       <window_info id="Favorites" side_tool="true" />
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24962178" />
@@ -295,6 +302,10 @@
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="2022-07-08-10:54" />
+    <option name="LAST_COMMIT_MESSAGE" value="2022-07-08-10:54" />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/tools/cv2_.py">
