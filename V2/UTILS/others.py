@@ -243,9 +243,9 @@ class YOLOV2Tools:
             grid_number
         )
 
-        position_abs_ = position_abs.view(-1, 4)
-        conf_ = conf.view(-1,)
-        scores_ = scores.view(-1, len(kins_name))
+        position_abs_ = position_abs.contiguous().view(-1, 4)
+        conf_ = conf.contiguous().view(-1,)
+        scores_ = scores.contiguous().view(-1, len(kins_name))
 
         keep_index = YOLOV2Tools.nms(
             position_abs_,

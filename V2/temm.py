@@ -83,4 +83,5 @@ a = torch.rand(size=(3, 4))
 b = torch.rand(size=(4, 4))
 c = compute_iou(a, b)
 print(c.shape)
-N * 13 * 13 * 125
+# N * 13 * 13 * 125
+print(a.contiguous().view(-1,))
