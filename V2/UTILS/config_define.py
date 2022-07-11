@@ -17,7 +17,7 @@ class TrainConfig:
     max_epoch_on_image_net_448 = 10
     max_epoch_on_detector = 100
 
-    batch_size = 128
+    batch_size = 32
     lr: float = 1e-4
     conf_th: float = 0.1
     prob_th: float = 0.1
