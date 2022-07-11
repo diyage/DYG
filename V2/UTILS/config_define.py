@@ -9,7 +9,7 @@ class DataSetConfig:
                         'bicycle', 'boat', 'chair', 'diningtable',
                         'pottedplant', 'train', 'cat', 'sofa', 'bird', 'sheep', 'motorbike', 'bus', 'cow']
 
-    pre_anchor_w_h: tuple = None
+    pre_anchor_w_h: tuple = ([1.19, 1.98], [2.79, 4.59], [4.53, 8.92], [8.06, 5.29], [10.32, 10.65])
 
 
 class TrainConfig:
