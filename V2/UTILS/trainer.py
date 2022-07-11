@@ -15,14 +15,16 @@ from typing import Union
 class YOLOV2Trainer:
     def __init__(
             self,
-            model: Union[YOLOV2Net, nn.DataParallel],
+            model: YOLOV2Net,
             opt_data_set: DataSetConfig,
             opt_trainer: TrainConfig,
     ):
-        if isinstance(model, nn.DataParallel):
-            self.model = model.module  # type: YOLOV2Net
-        else:
-            self.model = model  # type: YOLOV2Net
+        self.detector = model  # type: YOLOV2Net
+        self.detector = nn.DataParallel(self.detector, device_ids=[0, 1])
+
+        self.dark_net = model.darknet19
+        self.dark_net = nn.DataParallel(self.dark_net, device_ids=[0, 1])
+
         self.opt_data_set = opt_data_set
         self.opt_trainer = opt_trainer
 
@@ -53,7 +55,7 @@ class YOLOV2Trainer:
             conf_th=self.opt_trainer.conf_th,
             prob_th=self.opt_trainer.prob_th,
             use_score=use_score,
-            use_conf= use_conf
+            use_conf=use_conf
         )
 
     def __train_classifier_one_epoch(
@@ -63,11 +65,11 @@ class YOLOV2Trainer:
             optimizer: torch.optim.Optimizer
     ):
         for batch_id, (images, labels) in enumerate(data_loader_train):
-            self.model.train()
+            self.dark_net.train()
             images = images.cuda()
             labels = labels.cuda()
 
-            output = self.model.darknet19(images)  # type: torch.Tensor
+            output = self.dark_net(images)  # type: torch.Tensor
             loss = ce_loss_func(output, labels)  # type: torch.Tensor
             optimizer.zero_grad()
             loss.backward()
@@ -79,11 +81,11 @@ class YOLOV2Trainer:
     ):
         vec = []
         for batch_id, (images, labels) in enumerate(data_loader_test):
-            self.model.eval()
+            self.dark_net.eval()
             images = images.cuda()
             labels = labels.cuda()
 
-            output = self.model.darknet19(images)  # type: torch.Tensor
+            output = self.dark_net(images)  # type: torch.Tensor
             acc = (output.argmax(dim=-1) == labels).float().mean()
             vec.append(acc)
 
@@ -97,7 +99,7 @@ class YOLOV2Trainer:
     ):
 
         ce_loss_func = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.model.darknet19.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(self.dark_net.parameters(), lr=1e-4)
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_image_net_224),
                           desc='training on image_net_224'):
@@ -107,7 +109,7 @@ class YOLOV2Trainer:
             if epoch % 10 == 0:
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_224/'
                 os.makedirs(saved_dir, exist_ok=True)
-                torch.save(self.model.darknet19.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
+                torch.save(self.dark_net.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
                 # eval image
                 self.__eval_classifier(data_loader_test)
 
@@ -117,7 +119,7 @@ class YOLOV2Trainer:
             data_loader_test: DataLoader,
     ):
         ce_loss_func = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.model.darknet19.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(self.dark_net.parameters(), lr=1e-4)
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_image_net_448),
                           desc='training on image_net_448'):
@@ -127,7 +129,7 @@ class YOLOV2Trainer:
             if epoch % 10 == 0:
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_448/'
                 os.makedirs(saved_dir, exist_ok=True)
-                torch.save(self.model.darknet19.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
+                torch.save(self.dark_net.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
                 # eval image
                 self.__eval_classifier(data_loader_test)
 
@@ -138,10 +140,10 @@ class YOLOV2Trainer:
             optimizer: torch.optim.Optimizer
     ):
         for batch_id, (images, labels) in enumerate(data_loader_train):
-            self.model.train()
+            self.detector.train()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
-            output = self.model(images)
+            output = self.detector(images)
             loss = yolo_v2_loss_func(output, targets)
             optimizer.zero_grad()
             loss.backward()
@@ -155,10 +157,10 @@ class YOLOV2Trainer:
         gt_name_abs_pos_conf_vec = []
         pred_name_abs_pos_conf_vec = []
         for batch_id, (images, labels) in enumerate(data_loader_test):
-            self.model.eval()
+            self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
-            output = self.model(images)
+            output = self.detector(images)
 
             for image_index in range(images.shape[0]):
                 gt_name_abs_pos_conf_vec.append(
@@ -181,10 +183,10 @@ class YOLOV2Trainer:
             saved_dir: str
     ):
         for batch_id, (images, labels) in enumerate(data_loader_test):
-            self.model.eval()
+            self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
-            output = self.model(images)
+            output = self.detector(images)
             for image_index in range(images.shape[0]):
 
                 YOLOV2Tools.visualize(
@@ -212,7 +214,7 @@ class YOLOV2Trainer:
             self.opt_trainer.weight_conf_no_obj,
             self.opt_trainer.weight_score
         )
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-4)
+        optimizer = torch.optim.Adam(self.detector.parameters(), lr=1e-4)
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector), desc='training for detector'):
             self.__train_detector_one_epoch(data_loader_train, loss_func, optimizer)
@@ -221,7 +223,7 @@ class YOLOV2Trainer:
                 # save model
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
-                torch.save(self.model.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
+                torch.save(self.detector.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
 
                 # eval
                 self.__eval_detector(data_loader_test)
