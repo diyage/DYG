@@ -410,7 +410,7 @@ class YOLOV2Tools:
             vec_target_dict,
             iou_th
         )
-        mAP = ap_vec[ap_vec > 0].mean()
+        mAP = ap_vec[ap_vec >= 0].mean()
         return mAP
 
 
