@@ -9,7 +9,7 @@ data_opt = DataSetConfig()
 
 dark_net = DarkNet19()
 net = YOLOV2Net(dark_net)
-net = nn.DataParallel(net)
+net = nn.DataParallel(net, device_ids=[0, 1])
 net.cuda()
 
 trainer = YOLOV2Trainer(
