@@ -19,8 +19,7 @@ class YOLOV2Trainer:
             opt_data_set: DataSetConfig,
             opt_trainer: TrainConfig,
     ):
-        self.model = model
-        self.model.darknet19 = self.model.module
+        self.model = model.module  # type: YOLOV2Net
         self.opt_data_set = opt_data_set
         self.opt_trainer = opt_trainer
 
