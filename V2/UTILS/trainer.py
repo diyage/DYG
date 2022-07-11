@@ -159,6 +159,8 @@ class YOLOV2Trainer:
         gt_name_abs_pos_conf_vec = []
         pred_name_abs_pos_conf_vec = []
         for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='eval detector'):
+            if batch_id == 5:
+                break
             self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()

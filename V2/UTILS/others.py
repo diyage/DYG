@@ -312,7 +312,7 @@ class YOLOV2Tools:
             vec_pred_dict: dict,
             vec_target_dict: dict,
             iou_th: float
-    )-> list:
+    )-> np.ndarray:
 
         def compute_cls_ap(cls: str):
             pred = vec_pred_dict[cls]  # type: list
@@ -325,6 +325,8 @@ class YOLOV2Tools:
             fp = 0.0
 
             total_box_number = len(target)
+            if total_box_number == 0:
+                return -1.0
             has_used = [False for _ in range(total_box_number)]
 
             precision_vec = []
@@ -358,7 +360,7 @@ class YOLOV2Tools:
         for kinds_name in vec_pred_dict.keys():
             ap = compute_cls_ap(kinds_name)
             ap_vec.append(ap)
-        return ap_vec
+        return np.array(ap_vec)
 
     @staticmethod
     def compute_mAP(
@@ -401,7 +403,7 @@ class YOLOV2Tools:
             vec_target_dict,
             iou_th
         )
-        mAP = sum(ap_vec)/len(ap_vec)
+        mAP = ap_vec[ap_vec > 0].mean()
         return mAP
 
 
