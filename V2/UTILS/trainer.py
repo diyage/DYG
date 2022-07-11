@@ -15,11 +15,12 @@ from typing import Union
 class YOLOV2Trainer:
     def __init__(
             self,
-            model: YOLOV2Net,
+            model: Union[YOLOV2Net, nn.DataParallel],
             opt_data_set: DataSetConfig,
             opt_trainer: TrainConfig,
     ):
         self.model = model
+        self.model.darknet19 = self.model.module
         self.opt_data_set = opt_data_set
         self.opt_trainer = opt_trainer
 
