@@ -66,7 +66,7 @@ class YOLOV2Trainer:
             ce_loss_func,
             optimizer: torch.optim.Optimizer
     ):
-        for batch_id, (images, labels) in enumerate(data_loader_train):
+        for batch_id, (images, labels) in tqdm(enumerate(data_loader_train)):
             self.dark_net.train()
             images = images.cuda()
             labels = labels.cuda()
@@ -82,7 +82,7 @@ class YOLOV2Trainer:
             data_loader_test: DataLoader,
     ):
         vec = []
-        for batch_id, (images, labels) in enumerate(data_loader_test):
+        for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='eval classifier'):
             self.dark_net.eval()
             images = images.cuda()
             labels = labels.cuda()
@@ -141,7 +141,7 @@ class YOLOV2Trainer:
             yolo_v2_loss_func: YOLOV2Loss,
             optimizer: torch.optim.Optimizer
     ):
-        for batch_id, (images, labels) in enumerate(data_loader_train):
+        for batch_id, (images, labels) in tqdm(enumerate(data_loader_train)):
             self.detector.train()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
@@ -158,7 +158,7 @@ class YOLOV2Trainer:
         # compute mAP
         gt_name_abs_pos_conf_vec = []
         pred_name_abs_pos_conf_vec = []
-        for batch_id, (images, labels) in enumerate(data_loader_test):
+        for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='eval detector'):
             self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
@@ -184,7 +184,7 @@ class YOLOV2Trainer:
             data_loader_test: DataLoader,
             saved_dir: str
     ):
-        for batch_id, (images, labels) in enumerate(data_loader_test):
+        for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='show predict result'):
             self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
