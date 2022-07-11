@@ -233,6 +233,7 @@ class YOLOV2Trainer:
                 self.__eval_detector(data_loader_test)
                 # show predict
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
+                os.makedirs(saved_dir, exist_ok=True)
                 self.__show_detect_answer(data_loader_test, saved_dir)
 
 
