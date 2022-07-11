@@ -333,6 +333,8 @@ class YOLOV2Tools:
 
             precision_vec = []
             recall_vevc = []
+            if len(pred) == 0:
+                return 0.0
 
             for pre_image_index, pre_pos, _ in pred:
                 for now_ind, (gt_image_index, gt_pos, _) in enumerate(target):
