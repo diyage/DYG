@@ -65,14 +65,14 @@ class DarkNet19(nn.Module):
     def forward(self, x: torch.Tensor):
         out = self.feature_extractor(x)
         out = self.classifier(out)
-        return out
+        return out.view(out.shape[0], -1)
 
 
 class YOLOV2Net(nn.Module):
     def __init__(self,
                  darknet19: DarkNet19):
         super().__init__()
-        self.__darknet19 = darknet19
+        self.darknet19 = darknet19
 
         self.pass_through_conv = nn.Sequential(
             nn.Conv2d(512, 64, kernel_size=(1, 1))
@@ -103,10 +103,10 @@ class YOLOV2Net(nn.Module):
         N = x.shape[0]
         assert x.shape == (N, 3, 416, 416)
 
-        a = self.__darknet19.feature_extractor_top(x)  # N * 512 * 26 * 26
+        a = self.darknet19.feature_extractor_top(x)  # N * 512 * 26 * 26
         a_ = self.pass_through(a)  # N * 256 * 13 * 13
 
-        b = self.__darknet19.feature_extractor_down(a)  # N * 1024 * 13 * 13
+        b = self.darknet19.feature_extractor_down(a)  # N * 1024 * 13 * 13
         b_ = self.conv3_1024(b)  # N * 1024 * 13 * 13
 
         d = torch.cat((b_, a_), dim=1)  # N * (1024 + 256) * 13 * 13
