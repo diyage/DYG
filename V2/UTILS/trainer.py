@@ -19,7 +19,10 @@ class YOLOV2Trainer:
             opt_data_set: DataSetConfig,
             opt_trainer: TrainConfig,
     ):
-        self.model = model.module  # type: YOLOV2Net
+        if isinstance(model, nn.DataParallel):
+            self.model = model.module  # type: YOLOV2Net
+        else:
+            self.model = model  # type: YOLOV2Net
         self.opt_data_set = opt_data_set
         self.opt_trainer = opt_trainer
 
