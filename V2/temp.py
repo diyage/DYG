@@ -18,7 +18,7 @@ trainer = YOLOV2Trainer(
     data_opt,
     trainer_opt
 )
-
+trainer_opt.batch_size = 32
 voc_train_loader, voc_test_loader = get_voc_data_loader(data_opt, trainer_opt)
 trainer.train_object_detector(
     voc_train_loader, voc_test_loader
