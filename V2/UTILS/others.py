@@ -325,8 +325,10 @@ class YOLOV2Tools:
             fp = 0.0
 
             total_box_number = len(target)
+
             if total_box_number == 0:
                 return -1.0
+
             has_used = [False for _ in range(total_box_number)]
 
             precision_vec = []
@@ -349,6 +351,9 @@ class YOLOV2Tools:
                     precision_vec.append(precision)
                     recall = tp / total_box_number
                     recall_vevc.append(recall)
+
+            if len(recall_vevc) == 0:
+                return -1.0
 
             precision_recall = list(zip(precision_vec, recall_vevc))
             precision_recall = sorted(precision_recall, key=lambda s: s[-1], reverse=False)
