@@ -146,7 +146,7 @@ def get_imagenet_dataset(
     if train:
         path = '{}/train/'.format(root)
     else:
-        path = '{}/test/'.format(root)
+        path = '{}/val/'.format(root)
 
     return ImageFolder(path, transform)
 
