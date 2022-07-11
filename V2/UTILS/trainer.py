@@ -66,7 +66,7 @@ class YOLOV2Trainer:
             ce_loss_func,
             optimizer: torch.optim.Optimizer
     ):
-        for batch_id, (images, labels) in tqdm(enumerate(data_loader_train)):
+        for batch_id, (images, labels) in enumerate(data_loader_train):
             self.dark_net.train()
             images = images.cuda()
             labels = labels.cuda()
@@ -141,7 +141,7 @@ class YOLOV2Trainer:
             yolo_v2_loss_func: YOLOV2Loss,
             optimizer: torch.optim.Optimizer
     ):
-        for batch_id, (images, labels) in tqdm(enumerate(data_loader_train)):
+        for batch_id, (images, labels) in enumerate(data_loader_train):
             self.detector.train()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
