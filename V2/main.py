@@ -1,5 +1,7 @@
 import torch.nn as nn
-from V2.UTILS import *
+from V2.UTILS.dataset_define import *
+from V2.UTILS.model_define import DarkNet19, YOLOV2Net
+from V2.UTILS.trainer import YOLOV2Trainer
 
 
 trainer_opt = TrainConfig()
