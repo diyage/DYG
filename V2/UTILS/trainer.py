@@ -219,7 +219,7 @@ class YOLOV2Trainer:
         optimizer = torch.optim.Adam(self.detector.parameters(), lr=1e-4)
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector), desc='training for detector'):
-            self.__train_detector_one_epoch(data_loader_train, loss_func, optimizer)
+            # self.__train_detector_one_epoch(data_loader_train, loss_func, optimizer)
 
             if epoch % 10 == 0:
                 # save model
