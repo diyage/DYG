@@ -41,10 +41,11 @@ class PositionTranslate:
 
         'center_offset':   a,b ---> (center_grid_scaled_x, center_grid_scaled_y),
                             m,n ---> (scaled_img_width, scaled_img_height)
-                            a, b have not been processed by tanh --> [-1, 1]
+                            a, b have not been processed by tanh --> [-1, 1]  (out_put of detector)
                             (a little different from original one --> sigmoid)
 
-        :param pre_box_w_h: (w, h)  k-means compute w and h on grid [0, grid_number[0] or grid_number[1]]
+        :param pre_box_w_h: (w, h)  k-means compute w and h
+                            scaled on grid --> [0, grid_number[0] or grid_number[1]]
         :param image_size: (w, h) original image size
         :param grid_index: (w, h) which grid response(if types == 'center_offset' , offset where?)
         :param grid_number: (w, h)
