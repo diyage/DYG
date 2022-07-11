@@ -20,10 +20,12 @@ class YOLOV2Trainer:
             opt_trainer: TrainConfig,
     ):
         self.detector = model  # type: YOLOV2Net
-        self.detector = nn.DataParallel(self.detector, device_ids=[0, 1])
+        self.detector.cuda()
+        # self.detector = nn.DataParallel(self.detector, device_ids=[0, 1])
 
         self.dark_net = model.darknet19
-        self.dark_net = nn.DataParallel(self.dark_net, device_ids=[0, 1])
+        self.dark_net.cuda()
+        # self.dark_net = nn.DataParallel(self.dark_net, device_ids=[0, 1])
 
         self.opt_data_set = opt_data_set
         self.opt_trainer = opt_trainer

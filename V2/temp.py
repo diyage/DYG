@@ -11,7 +11,6 @@ data_opt = DataSetConfig()
 
 dark_net = DarkNet19()
 net = YOLOV2Net(dark_net)
-net.cuda()
 
 trainer = YOLOV2Trainer(
     net,
