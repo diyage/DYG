@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from typing import Union
 import numpy as np
 from UTILS import CV2
@@ -235,6 +236,7 @@ class YOLOV2Tools:
 
         a_n = len(anchor_pre_wh)
         position, conf, scores = YOLOV2Tools.split_output(out, a_n)
+        scores = nn.Softmax(dim=-1)(scores)
         # 1 * H * W * a_n * ()
         position_abs = YOLOV2Tools.translate_to_abs_position(
             position,
@@ -256,10 +258,11 @@ class YOLOV2Tools:
         res = []
         for index in keep_index:
 
-            if conf_[index] > conf_th and scores_[index] > prob_th:
+            predict_value, predict_index = scores_[index].max(dim=-1)
+
+            if conf_[index] > conf_th and predict_value > prob_th:
                 abs_double_pos = tuple(position_abs_[index].cpu().detach().numpy().tolist())
 
-                predict_value, predict_index = scores_[index].max(dim=-1)
                 predict_kind_name = kins_name[int(predict_index.item())]
                 prob_score = predict_value.item()
 
