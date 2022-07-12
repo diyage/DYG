@@ -3,6 +3,8 @@ from V2.UTILS.dataset_define import *
 from V2.UTILS.model_define import DarkNet19, YOLOV2Net
 from V2.UTILS.trainer import YOLOV2Trainer
 from tqdm import tqdm
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 trainer_opt = TrainConfig()
