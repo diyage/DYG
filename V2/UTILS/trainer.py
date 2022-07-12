@@ -45,6 +45,7 @@ class YOLOV2Trainer:
             out_put: torch.Tensor,
             use_score: bool = True,
             use_conf: bool = False,
+            out_is_target: bool = False,
     ) -> list:
         # 1 * _ * H * W or _ * H * W
         return YOLOV2Tools.decode_out(
@@ -57,7 +58,8 @@ class YOLOV2Trainer:
             conf_th=self.opt_trainer.conf_th,
             prob_th=self.opt_trainer.prob_th,
             use_score=use_score,
-            use_conf=use_conf
+            use_conf=use_conf,
+            out_is_target=out_is_target,
         )
 
     def __train_classifier_one_epoch(
@@ -166,7 +168,7 @@ class YOLOV2Trainer:
 
             for image_index in range(images.shape[0]):
                 gt_name_abs_pos_conf_vec.append(
-                    self.decode_out(targets[image_index], use_score=False, use_conf=True)
+                    self.decode_out(targets[image_index], use_score=False, use_conf=True, out_is_target=True)
                 )
                 pred_name_abs_pos_conf_vec.append(
                     self.decode_out(output[image_index], use_score=False, use_conf=True)
@@ -193,7 +195,7 @@ class YOLOV2Trainer:
 
                 YOLOV2Tools.visualize(
                     images[image_index],
-                    self.decode_out(targets[image_index]),
+                    self.decode_out(targets[image_index], out_is_target=True),
                     saved_path='{}/{}_{}_gt.png'.format(saved_dir, batch_id, image_index),
                 )
 

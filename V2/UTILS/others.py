@@ -163,8 +163,6 @@ class YOLOV2Tools:
                         pos = position[i, r, c,  a, :]
 
                         p = (pos[0].item(), pos[1].item(), pos[2].item(), pos[3].item())
-                        if pos[0].item() != 0 :
-                            print(p)
                         p_trans = PositionTranslate(
                             p,
                             types='center_offset',
