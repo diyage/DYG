@@ -161,7 +161,10 @@ class YOLOV2Tools:
                 for c in range(W):
                     for a in range(a_n):
                         pos = position[i, r, c,  a, :]
+
                         p = (pos[0].item(), pos[1].item(), pos[2].item(), pos[3].item())
+                        if pos[0].item() != 0 :
+                            print(p)
                         p_trans = PositionTranslate(
                             p,
                             types='center_offset',
@@ -228,6 +231,7 @@ class YOLOV2Tools:
             prob_th: float = 0.1,
             use_score: bool = True,
             use_conf: bool = False,
+            out_is_target: bool = False,
     ) -> list:
         shape = out.shape
         assert len(shape) == 3
@@ -236,7 +240,8 @@ class YOLOV2Tools:
 
         a_n = len(anchor_pre_wh)
         position, conf, scores = YOLOV2Tools.split_output(out, a_n)
-        scores = nn.Softmax(dim=-1)(scores)
+        if not out_is_target:
+            scores = nn.Softmax(dim=-1)(scores)
         # 1 * H * W * a_n * ()
         position_abs = YOLOV2Tools.translate_to_abs_position(
             position,
