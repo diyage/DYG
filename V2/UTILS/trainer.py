@@ -66,9 +66,12 @@ class YOLOV2Trainer:
             self,
             data_loader_train: DataLoader,
             ce_loss_func,
-            optimizer: torch.optim.Optimizer
+            optimizer: torch.optim.Optimizer,
+            desc: str = ''
     ):
-        for batch_id, (images, labels) in enumerate(data_loader_train):
+        for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
+                                                         desc=desc,
+                                                         position=0)):
             self.dark_net.train()
             images = images.cuda()
             labels = labels.cuda()
@@ -82,9 +85,12 @@ class YOLOV2Trainer:
     def __eval_classifier(
             self,
             data_loader_test: DataLoader,
+            desc: str = 'eval classifier'
     ):
         vec = []
-        for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='eval classifier'):
+        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
+                                                         desc=desc,
+                                                         position=0)):
             self.dark_net.eval()
             images = images.cuda()
             labels = labels.cuda()
@@ -106,16 +112,21 @@ class YOLOV2Trainer:
         optimizer = torch.optim.Adam(self.dark_net.parameters(), lr=1e-4)
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_image_net_224),
-                          desc='training on image_net_224'):
+                          desc='training on image_net_224',
+                          position=0):
 
-            self.__train_classifier_one_epoch(data_loader_train, ce_loss_func, optimizer)
+            self.__train_classifier_one_epoch(data_loader_train,
+                                              ce_loss_func,
+                                              optimizer,
+                                              desc='train on image_net_224 epoch --> {}'.format(epoch))
 
             if epoch % 10 == 0:
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_224/'
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.dark_net.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
                 # eval image
-                self.__eval_classifier(data_loader_test)
+                self.__eval_classifier(data_loader_test,
+                                       desc='eval on image_net_224')
 
     def train_on_image_net_448(
             self,
@@ -126,24 +137,32 @@ class YOLOV2Trainer:
         optimizer = torch.optim.Adam(self.dark_net.parameters(), lr=1e-4)
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_image_net_448),
-                          desc='training on image_net_448'):
+                          desc='training on image_net_448',
+                          position=0):
 
-            self.__train_classifier_one_epoch(data_loader_train, ce_loss_func, optimizer)
+            self.__train_classifier_one_epoch(data_loader_train,
+                                              ce_loss_func,
+                                              optimizer,
+                                              desc='train on image_net_448 epoch --> {}'.format(epoch))
 
             if epoch % 10 == 0:
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_448/'
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.dark_net.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
                 # eval image
-                self.__eval_classifier(data_loader_test)
+                self.__eval_classifier(data_loader_test,
+                                       desc='eval on image_net_448')
 
     def __train_detector_one_epoch(
             self,
             data_loader_train: DataLoader,
             yolo_v2_loss_func: YOLOV2Loss,
-            optimizer: torch.optim.Optimizer
+            optimizer: torch.optim.Optimizer,
+            desc: str = '',
     ):
-        for batch_id, (images, labels) in enumerate(data_loader_train):
+        for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
+                                                         desc=desc,
+                                                         position=0)):
             self.detector.train()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
@@ -156,11 +175,14 @@ class YOLOV2Trainer:
     def __eval_detector(
             self,
             data_loader_test: DataLoader,
+            desc: str = 'eval detector',
     ):
         # compute mAP
         gt_name_abs_pos_conf_vec = []
         pred_name_abs_pos_conf_vec = []
-        for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='eval detector'):
+        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
+                                                         desc=desc,
+                                                         position=0)):
             self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
@@ -184,9 +206,12 @@ class YOLOV2Trainer:
     def __show_detect_answer(
             self,
             data_loader_test: DataLoader,
-            saved_dir: str
+            saved_dir: str,
+            desc: str = 'show predict result'
     ):
-        for batch_id, (images, labels) in tqdm(enumerate(data_loader_test), desc='show predict result'):
+        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
+                                                         desc=desc,
+                                                         position=0)):
             self.detector.eval()
             images = images.cuda()
             targets = self.make_targets(labels).cuda()
@@ -220,20 +245,24 @@ class YOLOV2Trainer:
         )
         optimizer = torch.optim.Adam(self.detector.parameters(), lr=1e-4)
 
-        for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector), desc='training for detector'):
-            self.__train_detector_one_epoch(data_loader_train, loss_func, optimizer)
+        for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
+                          desc='training detector',
+                          position=0):
+
+            self.__train_detector_one_epoch(data_loader_train,
+                                            loss_func,
+                                            optimizer,
+                                            desc='train for detector epoch --> {}'.format(epoch))
 
             if epoch % 10 == 0:
                 # save model
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.detector.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
-
-                # eval
-                self.__eval_detector(data_loader_test)
+                if epoch % 50 == 0:
+                    # eval mAP
+                    self.__eval_detector(data_loader_test)
                 # show predict
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
                 os.makedirs(saved_dir, exist_ok=True)
                 self.__show_detect_answer(data_loader_test, saved_dir)
-
-

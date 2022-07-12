@@ -15,7 +15,7 @@ class DataSetConfig:
 class TrainConfig:
     max_epoch_on_image_net_224 = 160
     max_epoch_on_image_net_448 = 10
-    max_epoch_on_detector = 100
+    max_epoch_on_detector = 200
 
     batch_size = 32
     lr: float = 1e-4

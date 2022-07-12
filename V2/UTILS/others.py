@@ -299,7 +299,7 @@ class YOLOV2Tools:
             color = (0, 0, 255)
             CV2.putText(img,
                         '{}:{:.2%}'.format(predict_kind_name, prob_score),
-                        org=(int(abs_double_pos[0]), int(abs_double_pos[1] + 5)),
+                        org=(int(abs_double_pos[0]), int(abs_double_pos[1] + 12)),
                         color=color)
 
             CV2.rectangle(img,
