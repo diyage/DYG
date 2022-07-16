@@ -15,17 +15,17 @@ class DataSetConfig:
 class TrainConfig:
     max_epoch_on_image_net_224 = 160
     max_epoch_on_image_net_448 = 10
-    max_epoch_on_detector = 200
+    max_epoch_on_detector = 100
 
-    batch_size = 32
-    lr: float = 1e-4
-    conf_th: float = 0.1
-    prob_th: float = 0.1
-    iou_th: float = 0.5
+    batch_size = 64
+    lr: float = 1e-3
+    conf_th: float = 0.5
+    prob_th: float = 0.5
+    iou_th: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
-    weight_position: float = 1.0
+    weight_position: float = 5.0
     weight_conf_has_obj: float = 1.0
-    weight_conf_no_obj: float = 1.0
+    weight_conf_no_obj: float = 0.5
     weight_score: float = 1.0
     # saved model or images dir(part of )
     # if you want save something to now path, please set ABS_PATH = ''

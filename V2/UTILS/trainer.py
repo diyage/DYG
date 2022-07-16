@@ -32,13 +32,15 @@ class YOLOV2Trainer:
 
     def make_targets(
             self,
-            labels
+            labels,
+            need_abs: bool = False,
     ):
         return YOLOV2Tools.make_targets(labels,
                                         self.opt_data_set.pre_anchor_w_h,
                                         self.opt_data_set.image_size,
                                         self.opt_data_set.grid_number,
-                                        self.opt_data_set.kinds_name)
+                                        self.opt_data_set.kinds_name,
+                                        need_abs)
 
     def decode_out(
             self,
@@ -47,20 +49,73 @@ class YOLOV2Trainer:
             use_conf: bool = False,
             out_is_target: bool = False,
     ) -> list:
-        # 1 * _ * H * W or _ * H * W
-        return YOLOV2Tools.decode_out(
+
+        #  _ * H * W
+        out_put = out_put.unsqueeze(dim=0)
+        #  1 * _ * H * W
+        a_n = len(self.opt_data_set.pre_anchor_w_h)
+        position, conf, scores = YOLOV2Tools.split_output(
             out_put,
-            self.opt_data_set.pre_anchor_w_h,
-            self.opt_data_set.image_size,
-            self.opt_data_set.grid_number,
-            self.opt_data_set.kinds_name,
-            iou_th=self.opt_trainer.iou_th,
-            conf_th=self.opt_trainer.conf_th,
-            prob_th=self.opt_trainer.prob_th,
-            use_score=use_score,
-            use_conf=use_conf,
-            out_is_target=out_is_target,
+            a_n
         )
+
+        if not out_is_target:
+            conf = torch.sigmoid(conf)
+            scores = torch.softmax(scores, dim=-1)
+            position_abs = YOLOV2Tools.xywh_to_xyxy(
+                position,
+                self.opt_data_set.pre_anchor_w_h,
+                self.opt_data_set.image_size,
+                self.opt_data_set.grid_number
+            )
+        else:
+            position_abs = position
+
+        position_abs_ = position_abs.contiguous().view(-1, 4)
+        conf_ = conf.contiguous().view(-1, )
+        scores_ = scores.contiguous().view(-1, len(self.opt_data_set.kinds_name))
+
+        keep_index = YOLOV2Tools.nms(
+            position_abs_,
+            conf_,
+            threshold=self.opt_trainer.iou_th
+        )
+
+        res = []
+        for index in keep_index:
+
+            predict_value, predict_index = scores_[index].max(dim=-1)
+
+            if conf_[index] > self.opt_trainer.conf_th and predict_value > self.opt_trainer.prob_th:
+                abs_double_pos = tuple(position_abs_[index].cpu().detach().numpy().tolist())
+
+                predict_kind_name = self.opt_data_set.kinds_name[int(predict_index.item())]
+                prob_score = predict_value.item()
+
+                tmp = [predict_kind_name, abs_double_pos]
+
+                if use_score:
+                    tmp.append(prob_score)
+
+                if use_conf:
+                    tmp.append(conf_[index].item())
+
+                res.append(tuple(tmp))
+        return res
+
+        # return YOLOV2Tools.decode_out(
+        #     out_put,
+        #     self.opt_data_set.pre_anchor_w_h,
+        #     self.opt_data_set.image_size,
+        #     self.opt_data_set.grid_number,
+        #     self.opt_data_set.kinds_name,
+        #     iou_th=self.opt_trainer.iou_th,
+        #     conf_th=self.opt_trainer.conf_th,
+        #     prob_th=self.opt_trainer.prob_th,
+        #     use_score=use_score,
+        #     use_conf=use_conf,
+        #     out_is_target=out_is_target,
+        # )
 
     def __train_classifier_one_epoch(
             self,
@@ -82,7 +137,7 @@ class YOLOV2Trainer:
             loss.backward()
             optimizer.step()
 
-    def __eval_classifier(
+    def eval_classifier(
             self,
             data_loader_test: DataLoader,
             desc: str = 'eval classifier'
@@ -125,8 +180,8 @@ class YOLOV2Trainer:
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.dark_net.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
                 # eval image
-                self.__eval_classifier(data_loader_test,
-                                       desc='eval on image_net_224')
+                self.eval_classifier(data_loader_test,
+                                     desc='eval on image_net_224')
 
     def train_on_image_net_448(
             self,
@@ -150,8 +205,8 @@ class YOLOV2Trainer:
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.dark_net.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
                 # eval image
-                self.__eval_classifier(data_loader_test,
-                                       desc='eval on image_net_448')
+                self.eval_classifier(data_loader_test,
+                                     desc='eval on image_net_448')
 
     def __train_detector_one_epoch(
             self,
@@ -165,14 +220,14 @@ class YOLOV2Trainer:
                                                          position=0)):
             self.detector.train()
             images = images.cuda()
-            targets = self.make_targets(labels).cuda()
+            targets = self.make_targets(labels, need_abs=True).cuda()
             output = self.detector(images)
             loss = yolo_v2_loss_func(output, targets)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-    def __eval_detector(
+    def eval_detector(
             self,
             data_loader_test: DataLoader,
             desc: str = 'eval detector',
@@ -185,7 +240,7 @@ class YOLOV2Trainer:
                                                          position=0)):
             self.detector.eval()
             images = images.cuda()
-            targets = self.make_targets(labels).cuda()
+            targets = self.make_targets(labels, need_abs=True).cuda()
             output = self.detector(images)
 
             for image_index in range(images.shape[0]):
@@ -203,7 +258,7 @@ class YOLOV2Trainer:
         )
         print('mAP:{:.3%}'.format(mAP))
 
-    def __show_detect_answer(
+    def show_detect_answer(
             self,
             data_loader_test: DataLoader,
             saved_dir: str,
@@ -214,7 +269,7 @@ class YOLOV2Trainer:
                                                          position=0)):
             self.detector.eval()
             images = images.cuda()
-            targets = self.make_targets(labels).cuda()
+            targets = self.make_targets(labels, need_abs=True).cuda()
             output = self.detector(images)
             for image_index in range(images.shape[0]):
 
@@ -259,10 +314,13 @@ class YOLOV2Trainer:
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.detector.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
-                if epoch % 50 == 0:
-                    # eval mAP
-                    self.__eval_detector(data_loader_test)
+
                 # show predict
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
                 os.makedirs(saved_dir, exist_ok=True)
-                self.__show_detect_answer(data_loader_test, saved_dir)
+                self.show_detect_answer(data_loader_test, saved_dir)
+
+                # eval mAP
+                if epoch != 0 and epoch % 50 == 0:
+                    self.eval_detector(data_loader_test)
+

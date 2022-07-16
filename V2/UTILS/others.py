@@ -6,6 +6,10 @@ from UTILS import CV2
 from V2.UTILS.position_translate import PositionTranslate
 
 
+def arc_sigmoid(x: torch.Tensor) -> torch.Tensor:
+    return - torch.log(1.0 / (x + 1e-8) - 1.0)
+
+
 class YOLOV2Tools:
 
     @staticmethod
@@ -96,7 +100,8 @@ class YOLOV2Tools:
             anchor_pre_wh: tuple,
             image_wh: tuple,
             grid_number: tuple,
-            kinds_name: list
+            kinds_name: list,
+            need_abs: bool = False
     ) -> torch.Tensor:
 
         kinds_number = len(kinds_name)
@@ -115,12 +120,15 @@ class YOLOV2Tools:
                                                   pre_box_w_h=pre_box_w_h,
                                                   grid_number=grid_number)
 
-                    offset_position = pos_trans.center_offset_position.get_position()  # type: tuple
+                    if need_abs:
+                        pos = pos_trans.abs_double_position.get_position()  # type: tuple
+                    else:
+                        pos = pos_trans.center_offset_position.get_position()  # type: tuple
 
                     grid_index = pos_trans.grid_index_to_x_y_axis  # type: tuple
 
                     targets[batch_index, pre_box_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
-                        offset_position)
+                        pos)
 
                     targets[batch_index, pre_box_index, 4, grid_index[1], grid_index[0]] = 1.0
 
@@ -145,6 +153,103 @@ class YOLOV2Tools:
         scores = x[..., 5:]  # N * H * W * a_n * ...
 
         return position, conf, scores
+
+    @staticmethod
+    def get_grid(
+            grid_number: tuple
+    ):
+        index = torch.tensor(list(range(grid_number[0])), dtype=torch.float32)
+        grid_r, grid_c = torch.meshgrid(index, index)
+        grid = torch.cat((grid_c.unsqueeze(-1), grid_r.unsqueeze(-1)), dim=-1)
+        # H * W * 2
+        return grid
+
+    @staticmethod
+    def xywh_to_xyxy(
+            position: torch.Tensor,
+            anchor_pre_wh: tuple,
+            image_wh: tuple,
+            grid_number: tuple,
+    ) -> torch.Tensor:
+        # -1 * H * W * a_n * 4
+        N, _, _, a_n, _ = position.shape
+
+        grid = YOLOV2Tools.get_grid(grid_number)
+        # H * W * 2
+
+        grid = grid.unsqueeze(-2).unsqueeze(0).expand(N,
+                                                      grid_number[0],
+                                                      grid_number[1],
+                                                      a_n,
+                                                      2)
+
+        # -1 * H * W * a_n * 2
+
+        grid_index = grid.to(position.device)
+
+        pre_wh = torch.tensor(
+            anchor_pre_wh,
+            dtype=torch.float32
+        )
+        pre_wh = pre_wh.to(position.device)
+        # a_n * 2
+
+        a_b = position[..., 0:2]  # -1 * a_n * 2
+        m_n = position[..., 2:4]  # -1 * a_n * 2
+
+        center_x_y = (torch.sigmoid(a_b) + grid_index) / grid_number[0] * image_wh[0]
+        w_h = torch.exp(m_n) * pre_wh.expand_as(m_n) / grid_number[0] * image_wh[0]
+
+        x_y_0 = center_x_y - 0.5 * w_h
+        # x_y_0[x_y_0 < 0] = 0
+        x_y_1 = center_x_y + 0.5 * w_h
+        # x_y_1[x_y_1 > grid_number] = grid_number
+        res = torch.cat((x_y_0, x_y_1), dim=-1)
+        return res.clamp_(0.0, image_wh[0])
+
+    @staticmethod
+    def xyxy_to_xywh(
+            position: torch.Tensor,
+            anchor_pre_wh: tuple,
+            image_wh: tuple,
+            grid_number: tuple,
+    ) -> torch.Tensor:
+        # -1 * H * W * a_n * 4
+        N, _, _, a_n, _ = position.shape
+
+        grid = YOLOV2Tools.get_grid(grid_number)
+        # H * W * 2
+
+        grid = grid.unsqueeze(-2).unsqueeze(0).expand(N,
+                                                      grid_number[0],
+                                                      grid_number[1],
+                                                      a_n,
+                                                      2)
+
+        # -1 * H * W * a_n * 2
+
+        grid_index = grid.to(position.device)
+
+        pre_wh = torch.tensor(
+            anchor_pre_wh,
+            dtype=torch.float32
+        )
+        pre_wh = pre_wh.to(position.device)
+
+        # a_n * 2
+
+        a_b = position[..., 0:2]  # -1 * a_n * 2
+        m_n = position[..., 2:4]  # -1 * a_n * 2
+
+        center_x_y = (a_b + m_n) * 0.5
+
+        w_h = m_n - a_b
+
+        txy = arc_sigmoid(center_x_y / image_wh[0] * grid_number[0] - grid_index)
+
+        twh = torch.log(w_h/image_wh[0]*grid_number[0]/pre_wh.expand_as(w_h))
+
+        return torch.cat((txy, twh), dim=-1)
 
     @staticmethod
     def translate_to_abs_position(
@@ -237,9 +342,15 @@ class YOLOV2Tools:
         out = out.unsqueeze(0)  # 1 * _ * H * N
 
         a_n = len(anchor_pre_wh)
-        position, conf, scores = YOLOV2Tools.split_output(out, a_n)
+
+        position, conf, scores = YOLOV2Tools.split_output(
+            out,
+            a_n,
+        )
         if not out_is_target:
+            conf = nn.Sigmoid()(conf)
             scores = nn.Softmax(dim=-1)(scores)
+
         # 1 * H * W * a_n * ()
         position_abs = YOLOV2Tools.translate_to_abs_position(
             position,
@@ -247,6 +358,13 @@ class YOLOV2Tools:
             image_wh,
             grid_number
         )
+
+        # position_abs = YOLOV2Tools.xywh_to_xyxy(
+        #     position,
+        #     anchor_pre_wh,
+        #     image_wh,
+        #     grid_number
+        # )
 
         position_abs_ = position_abs.contiguous().view(-1, 4)
         conf_ = conf.contiguous().view(-1,)
@@ -289,7 +407,8 @@ class YOLOV2Tools:
         assert len(img.shape) == 3
 
         if not isinstance(img, np.ndarray):
-            img = img.cpu().detach().numpy().copy() * 255  # type:np.ndarray
+
+            img = (img.cpu().detach().numpy().copy()*0.5 + 0.5) * 255  # type:np.ndarray
             img = np.transpose(img, axes=(1, 2, 0))  # type:np.ndarray
             img = np.array(img, np.uint8)  # type:np.ndarray
             img = CV2.cvtColorToBGR(img)

@@ -110,8 +110,12 @@ class VOC2012DataSet(Dataset):
             xml_trans.resize(new_size=self.image_size)
             images.append(xml_trans.img)
             labels.append(xml_trans.objects)
-
-        return images, labels
+        number = len(images)
+        cut = int(0.7 * number)
+        if self.train:
+            return images[0: cut], labels[0: cut]
+        else:
+            return images[cut:], labels[cut:]
 
     def __len__(self):
         return len(self.images)

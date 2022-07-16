@@ -9,8 +9,13 @@ def get_voc_data_loader(
         train_opt: TrainConfig,
 
 ):
+    normalize = transforms.Normalize(
+            std=[0.5, 0.5, 0.5],
+            mean=[0.5, 0.5, 0.5],
+        )
     transform_train = transforms.Compose([
         transforms.ToTensor(),
+        normalize
     ])
 
     transform_test = transform_train
@@ -41,21 +46,23 @@ def get_image_net_224_loader(
         data_opt: DataSetConfig,
         train_opt: TrainConfig,
 ):
-    # normalize = transforms.Normalize(
-    #     mean=[0.485, 0.456, 0.406],
-    #     std=[0.229, 0.224, 0.225]
-    # )
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
 
     transform_train = transforms.Compose([
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
+        normalize,
     ])
 
     transform_test = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
+            normalize,
         ])
 
     train_set = get_imagenet_dataset(
@@ -85,15 +92,22 @@ def get_image_net_448_loader(
         data_opt: DataSetConfig,
         train_opt: TrainConfig,
 ):
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
     transform_train = transforms.Compose([
-        transforms.RandomResizedCrop(448),
+        transforms.RandomResizedCrop((448, 448)),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
+        normalize,
+
     ])
 
     transform_test = transforms.Compose([
-        transforms.Resize(448),
+        transforms.Resize((448, 448)),
         transforms.ToTensor(),
+        normalize
     ])
 
     train_set = get_imagenet_dataset(

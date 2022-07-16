@@ -1,6 +1,16 @@
 import numpy as np
 
 
+def sigmoid(x) -> np.ndarray:
+    s = 1.0 / (1.0 + np.exp(-x))
+
+    return s
+
+
+def arc_sigmoid(x) -> np.ndarray:
+    return - np.log(1.0 / (x + 1e-8) - 1.0)
+
+
 class Position:
     def __init__(self, p: tuple):
         self.a = None
@@ -41,8 +51,7 @@ class PositionTranslate:
 
         'center_offset':   a,b ---> (center_grid_scaled_x, center_grid_scaled_y),
                             m,n ---> (scaled_img_width, scaled_img_height)
-                            a, b have not been processed by tanh --> [-1, 1]  (out_put of detector)
-                            (a little different from original one --> sigmoid)
+                            a, b have not been processed by sigmoid
 
         :param pre_box_w_h: (w, h)  k-means compute w and h
                             scaled on grid --> [0, grid_number[0] or grid_number[1]]
@@ -75,8 +84,8 @@ class PositionTranslate:
             grid_index_to_y_axis = int(abs_center_y // self.grid_size[1])
             self.grid_index_to_x_y_axis = (grid_index_to_x_axis, grid_index_to_y_axis)
 
-            a_ = np.arctanh(abs_center_x/self.image_size[0] * self.grid_number[0] - grid_index_to_x_axis)
-            b_ = np.arctanh(abs_center_y/self.image_size[1] * self.grid_number[1] - grid_index_to_y_axis)
+            a_ = arc_sigmoid(abs_center_x/self.image_size[0] * self.grid_number[0] - grid_index_to_x_axis)
+            b_ = arc_sigmoid(abs_center_y/self.image_size[1] * self.grid_number[1] - grid_index_to_y_axis)
             m_ = np.log(obj_w/self.image_size[0]*self.grid_number[0]/self.pre_box_w_h[0])
             n_ = np.log(obj_h/self.image_size[1]*self.grid_number[1]/self.pre_box_w_h[1])
 
@@ -91,10 +100,10 @@ class PositionTranslate:
             grid_index_to_x_axis = self.grid_index_to_x_y_axis[0]
             grid_index_to_y_axis = self.grid_index_to_x_y_axis[1]
 
-            abs_center_x = (np.tanh(a) + grid_index_to_x_axis)/self.grid_number[0]*self.image_size[0]
-            abs_center_y = (np.tanh(b) + grid_index_to_y_axis)/self.grid_number[1]*self.image_size[1]
-            obj_w = self.pre_box_w_h[0] * np.exp(m) /self.grid_number[0] * self.image_size[0]
-            obj_h = self.pre_box_w_h[1] * np.exp(n) /self.grid_number[1] * self.image_size[1]
+            abs_center_x = (sigmoid(a) + grid_index_to_x_axis)/self.grid_number[0]*self.image_size[0]
+            abs_center_y = (sigmoid(b) + grid_index_to_y_axis)/self.grid_number[1]*self.image_size[1]
+            obj_w = self.pre_box_w_h[0] * np.exp(m) / self.grid_number[0] * self.image_size[0]
+            obj_h = self.pre_box_w_h[1] * np.exp(n) / self.grid_number[1] * self.image_size[1]
 
             a_ = max(abs_center_x - obj_w * 0.5, 0)
             b_ = max(abs_center_y - obj_h * 0.5, 0)
@@ -103,3 +112,4 @@ class PositionTranslate:
             self.abs_double_position = Position((a_, b_, m_, n_))
         else:
             print('wrong types={}'.format(types))
+

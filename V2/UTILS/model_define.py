@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from typing import Union
+from V2.UTILS.get_pretrained_darknet_19 import DarkNet_19
 
 
 def make_conv_bn_active_layer(
@@ -70,8 +72,9 @@ class DarkNet19(nn.Module):
 
 class YOLOV2Net(nn.Module):
     def __init__(self,
-                 darknet19: DarkNet19):
+                 darknet19: Union[DarkNet19, DarkNet_19]):
         super().__init__()
+
         self.darknet19 = darknet19
 
         self.pass_through_conv = nn.Sequential(
