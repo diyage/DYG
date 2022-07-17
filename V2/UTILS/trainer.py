@@ -42,6 +42,68 @@ class YOLOV2Trainer:
                                         self.opt_data_set.kinds_name,
                                         need_abs)
 
+    def __nms(
+            self,
+            position_abs_: torch.Tensor,
+            conf_: torch.Tensor,
+            scores_: torch.Tensor,
+            use_score: bool = True,
+            use_conf: bool = False,
+    ):
+
+        def for_response(
+                now_kind_pos_abs,
+                now_kind_conf,
+                now_kind_scores_max_value,
+        ):
+            res = []
+            keep_index = YOLOV2Tools.nms(
+                now_kind_pos_abs,
+                now_kind_scores_max_value,
+                threshold=iou_th,
+            )
+
+            for index in keep_index:
+
+                predict_value = now_kind_scores_max_value[index]
+
+                if predict_value > conf_prob_th:
+                    abs_double_pos = tuple(now_kind_pos_abs[index].cpu().detach().numpy().tolist())
+
+                    predict_kind_name = kind_name
+
+                    tmp = [predict_kind_name, abs_double_pos]
+
+                    if use_score:
+                        tmp.append(predict_value.item())
+
+                    if use_conf:
+                        tmp.append(now_kind_conf[index].item())
+
+                    res.append(tuple(tmp))
+
+            return res
+
+        scores_ = scores_ * conf_.unsqueeze(-1).expand_as(scores_)
+        scores_max_value, scores_max_index = scores_.max(dim=-1)
+
+        iou_th = self.opt_trainer.iou_th
+        # prob_th = self.opt_trainer.prob_th
+        # conf_th = self.opt_trainer.conf_th
+        conf_prob_th = self.opt_trainer.conf_prob_th
+        kinds_name = self.opt_data_set.kinds_name
+
+        total = []
+        for kind_index, kind_name in enumerate(kinds_name):
+            now_kind_response = scores_max_index == kind_index
+            total = total + for_response(
+                position_abs_[now_kind_response],
+                conf_[now_kind_response],
+                scores_max_value[now_kind_response]
+            )
+
+        return total
+
     def decode_out(
             self,
             out_put: torch.Tensor,
@@ -75,47 +137,13 @@ class YOLOV2Trainer:
         conf_ = conf.contiguous().view(-1, )
         scores_ = scores.contiguous().view(-1, len(self.opt_data_set.kinds_name))
 
-        keep_index = YOLOV2Tools.nms(
+        return self.__nms(
             position_abs_,
             conf_,
-            threshold=self.opt_trainer.iou_th
+            scores_,
+            use_score,
+            use_conf
         )
-
-        res = []
-        for index in keep_index:
-
-            predict_value, predict_index = scores_[index].max(dim=-1)
-
-            if conf_[index] > self.opt_trainer.conf_th and predict_value > self.opt_trainer.prob_th:
-                abs_double_pos = tuple(position_abs_[index].cpu().detach().numpy().tolist())
-
-                predict_kind_name = self.opt_data_set.kinds_name[int(predict_index.item())]
-                prob_score = predict_value.item()
-
-                tmp = [predict_kind_name, abs_double_pos]
-
-                if use_score:
-                    tmp.append(prob_score)
-
-                if use_conf:
-                    tmp.append(conf_[index].item())
-
-                res.append(tuple(tmp))
-        return res
-
-        # return YOLOV2Tools.decode_out(
-        #     out_put,
-        #     self.opt_data_set.pre_anchor_w_h,
-        #     self.opt_data_set.image_size,
-        #     self.opt_data_set.grid_number,
-        #     self.opt_data_set.kinds_name,
-        #     iou_th=self.opt_trainer.iou_th,
-        #     conf_th=self.opt_trainer.conf_th,
-        #     prob_th=self.opt_trainer.prob_th,
-        #     use_score=use_score,
-        #     use_conf=use_conf,
-        #     out_is_target=out_is_target,
-        # )
 
     def __train_classifier_one_epoch(
             self,
@@ -296,7 +324,9 @@ class YOLOV2Trainer:
             self.opt_trainer.weight_position,
             self.opt_trainer.weight_conf_has_obj,
             self.opt_trainer.weight_conf_no_obj,
-            self.opt_trainer.weight_score
+            self.opt_trainer.weight_score,
+            self.opt_data_set.grid_number,
+            self.opt_data_set.image_size
         )
         optimizer = torch.optim.Adam(self.detector.parameters(), lr=1e-4)
 
@@ -321,6 +351,6 @@ class YOLOV2Trainer:
                 self.show_detect_answer(data_loader_test, saved_dir)
 
                 # eval mAP
-                if epoch != 0 and epoch % 50 == 0:
-                    self.eval_detector(data_loader_test)
+                # if epoch != 0 and epoch % 50 == 0:
+                #     self.eval_detector(data_loader_test)
 

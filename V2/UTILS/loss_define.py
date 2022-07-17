@@ -75,7 +75,7 @@ class YOLOV2Loss(nn.Module):
 
         N, H, W, a_n, _ = o_position.shape
 
-        # translate position from xywh to xyxy(compare to grid)
+        # translate position from xywh to xyxy
         o_xyxy = self.xywh_xyxy(o_position)  # N * H * W * a_n * 4
         g_xyxy = g_position  # N * H * W * a_n * 4
 

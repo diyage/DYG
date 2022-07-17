@@ -336,67 +336,8 @@ class YOLOV2Tools:
             use_conf: bool = False,
             out_is_target: bool = False,
     ) -> list:
-        shape = out.shape
-        assert len(shape) == 3
-        _, H, W = shape
-        out = out.unsqueeze(0)  # 1 * _ * H * N
-
-        a_n = len(anchor_pre_wh)
-
-        position, conf, scores = YOLOV2Tools.split_output(
-            out,
-            a_n,
-        )
-        if not out_is_target:
-            conf = nn.Sigmoid()(conf)
-            scores = nn.Softmax(dim=-1)(scores)
-
-        # 1 * H * W * a_n * ()
-        position_abs = YOLOV2Tools.translate_to_abs_position(
-            position,
-            anchor_pre_wh,
-            image_wh,
-            grid_number
-        )
-
-        # position_abs = YOLOV2Tools.xywh_to_xyxy(
-        #     position,
-        #     anchor_pre_wh,
-        #     image_wh,
-        #     grid_number
-        # )
-
-        position_abs_ = position_abs.contiguous().view(-1, 4)
-        conf_ = conf.contiguous().view(-1,)
-        scores_ = scores.contiguous().view(-1, len(kins_name))
-
-        keep_index = YOLOV2Tools.nms(
-            position_abs_,
-            conf_,
-            threshold=iou_th
-        )
-
-        res = []
-        for index in keep_index:
-
-            predict_value, predict_index = scores_[index].max(dim=-1)
-
-            if conf_[index] > conf_th and predict_value > prob_th:
-                abs_double_pos = tuple(position_abs_[index].cpu().detach().numpy().tolist())
-
-                predict_kind_name = kins_name[int(predict_index.item())]
-                prob_score = predict_value.item()
-
-                tmp = [predict_kind_name, abs_double_pos]
-
-                if use_score:
-                    tmp.append(prob_score)
-
-                if use_conf:
-                    tmp.append(conf_[index].item())
-
-                res.append(tuple(tmp))
-        return res
+        ' see YOLOV2Trainer --> decode_out()'
+        pass
 
     @staticmethod
     def visualize(

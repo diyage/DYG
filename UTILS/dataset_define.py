@@ -107,7 +107,13 @@ class VOC2012DataSet(Dataset):
             temp = f.readlines()
             xml_file_names = [val[:-1]+'.xml' for val in temp]
 
-        for val in xml_file_names:
+        n = len(xml_file_names)
+        random_index = np.random.choice(n, size=(n,), replace=False)
+
+        for i in range(n):
+            ind = random_index[i]
+            val = xml_file_names[ind]
+
             xml_trans = XMLTranslate(root_path=self.root, file_name=val)
             xml_trans.resize(new_size=self.image_size)
             images.append(xml_trans.img)
@@ -123,6 +129,7 @@ class VOC2012DataSet(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
+
         label = self.labels[index]
         img = self.images[index]
         img = CV2.cvtColorToRGB(img)

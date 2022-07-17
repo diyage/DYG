@@ -92,15 +92,29 @@ class YOLOV2Net(nn.Module):
             nn.Conv2d(1024, 125, kernel_size=(1, 1))
         )
 
-    def pass_through(self, a: torch.Tensor):
+    def pass_through(
+            self,
+            a: torch.Tensor,
+            stride: tuple = (2, 2)
+    ):
         # https://zhuanlan.zhihu.com/p/35325884
         N = a.shape[0]
         assert a.shape == (N, 512, 26, 26)
-        tmp = self.pass_through_conv(a)  # N * 64 * 26 * 26
-        N, C, H, W = tmp.shape
-        tmp = nn.Unfold(kernel_size=2, stride=2)(tmp) # N * (C * 4) * (H/2 * W/2)
-        tmp = tmp.view(N, C*4, H//2, W//2)  # N * 256 * 13 * 13
-        return tmp
+
+        x = self.pass_through_conv(a)  # N * 64 * 26 * 26
+        # ReOrg
+        B = x.data.size(0)
+        C = x.data.size(1)
+        H = x.data.size(2)
+        W = x.data.size(3)
+
+        ws, hs = stride
+        x = x.view(B, C, H // hs, hs, W // ws, ws).transpose(3, 4).contiguous()
+        x = x.view(B, C, H // hs * W // ws, hs * ws).transpose(2, 3).contiguous()
+        x = x.view(B, C, hs * ws, H // hs, W // ws).transpose(1, 2).contiguous()
+        x = x.view(B, hs * ws * C, H // hs, W // ws)
+
+        return x  # N * 256 * 13 * 13
 
     def forward(self, x: torch.Tensor):
         N = x.shape[0]

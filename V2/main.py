@@ -32,10 +32,15 @@ trainer = YOLOV2Trainer(
 
 
 voc_train_loader, voc_test_loader = get_voc_data_loader(data_opt, trainer_opt)
-trainer.detector.load_state_dict(
-    torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/10.pth'))
+# trainer.detector.load_state_dict(
+#     torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/90.pth'))
+
 trainer.train_object_detector(
-    voc_train_loader, voc_train_loader
+    voc_train_loader, voc_test_loader
 )
+# trainer.show_detect_answer(
+#     voc_train_loader,
+#     saved_dir='tmp/'
+# )
 # 2 problems
 # 1, loss 2,position
