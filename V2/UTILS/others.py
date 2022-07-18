@@ -132,7 +132,7 @@ class YOLOV2Tools:
 
                     targets[batch_index, pre_box_index, 4, grid_index[1], grid_index[0]] = 1.0
 
-                    targets[batch_index, pre_box_index, int(5 + kind_int):, grid_index[1], grid_index[0]] = 1.0
+                    targets[batch_index, pre_box_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
 
         return targets.view(N, -1, H, W)
 

@@ -54,20 +54,23 @@ class YOLOV2Trainer:
         def for_response(
                 now_kind_pos_abs,
                 now_kind_conf,
-                now_kind_scores_max_value,
+                now_kind_scores,
+                now_kind_conf_x_scores_max_value,
+                now_kind_index,
         ):
             res = []
             keep_index = YOLOV2Tools.nms(
                 now_kind_pos_abs,
-                now_kind_scores_max_value,
+                now_kind_conf_x_scores_max_value,
                 threshold=iou_th,
             )
 
             for index in keep_index:
+                c = now_kind_conf[index]
+                s = now_kind_scores[index][now_kind_index]
+                c_x_s = now_kind_conf_x_scores_max_value[index]
 
-                predict_value = now_kind_scores_max_value[index]
-
-                if predict_value > conf_prob_th:
+                if c_x_s > conf_prob_th and c > conf_th and s > prob_th:
                     abs_double_pos = tuple(now_kind_pos_abs[index].cpu().detach().numpy().tolist())
 
                     predict_kind_name = kind_name
@@ -75,31 +78,33 @@ class YOLOV2Trainer:
                     tmp = [predict_kind_name, abs_double_pos]
 
                     if use_score:
-                        tmp.append(predict_value.item())
+                        tmp.append(s.item())
 
                     if use_conf:
-                        tmp.append(now_kind_conf[index].item())
+                        tmp.append(c.item())
 
                     res.append(tuple(tmp))
 
             return res
 
-        scores_ = scores_ * conf_.unsqueeze(-1).expand_as(scores_)
-        scores_max_value, scores_max_index = scores_.max(dim=-1)
+        conf_x_scores = scores_ * conf_.unsqueeze(-1).expand_as(scores_)
+        conf_x_scores_max_value, conf_x_scores_max_index = conf_x_scores.max(dim=-1)
 
         iou_th = self.opt_trainer.iou_th
-        # prob_th = self.opt_trainer.prob_th
-        # conf_th = self.opt_trainer.conf_th
+        prob_th = self.opt_trainer.prob_th
+        conf_th = self.opt_trainer.conf_th
         conf_prob_th = self.opt_trainer.conf_prob_th
         kinds_name = self.opt_data_set.kinds_name
 
         total = []
         for kind_index, kind_name in enumerate(kinds_name):
-            now_kind_response = scores_max_index == kind_index
+            now_kind_response = conf_x_scores_max_index == kind_index
             total = total + for_response(
                 position_abs_[now_kind_response],
                 conf_[now_kind_response],
-                scores_max_value[now_kind_response]
+                scores_[now_kind_response],
+                conf_x_scores_max_value[now_kind_response],
+                kind_index,
             )
 
         return total

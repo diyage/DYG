@@ -110,18 +110,25 @@ class YOLOV2Loss(nn.Module):
 
         # conf loss
         mask = has_obj_mask
-        has_obj_conf_loss = self.mse(o_conf[mask], g_conf[mask])
+        o_conf_mask = o_conf[mask]
+        g_conf_mask = g_conf[mask]
+        has_obj_conf_loss = self.mse(o_conf_mask, g_conf_mask)
 
         mask = no_obj_mask
         o_conf_mask = o_conf[mask]
-        no_obj_conf_loss = self.mse(o_conf_mask,
-                                    torch.zeros_like(o_conf_mask).to(o_conf_mask.device))
+        no_obj_conf_loss = self.mse(
+            o_conf_mask,
+            torch.zeros_like(o_conf_mask).to(o_conf_mask.device)
+        )
 
         # score loss
 
         mask = has_obj_mask.unsqueeze(-1).expand_as(o_scores)
 
-        score_loss = self.mse(o_scores[mask], g_scores[mask])
+        o_scores_mask = o_scores[mask]
+        g_scores_mask = g_scores[mask]
+
+        score_loss = self.mse(o_scores_mask, g_scores_mask)
 
         loss = self.weight_position * position_loss + \
             self.weight_conf_has_obj * has_obj_conf_loss + \

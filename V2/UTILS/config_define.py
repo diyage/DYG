@@ -39,11 +39,11 @@ class TrainConfig:
     max_epoch_on_image_net_448 = 10
     max_epoch_on_detector = 200
 
-    batch_size = 64
+    batch_size = 32
     lr: float = 1e-4
-    conf_th: float = 0.1
-    prob_th: float = 0.1
-    conf_prob_th: float = 0.2
+    conf_th: float = 0.5
+    prob_th: float = 0.5
+    conf_prob_th: float = 0.3
     iou_th: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
     weight_position: float = 1.0
