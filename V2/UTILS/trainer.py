@@ -136,7 +136,13 @@ class YOLOV2Trainer:
         position_abs_ = position_abs.contiguous().view(-1, 4)
         conf_ = conf.contiguous().view(-1, )
         scores_ = scores.contiguous().view(-1, len(self.opt_data_set.kinds_name))
-        mask = conf_ > self.opt_trainer.conf_th  # (-1, )
+
+        scores_max_value = scores_.max(dim=-1)[0]  # (-1, )
+
+        scores_mask = scores_max_value > self.opt_trainer.prob_th  # (-1, )
+        conf_mask = conf_ > self.opt_trainer.conf_th  # (-1, )
+
+        mask = (conf_mask.float() * scores_mask.float()).bool()
 
         return self.__nms(
             position_abs_[mask],
