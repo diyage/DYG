@@ -372,9 +372,12 @@ class YOLOV2Tools:
                           color=color,
                           thickness=-1)
 
+            scale = (abs_double_pos[2] - abs_double_pos[0]) / img.shape[0]
+
             CV2.putText(img,
                         '{}:{:.2%}'.format(predict_kind_name, prob_score),
                         org=(int(abs_double_pos[0]), int(abs_double_pos[1] - 5)),
+                        font_scale=0.5*scale
                         )
 
         CV2.imwrite(saved_path, img)
