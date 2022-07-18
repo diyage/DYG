@@ -68,22 +68,20 @@ class YOLOV2Trainer:
             for index in keep_index:
                 c = now_kind_conf[index]
                 s = now_kind_scores[index][now_kind_index]
-                c_x_s = now_kind_conf_x_scores_max_value[index]
 
-                if c_x_s > conf_prob_th and c > conf_th and s > prob_th:
-                    abs_double_pos = tuple(now_kind_pos_abs[index].cpu().detach().numpy().tolist())
+                abs_double_pos = tuple(now_kind_pos_abs[index].cpu().detach().numpy().tolist())
 
-                    predict_kind_name = kind_name
+                predict_kind_name = kind_name
 
-                    tmp = [predict_kind_name, abs_double_pos]
+                tmp = [predict_kind_name, abs_double_pos]
 
-                    if use_score:
-                        tmp.append(s.item())
+                if use_score:
+                    tmp.append(s.item())
 
-                    if use_conf:
-                        tmp.append(c.item())
+                if use_conf:
+                    tmp.append(c.item())
 
-                    res.append(tuple(tmp))
+                res.append(tuple(tmp))
 
             return res
 
@@ -91,9 +89,6 @@ class YOLOV2Trainer:
         conf_x_scores_max_value, conf_x_scores_max_index = conf_x_scores.max(dim=-1)
 
         iou_th = self.opt_trainer.iou_th
-        prob_th = self.opt_trainer.prob_th
-        conf_th = self.opt_trainer.conf_th
-        conf_prob_th = self.opt_trainer.conf_prob_th
         kinds_name = self.opt_data_set.kinds_name
 
         total = []
@@ -141,11 +136,12 @@ class YOLOV2Trainer:
         position_abs_ = position_abs.contiguous().view(-1, 4)
         conf_ = conf.contiguous().view(-1, )
         scores_ = scores.contiguous().view(-1, len(self.opt_data_set.kinds_name))
+        mask = conf_ > self.opt_trainer.conf_th  # (-1, )
 
         return self.__nms(
-            position_abs_,
-            conf_,
-            scores_,
+            position_abs_[mask],
+            conf_[mask],
+            scores_[mask],
             use_score,
             use_conf
         )
