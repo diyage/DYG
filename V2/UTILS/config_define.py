@@ -14,6 +14,8 @@ VOC:
 
 '''
 
+import numpy as np
+
 
 class DataSetConfig:
     root_path: str = '/home/dell/下载/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/'
@@ -24,6 +26,10 @@ class DataSetConfig:
     kinds_name: list = ['horse', 'person', 'bottle', 'dog', 'tvmonitor', 'car', 'aeroplane',
                         'bicycle', 'boat', 'chair', 'diningtable',
                         'pottedplant', 'train', 'cat', 'sofa', 'bird', 'sheep', 'motorbike', 'bus', 'cow']
+
+    class_colors: list = [
+        (np.random.randint(255), np.random.randint(255), np.random.randint(255)) for _ in range(len(kinds_name))
+    ]
 
     pre_anchor_w_h: tuple = (
         (1.3221, 1.73145),

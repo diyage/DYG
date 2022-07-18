@@ -343,7 +343,9 @@ class YOLOV2Tools:
     def visualize(
             img: Union[torch.Tensor, np.ndarray],
             predict_name_pos_score: list,
-            saved_path: str
+            saved_path: str,
+            class_colors: list,
+            kinds_name: list,
     ):
         assert len(img.shape) == 3
 
@@ -356,17 +358,24 @@ class YOLOV2Tools:
 
         for box in predict_name_pos_score:
             predict_kind_name, abs_double_pos, prob_score = box
-            color = (0, 0, 255)
-            CV2.putText(img,
-                        '{}:{:.2%}'.format(predict_kind_name, prob_score),
-                        org=(int(abs_double_pos[0]), int(abs_double_pos[1] + 12)),
-                        color=color)
+            color = class_colors[kinds_name.index(predict_kind_name)]
 
             CV2.rectangle(img,
                           start_point=(int(abs_double_pos[0]), int(abs_double_pos[1])),
                           end_point=(int(abs_double_pos[2]), int(abs_double_pos[3])),
                           color=color,
                           thickness=2)
+
+            CV2.rectangle(img,
+                          start_point=(int(abs_double_pos[0]), int(abs_double_pos[1] - 10)),
+                          end_point=(int(abs_double_pos[2]), int(abs_double_pos[1])),
+                          color=color,
+                          thickness=-1)
+
+            CV2.putText(img,
+                        '{}:{:.2%}'.format(predict_kind_name, prob_score),
+                        org=(int(abs_double_pos[0]), int(abs_double_pos[1] - 5)),
+                        )
 
         CV2.imwrite(saved_path, img)
 

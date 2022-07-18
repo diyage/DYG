@@ -312,12 +312,16 @@ class YOLOV2Trainer:
                     images[image_index],
                     self.decode_out(targets[image_index], out_is_target=True),
                     saved_path='{}/{}_{}_gt.png'.format(saved_dir, batch_id, image_index),
+                    class_colors=self.opt_data_set.class_colors,
+                    kinds_name=self.opt_data_set.kinds_name
                 )
 
                 YOLOV2Tools.visualize(
                     images[image_index],
                     self.decode_out(output[image_index]),
                     saved_path='{}/{}_{}_predict.png'.format(saved_dir, batch_id, image_index),
+                    class_colors=self.opt_data_set.class_colors,
+                    kinds_name=self.opt_data_set.kinds_name
                 )
             break
 

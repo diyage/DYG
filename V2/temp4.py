@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
-scores = torch.rand(size=(128, 20))
-print(scores[0].max())
-scores = torch.randint(0, 10, size=(3, 4))
-print(scores)
-print(scores.bool())
+num_classes = 20
+class_colors = [
+    (np.random.randint(255), np.random.randint(255), np.random.randint(255)) for _ in range(num_classes)
+]
+print(class_colors)
