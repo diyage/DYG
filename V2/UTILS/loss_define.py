@@ -12,7 +12,8 @@ class YOLOV2Loss(nn.Module):
                  weight_conf_no_obj: float = 1.0,
                  weight_score: float = 1.0,
                  grid_number: tuple = (13, 13),
-                 image_size: tuple = (416, 416)):
+                 image_size: tuple = (416, 416),
+                 iou_th: float = 0.6):
         super().__init__()
         self.anchor_number = len(anchor_pre_wh)
         self.anchor_pre_wh = anchor_pre_wh
@@ -24,6 +25,8 @@ class YOLOV2Loss(nn.Module):
         self.grid_number = grid_number
 
         self.image_size = image_size
+
+        self.iou_th = iou_th
 
         self.mse = nn.MSELoss()
         self._grid = YOLOV2Tools.get_grid(grid_number)  # H * W * 2
@@ -83,38 +86,39 @@ class YOLOV2Loss(nn.Module):
         iou = self.compute_iou(o_xyxy.detach(), g_xyxy.detach())  # N * H * W * a_n
         iou_max_index = iou.max(-1)[1]  # N * H * W
         iou_max = F.one_hot(iou_max_index, a_n)   # N * H * W * a_n
-        # there are a_n anchors but just one response(others not response) one-hot
+        iou_smaller_than_iou_th = (iou < self.iou_th).float()  # N * H * W * a_n
 
-        # compute response mask
-        has_obj_response_mask = (g_conf > 0).float()  # N * H * W * a_n
-        has_obj_response_mask = has_obj_response_mask * iou_max  # N * H * W * a_n
-        # there are a_n anchors but just one response(others not response)
-        has_obj_mask = has_obj_response_mask.bool()
+        # compute box mask
+        # some boxes positive , some negative and ! other are free!
+        positive = (g_conf > 0).float() * iou_max  # N * H * W * a_n
+        negative = (1.0 - positive) * iou_smaller_than_iou_th  # N * H * W * a_n
+        positive_mask = positive.bool()
+        negative_mask = negative.bool()
 
-        no_obj_response_mask = 1.0 - has_obj_response_mask  # N * H * W * a_n
-        no_obj_mask = no_obj_response_mask.bool()
         # position loss
-        mask = has_obj_mask.unsqueeze(-1).expand_as(o_xyxy)
-        position_loss = self.mse(o_xyxy[mask], g_xyxy[mask])
+        # # part one, compute the response d box position loss
+        mask = positive_mask.unsqueeze(-1).expand_as(o_xyxy)  # N * H * W * a_n * 4
+        position_loss_one = self.mse(o_xyxy[mask], g_xyxy[mask])
+        # # part two, compute the not response d box position loss, regression to the anchor box
+        mask = negative_mask.unsqueeze(-1).expand_as(o_xyxy)  # N * H * W * a_n * 4
+        anchor_txy = torch.empty(size=(*o_xyxy.shape[: -1], 2)).fill_(-torch.inf)  # N * H * W * a_n * 2
+        anchor_twh = torch.zeros_like(anchor_txy)  # N * H * W * a_n * 2
 
-        mask = no_obj_mask.unsqueeze(-1).expand_as(o_xyxy)
+        anchor_position = torch.cat((anchor_txy, anchor_twh), dim=-1).to(o_position.device)  # N * H * W * a_n * 4
+        anchor_xyxy = self.xywh_xyxy(anchor_position)  # N * H * W * a_n * 2
 
-        anchor_txy = torch.empty(size=(*o_xyxy.shape[: -1], 2)).fill_(-torch.inf)
-
-        anchor_twh = torch.zeros_like(anchor_txy)
-
-        anchor_position = torch.cat((anchor_txy, anchor_twh), dim=-1).to(o_position.device)
-        anchor_xyxy = self.xywh_xyxy(anchor_position)
-
-        position_loss += self.mse(o_xyxy[mask], anchor_xyxy[mask])
+        position_loss_two = self.mse(o_xyxy[mask], anchor_xyxy[mask])
+        # position loss
+        position_loss = position_loss_one + position_loss_two
 
         # conf loss
-        mask = has_obj_mask
+
+        mask = positive_mask  # N * H * W * a_n
         o_conf_mask = o_conf[mask]
         g_conf_mask = g_conf[mask]
         has_obj_conf_loss = self.mse(o_conf_mask, g_conf_mask)
 
-        mask = no_obj_mask
+        mask = negative_mask  # N * H * W * a_n
         o_conf_mask = o_conf[mask]
         no_obj_conf_loss = self.mse(
             o_conf_mask,
@@ -122,8 +126,7 @@ class YOLOV2Loss(nn.Module):
         )
 
         # score loss
-
-        mask = has_obj_mask.unsqueeze(-1).expand_as(o_scores)
+        mask = positive_mask.unsqueeze(-1).expand_as(o_scores)  # N * H * W * a_n * kind_number
 
         o_scores_mask = o_scores[mask]
         g_scores_mask = g_scores[mask]

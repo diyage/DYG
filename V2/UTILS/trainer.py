@@ -331,7 +331,8 @@ class YOLOV2Trainer:
             self.opt_trainer.weight_conf_no_obj,
             self.opt_trainer.weight_score,
             self.opt_data_set.grid_number,
-            self.opt_data_set.image_size
+            self.opt_data_set.image_size,
+            iou_th=self.opt_trainer.iou_th,
         )
         optimizer = torch.optim.Adam(self.detector.parameters(), lr=1e-4)
 
