@@ -58,4 +58,3 @@ mask = conf_off[0] != 0
 
 print(pos_abs[0][mask])
 print(pos_off_to_abs_test[0][mask])
-
