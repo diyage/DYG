@@ -340,6 +340,119 @@ class YOLOV2Tools:
         pass
 
     @staticmethod
+    def calculate_pr(gt_num, tp_list, confidence_score):
+        """
+        calculate all p-r pairs among different score_thresh for one class, using `tp_list` and `confidence_score`.
+
+        Args:
+            gt_num (Integer): 某张图片中某类别的gt数量
+            tp_list (List): 记录某张图片中某类别的预测框是否为tp的情况
+            confidence_score (List): 记录某张图片中某类别的预测框的score值 (与tp_list相对应)
+
+        Returns:
+            recall
+            precision
+
+        """
+        if gt_num == 0:
+            return [0], [0]
+        if isinstance(tp_list, (tuple, list)):
+            tp_list = np.array(tp_list)
+        if isinstance(confidence_score, (tuple, list)):
+            confidence_score = np.array(confidence_score)
+
+        assert len(tp_list) == len(confidence_score), "len(tp_list) and len(confidence_score) should be same"
+
+        if len(tp_list) == 0:
+            return [0], [0]
+
+        sort_mask = np.argsort(-confidence_score)
+        tp_list = tp_list[sort_mask]
+        recall = np.cumsum(tp_list) / gt_num
+        precision = np.cumsum(tp_list) / (np.arange(len(tp_list)) + 1)
+
+        return recall.tolist(), precision.tolist()
+
+    @staticmethod
+    def voc_ap(rec, prec, use_07_metric=False):
+        """Compute VOC AP given precision and recall. If use_07_metric is true, uses
+        the VOC 07 11-point method (default:False).
+        """
+        if isinstance(rec, (tuple, list)):
+            rec = np.array(rec)
+        if isinstance(prec, (tuple, list)):
+            prec = np.array(prec)
+        if use_07_metric:
+            # 11 point metric
+            ap = 0.
+            for t in np.arange(0., 1.1, 0.1):
+                if np.sum(rec >= t) == 0:
+                    p = 0
+                else:
+                    p = np.max(prec[rec >= t])
+                ap = ap + p / 11.
+        else:
+            # correct AP calculation
+            # first append sentinel values at the end
+            mrec = np.concatenate(([0.], rec, [1.]))
+            mpre = np.concatenate(([0.], prec, [0.]))
+
+            # compute the precision envelope
+            for i in range(mpre.size - 1, 0, -1):
+                mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+            # to calculate area under PR curve, look for points
+            # where X axis (recall) changes value
+            i = np.where(mrec[1:] != mrec[:-1])[0]
+
+            # and sum (\Delta recall) * prec
+            ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+        return ap
+
+    @staticmethod
+    def get_pre_kind_name_tp_score_and_gt_num(
+            pre_kind_name_pos_score: list,
+            gt_kind_name_pos_score: list,
+            kinds_name: list,
+            iou_th: float = 0.5
+    ):
+        pre_kind_name_pos_score = sorted(
+            pre_kind_name_pos_score,
+            key=lambda s: s[2],
+            reverse=True
+        )
+        # sorted score from big to small
+        kind_tp_and_score = []
+        gt_num = {
+            key: 0 for key in kinds_name
+        }
+
+        gt_has_used = []
+        for gt_ in gt_kind_name_pos_score:
+            gt_kind_name, _, _ = gt_
+            gt_num[gt_kind_name] += 1
+            gt_has_used.append(False)
+
+        for pre_ in pre_kind_name_pos_score:
+            pre_kind_name, pre_pos, pre_score = pre_
+            is_tp = 0   # second element represents it tp(or fp)
+            for gt_index, gt_ in enumerate(gt_kind_name_pos_score):
+                gt_kind_name, gt_pos, gt_score = gt_
+                if gt_kind_name == pre_kind_name and not gt_has_used[gt_index]:
+                    iou = YOLOV2Tools.compute_iou(
+                        list(pre_pos),
+                        list(gt_pos)
+                    )
+                    if iou[0].item() > iou_th:
+                        gt_has_used[gt_index] = True
+                        is_tp = 1
+
+            kind_tp_and_score.append(
+                [pre_kind_name, is_tp, pre_score]
+            )
+        return kind_tp_and_score, gt_num
+
+    @staticmethod
     def visualize(
             img: Union[torch.Tensor, np.ndarray],
             predict_name_pos_score: list,

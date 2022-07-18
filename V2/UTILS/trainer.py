@@ -259,14 +259,16 @@ class YOLOV2Trainer:
             loss.backward()
             optimizer.step()
 
-    def eval_detector(
+    def eval_detector_mAP(
             self,
             data_loader_test: DataLoader,
             desc: str = 'eval detector',
     ):
         # compute mAP
-        gt_name_abs_pos_conf_vec = []
-        pred_name_abs_pos_conf_vec = []
+        record = {
+            key: [[], [], 0] for key in self.opt_data_set.kinds_name
+            # kind_name: [tp_list, score_list, gt_num]
+        }
         for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
                                                          desc=desc,
                                                          position=0)):
@@ -276,18 +278,42 @@ class YOLOV2Trainer:
             output = self.detector(images)
 
             for image_index in range(images.shape[0]):
-                gt_name_abs_pos_conf_vec.append(
-                    self.decode_out(targets[image_index], use_score=False, use_conf=True, out_is_target=True)
+                gt_decode = self.decode_out(
+                    targets[image_index],
+                    use_score=True,
+                    use_conf=False,
+                    out_is_target=True
                 )
-                pred_name_abs_pos_conf_vec.append(
-                    self.decode_out(output[image_index], use_score=False, use_conf=True)
+
+                pre_decode = self.decode_out(
+                    output[image_index],
+                    use_score=True,
+                    use_conf=False,
+                    out_is_target=False,
                 )
-        mAP = YOLOV2Tools.compute_mAP(
-            pred_name_abs_pos_conf_vec,
-            gt_name_abs_pos_conf_vec,
-            kinds_name=self.opt_data_set.kinds_name,
-            iou_th=self.opt_trainer.iou_th
-        )
+                res = YOLOV2Tools.get_pre_kind_name_tp_score_and_gt_num(
+                    pre_decode,
+                    gt_decode,
+                    kinds_name=self.opt_data_set.kinds_name,
+                    iou_th=self.opt_trainer.iou_th
+                )
+
+                for pre_kind_name, is_tp, pre_score in res[0]:
+                    record[pre_kind_name][0].append(is_tp)  # tp list
+                    record[pre_kind_name][1].append(pre_score)  # score list
+
+                for kind_name, gt_num in res[1].items():
+                    record[kind_name][2] += gt_num
+
+        # end for dataloader
+        ap_vec = []
+        for kind_name in self.opt_data_set.kinds_name:
+            tp_list, score_list, gt_num = record[kind_name]
+            recall, precision = YOLOV2Tools.calculate_pr(gt_num, tp_list, score_list)
+            kind_name_ap = YOLOV2Tools.voc_ap(recall, precision)
+            ap_vec.append(kind_name_ap)
+
+        mAP = np.mean(ap_vec)
         print('mAP:{:.3%}'.format(mAP))
 
     def show_detect_answer(

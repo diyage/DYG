@@ -6,7 +6,7 @@ from V2.UTILS.trainer import YOLOV2Trainer
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 trainer_opt = TrainConfig()
 data_opt = DataSetConfig()
 
