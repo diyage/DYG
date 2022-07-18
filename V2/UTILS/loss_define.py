@@ -54,18 +54,11 @@ class YOLOV2Loss(nn.Module):
             boxes0: torch.Tensor,
             boxes1: torch.Tensor,
     ):
-        w0 = boxes0[..., 2] - boxes0[..., 0]  # -1
-        h0 = boxes0[..., 3] - boxes0[..., 1]  # -1
-        s0 = w0 * h0  # -1
 
-        w1 = boxes1[..., 2] - boxes1[..., 0]  # -1
-        h1 = boxes1[..., 3] - boxes1[..., 1]  # -1
-        s1 = w1 * h1  # -1
-
-        s = s0/s1
-        mask = s > 1.0
-        s[mask] = 1.0/s[mask]
-        return s
+        return YOLOV2Tools.compute_iou(
+            boxes0,
+            boxes1
+        )
 
     def forward(self,
                 out: torch.Tensor,
