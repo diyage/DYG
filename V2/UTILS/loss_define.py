@@ -91,7 +91,7 @@ class YOLOV2Loss(nn.Module):
         # compute box mask
         # some boxes positive , some negative and ! other are free!
         positive = (g_conf > 0).float() * iou_max  # N * H * W * a_n
-        negative = (1.0 - positive) * iou_smaller_than_iou_th  # N * H * W * a_n
+        negative = (g_conf <= 0).float() + (g_conf > 0).float() * iou_smaller_than_iou_th  # N * H * W * a_n
         positive_mask = positive.bool()
         negative_mask = negative.bool()
 
