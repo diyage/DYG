@@ -54,9 +54,7 @@ class YOLOV2Trainer:
         def for_response(
                 now_kind_pos_abs,
                 now_kind_conf,
-                now_kind_scores,
                 now_kind_conf_x_scores_max_value,
-                now_kind_index,
         ):
             res = []
             keep_index = YOLOV2Tools.nms(
@@ -67,7 +65,7 @@ class YOLOV2Trainer:
 
             for index in keep_index:
                 c = now_kind_conf[index]
-                s = now_kind_scores[index][now_kind_index]
+                s = now_kind_conf_x_scores_max_value[index]
 
                 abs_double_pos = tuple(now_kind_pos_abs[index].cpu().detach().numpy().tolist())
 
@@ -97,9 +95,8 @@ class YOLOV2Trainer:
             total = total + for_response(
                 position_abs_[now_kind_response],
                 conf_[now_kind_response],
-                scores_[now_kind_response],
                 conf_x_scores_max_value[now_kind_response],
-                kind_index,
+
             )
 
         return total
