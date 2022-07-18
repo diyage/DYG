@@ -43,7 +43,7 @@ class DataSetConfig:
 class TrainConfig:
     max_epoch_on_image_net_224 = 160
     max_epoch_on_image_net_448 = 10
-    max_epoch_on_detector = 200
+    max_epoch_on_detector = 1000
 
     batch_size = 32
     lr: float = 1e-4
@@ -55,6 +55,6 @@ class TrainConfig:
     weight_position: float = 1.0
     weight_conf_has_obj: float = 5.0
     weight_conf_no_obj: float = 1.0
-    weight_score: float = 1.0
+    weight_score: float = 5.0
     # saved model or images dir(part of )
     # if you want save something to now path, please set ABS_PATH = ''

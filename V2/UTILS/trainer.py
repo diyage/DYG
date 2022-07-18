@@ -262,7 +262,7 @@ class YOLOV2Trainer:
     def eval_detector_mAP(
             self,
             data_loader_test: DataLoader,
-            desc: str = 'eval detector',
+            desc: str = 'eval detector mAP',
     ):
         # compute mAP
         record = {
@@ -314,7 +314,7 @@ class YOLOV2Trainer:
             ap_vec.append(kind_name_ap)
 
         mAP = np.mean(ap_vec)
-        print('mAP:{:.3%}'.format(mAP))
+        print('mAP:{:.2%}'.format(mAP))
 
     def show_detect_answer(
             self,
@@ -386,6 +386,5 @@ class YOLOV2Trainer:
                 self.show_detect_answer(data_loader_test, saved_dir)
 
                 # eval mAP
-                # if epoch != 0 and epoch % 50 == 0:
-                #     self.eval_detector(data_loader_test)
+                self.eval_detector_mAP(data_loader_test)
 
