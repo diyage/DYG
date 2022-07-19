@@ -79,7 +79,8 @@ class Helper:
         optimizer = torch.optim.SGD(
             self.detector.parameters(),
             lr=self.opt_trainer.lr,
-            momentum=0.9
+            momentum=0.9,
+            weight_decay=5e-4
         )
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
@@ -117,8 +118,6 @@ class Helper:
                 self.evaluator.eval_detector_mAP(
                     data_loader_test
                 )
-
-
 
 
 torch.cuda.set_device(1)

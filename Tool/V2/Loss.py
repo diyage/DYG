@@ -153,8 +153,8 @@ class YOLOV2Loss(nn.Module):
         N, H, W, a_n, _ = o_position.shape
 
         # translate position from xywh to xyxy
-        o_xyxy = self.xywh_xyxy(o_position)  # N * H * W * a_n * 4
-        g_xyxy = g_position  # N * H * W * a_n * 4
+        o_xyxy = self.xywh_xyxy(o_position)/self.image_size[0]  # N * H * W * a_n * 4
+        g_xyxy = g_position/self.image_size[0]  # N * H * W * a_n * 4
 
         # compute box mask
         positive = (g_conf > 0).float()  # N * H * W * a_n
