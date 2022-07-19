@@ -94,9 +94,9 @@ class Helper:
                 desc='train for detector epoch --> {}'.format(epoch)
             )
 
-            print_info = '\nloss info-->\n'
+            print_info = '\n\n epoch: {}, loss info-->\n'.format(epoch)
             for key, val in loss_dict.items():
-                print_info += '   {}:{:.5f}.\n '.format(key, val)
+                print_info += '    {}:{:.6f}.\n'.format(key, val)
             tqdm.write(print_info)
 
             if epoch % 10 == 0:
