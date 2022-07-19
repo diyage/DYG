@@ -94,10 +94,10 @@ class Helper:
                 desc='train for detector epoch --> {}'.format(epoch)
             )
 
-            print_info = '\nloss info--> '
+            print_info = '\nloss info-->\n'
             for key, val in loss_dict.items():
-                print_info += ' {}:{:.5f}. '.format(key, val)
-            print(print_info)
+                print_info += '   {}:{:.5f}.\n '.format(key, val)
+            tqdm.write(print_info)
 
             if epoch % 10 == 0:
                 # save model
