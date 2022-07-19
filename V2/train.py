@@ -7,6 +7,8 @@ from Tool.V2 import YOLOV2Trainer, Predictor, Visualizer, Evaluator, YOLOV2Loss,
 from Tool.BaseTools import get_voc_data_loader
 from V2.UTILS.get_pretrained_darknet_19 import get_pretained_dark_net_19
 from V2.UTILS.model_define import YOLOV2Net
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class Helper:
