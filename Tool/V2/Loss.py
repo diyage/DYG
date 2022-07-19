@@ -168,11 +168,12 @@ class YOLOV2Loss(nn.Module):
         position_loss = self.mse(o_xyxy[mask], g_xyxy[mask])
 
         # conf loss
-
+        iou = YOLOV2Tools.compute_iou(
+            o_xyxy,
+            g_xyxy
+        )  # (N, H, W, a_n)
         mask = positive_mask  # N * H * W * a_n
-        masked_o_conf = o_conf[mask]
-        masked_g_conf = g_conf[mask]
-        has_obj_conf_loss = self.mse(masked_o_conf, masked_g_conf)
+        has_obj_conf_loss = self.mse(o_conf[mask], iou[mask].detach().clone())
 
         mask = negative_mask  # N * H * W * a_n
         masked_o_conf = o_conf[mask]
@@ -184,11 +185,7 @@ class YOLOV2Loss(nn.Module):
 
         # cls_prob loss
         mask = positive_mask.unsqueeze(-1).expand_as(o_cls_prob)  # N * H * W * a_n * kind_number
-
-        masked_o_cls_prob = o_cls_prob[mask]
-        masked_g_cls_prob = g_cls_prob[mask]
-
-        cls_prob_loss = self.mse(masked_o_cls_prob, masked_g_cls_prob)
+        cls_prob_loss = self.mse(o_cls_prob[mask], g_cls_prob[mask])
 
         loss = self.weight_position * position_loss + \
             self.weight_conf_has_obj * has_obj_conf_loss + \

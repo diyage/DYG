@@ -52,9 +52,9 @@ class TrainConfig:
     score_th: float = 0.5
     iou_th: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
-    weight_position: float = 1.0
+    weight_position: float = 5.0
     weight_conf_has_obj: float = 5.0
     weight_conf_no_obj: float = 1.0
-    weight_cls_prob: float = 2.0
+    weight_cls_prob: float = 5.0
     # saved model or images dir(part of )
     # if you want save something to now path, please set ABS_PATH = ''
