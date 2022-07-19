@@ -100,10 +100,6 @@ class PositionTranslate:
         return - np.log(1.0 / (x + 1e-8) - 1.0)
 
 
-def arc_sigmoid(x: torch.Tensor) -> torch.Tensor:
-    return - torch.log(1.0 / (x + 1e-8) - 1.0)
-
-
 class YOLOV2Tools:
 
     @staticmethod
@@ -131,7 +127,7 @@ class YOLOV2Tools:
     def compute_iou_m_to_n(
             bbox1: Union[torch.Tensor, np.ndarray, list],
             bbox2: Union[torch.Tensor, np.ndarray, list]
-    )-> torch.Tensor:
+    ) -> torch.Tensor:
 
         if isinstance(bbox1, np.ndarray) or isinstance(bbox1, list):
             bbox1 = torch.tensor(bbox1)
@@ -350,6 +346,10 @@ class YOLOV2Tools:
             image_wh: tuple,
             grid_number: tuple,
     ) -> torch.Tensor:
+
+        def arc_sigmoid(x: torch.Tensor) -> torch.Tensor:
+            return - torch.log(1.0 / (x + 1e-8) - 1.0)
+
         # -1 * H * W * a_n * 4
         N, _, _, a_n, _ = position.shape
 
