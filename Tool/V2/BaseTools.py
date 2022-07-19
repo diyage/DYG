@@ -389,41 +389,79 @@ class YOLOV2Tools:
 
     @staticmethod
     def nms(
-            position_abs: torch.Tensor,
-            conf: torch.Tensor,
-            threshold: float = 0.5
+        position_abs: torch.Tensor,
+        scores: torch.Tensor,
+        threshold: float = 0.5
     ):
-        x1 = position_abs[:, 0]
-        y1 = position_abs[:, 1]
-        x2 = position_abs[:, 2]
-        y2 = position_abs[:, 3]
-        areas = (x2 - x1) * (y2 - y1)  # [N,]
-        _, order = conf.sort(0, descending=True)
+        position_abs = position_abs.cpu().detach().numpy().clone()
+        scores = scores.cpu().detach().numpy().clone()
+        """"Pure Python NMS baseline."""
+        x1 = position_abs[:, 0]  # xmin
+        y1 = position_abs[:, 1]  # ymin
+        x2 = position_abs[:, 2]  # xmax
+        y2 = position_abs[:, 3]  # ymax
+
+        areas = (x2 - x1) * (y2 - y1)
+        order = scores.argsort()[::-1]
 
         keep = []
-        while order.numel() > 0:
-            if order.numel() == 1:  # just one
-                i = order.item()
-                keep.append(i)
-                break
-            else:
-                i = order[0].item()  # max conf
-                keep.append(i)
+        while order.size > 0:
+            i = order[0]
+            keep.append(i)
+            # 计算交集的左上角点和右下角点的坐标
+            xx1 = np.maximum(x1[i], x1[order[1:]])
+            yy1 = np.maximum(y1[i], y1[order[1:]])
+            xx2 = np.minimum(x2[i], x2[order[1:]])
+            yy2 = np.minimum(y2[i], y2[order[1:]])
+            # 计算交集的宽高
+            w = np.maximum(1e-28, xx2 - xx1)
+            h = np.maximum(1e-28, yy2 - yy1)
+            # 计算交集的面积
+            inter = w * h
 
-            # 计算box[i]与其余各框的IOU(思路很好)
-            xx1 = x1[order[1:]].clamp(min=x1[i])  # [N-1,]
-            yy1 = y1[order[1:]].clamp(min=y1[i])
-            xx2 = x2[order[1:]].clamp(max=x2[i])
-            yy2 = y2[order[1:]].clamp(max=y2[i])
-            inter = (xx2 - xx1).clamp(min=0) * (yy2 - yy1).clamp(min=0)  # [N-1,]
+            # 计算交并比
+            ovr = inter / (areas[i] + areas[order[1:]] - inter)
+            # 滤除超过nms阈值的检测框
+            inds = np.where(ovr <= threshold)[0]
+            order = order[inds + 1]
 
-            iou = inter / (areas[i] + areas[order[1:]] - inter)  # [N-1,]
-            idx = (iou <= threshold).nonzero().squeeze()  # idx[N-1,] order[N,]
-            if idx.numel() == 0:
-                break
-            order = order[idx + 1]  #
-
-        return torch.tensor(keep, dtype=torch.long)
+        return keep
+    # def nms(
+    #         position_abs: torch.Tensor,
+    #         conf: torch.Tensor,
+    #         threshold: float = 0.5
+    # ):
+    #     x1 = position_abs[:, 0]
+    #     y1 = position_abs[:, 1]
+    #     x2 = position_abs[:, 2]
+    #     y2 = position_abs[:, 3]
+    #     areas = (x2 - x1) * (y2 - y1)  # [N,]
+    #     _, order = conf.sort(0, descending=True)
+    #
+    #     keep = []
+    #     while order.numel() > 0:
+    #         if order.numel() == 1:  # just one
+    #             i = order.item()
+    #             keep.append(i)
+    #             break
+    #         else:
+    #             i = order[0].item()  # max conf
+    #             keep.append(i)
+    #
+    #         # 计算box[i]与其余各框的IOU(思路很好)
+    #         xx1 = x1[order[1:]].clamp(min=x1[i])  # [N-1,]
+    #         yy1 = y1[order[1:]].clamp(min=y1[i])
+    #         xx2 = x2[order[1:]].clamp(max=x2[i])
+    #         yy2 = y2[order[1:]].clamp(max=y2[i])
+    #         inter = (xx2 - xx1).clamp(min=0) * (yy2 - yy1).clamp(min=0)  # [N-1,]
+    #
+    #         iou = inter / (areas[i] + areas[order[1:]] - inter)  # [N-1,]
+    #         idx = (iou <= threshold).nonzero().squeeze()  # idx[N-1,] order[N,]
+    #         if idx.numel() == 0:
+    #             break
+    #         order = order[idx + 1]  #
+    #
+    #     return torch.tensor(keep, dtype=torch.long)
 
     @staticmethod
     def calculate_pr(gt_num, tp_list, confidence_score):
