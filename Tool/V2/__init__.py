@@ -1,4 +1,4 @@
-from .BaseTools import YOLOV2Tools
+from .BaseTools import YOLOV2Tools, PositionTranslate
 from .Config import DataSetConfig, TrainConfig
 from .Evaluator import Evaluator
 from .Loss import YOLOV2Loss
