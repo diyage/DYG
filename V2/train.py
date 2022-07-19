@@ -94,7 +94,7 @@ class Helper:
                 desc='train for detector epoch --> {}'.format(epoch)
             )
 
-            print_info = 'loss info--> '
+            print_info = '\nloss info--> '
             for key, val in loss_dict.items():
                 print_info += ' {}:{:.5f}. '.format(key, val)
             print(print_info)
