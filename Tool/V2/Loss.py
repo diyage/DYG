@@ -192,4 +192,4 @@ class YOLOV2Loss(nn.Module):
             self.weight_conf_no_obj * no_obj_conf_loss + \
             self.weight_cls_prob * cls_prob_loss
 
-        return loss
+        return loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss

@@ -75,18 +75,28 @@ class Helper:
         )
         # already trained dark_net 19
         # so just train detector
-        optimizer = torch.optim.Adam(self.detector.parameters(), lr=self.opt_trainer.lr)
+        # optimizer = torch.optim.Adam(self.detector.parameters(), lr=self.opt_trainer.lr)
+        optimizer = torch.optim.SGD(
+            self.detector.parameters(),
+            lr=self.opt_trainer.lr,
+            momentum=0.9
+        )
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
                           desc='training detector',
                           position=0):
 
-            self.trainer.train_detector_one_epoch(
+            loss_dict = self.trainer.train_detector_one_epoch(
                 data_loader_train,
                 loss_func,
                 optimizer,
                 desc='train for detector epoch --> {}'.format(epoch)
             )
+
+            print_info = 'loss info--> '
+            for key, val in loss_dict.items():
+                print_info += ' {}:{:.5f}. '.format(key, val)
+            print(print_info)
 
             if epoch % 10 == 0:
                 # save model
@@ -107,6 +117,8 @@ class Helper:
                 self.evaluator.eval_detector_mAP(
                     data_loader_test
                 )
+
+
 
 
 torch.cuda.set_device(1)

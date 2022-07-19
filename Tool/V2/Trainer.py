@@ -68,6 +68,13 @@ class YOLOV2Trainer:
             optimizer: torch.optim.Optimizer,
             desc: str = '',
     ):
+        loss_dict_vec = {
+            'position_loss': [],
+            'has_obj_conf_loss': [],
+            'no_obj_conf_loss': [],
+            'cls_prob_loss': [],
+            'total_loss': [],
+        }
         for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
                                                          desc=desc,
                                                          position=0)):
@@ -75,7 +82,18 @@ class YOLOV2Trainer:
             images = images.cuda()
             targets = self.make_targets(labels, need_abs=True).cuda()
             output = self.detector(images)
-            loss = yolo_v2_loss_func(output, targets)
+            loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss = yolo_v2_loss_func(output, targets)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            loss_dict_vec['position_loss'].append(position_loss.item())
+            loss_dict_vec['has_obj_conf_loss'].append(has_obj_conf_loss.item())
+            loss_dict_vec['no_obj_conf_loss'].append(no_obj_conf_loss.item())
+            loss_dict_vec['cls_prob_loss'].append(cls_prob_loss.item())
+            loss_dict_vec['total_loss'].append(loss.item())
+        loss_dict = {}
+        for key, val in loss_dict_vec.items():
+            loss_dict[key] = sum(val)/len(val)
+        return loss_dict
+
