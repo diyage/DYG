@@ -7,9 +7,7 @@ from V2.UTILS.config_define import *
 import os
 from V2.UTILS.others import YOLOV2Tools
 from V2.UTILS.loss_define import YOLOV2Loss
-from UTILS import CV2
 import numpy as np
-from typing import Union
 
 
 class YOLOV2Trainer:
@@ -387,4 +385,7 @@ class YOLOV2Trainer:
 
                 # eval mAP
                 self.eval_detector_mAP(data_loader_test)
+
+
+
 

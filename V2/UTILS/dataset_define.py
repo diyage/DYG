@@ -1,4 +1,4 @@
-from UTILS.dataset_define import VOC2012DataSet, get_imagenet_dataset
+from Tool import VOC2012DataSet, get_imagenet_dataset
 from V2.UTILS.config_define import DataSetConfig, TrainConfig
 from torch.utils.data import DataLoader
 from torchvision import transforms

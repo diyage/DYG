@@ -5,8 +5,9 @@ import torch.nn as nn
 import xml.etree.ElementTree as ET
 from torch.utils.data import Dataset, DataLoader
 import torchvision
+import torchvision.transforms.transforms as transforms
 import numpy as np
-from UTILS.cv2_ import CV2
+from .cv2_ import CV2
 from PIL import Image
 
 
@@ -149,6 +150,7 @@ class VOC2012DataSet(Dataset):
         del batch
         return torch.stack(imgs), labels
 
+
 def get_imagenet_dataset(
         root: str,
         transform: Compose,
@@ -161,3 +163,149 @@ def get_imagenet_dataset(
 
     return ImageFolder(path, transform)
 
+#######################################################
+
+
+def get_voc_data_loader(
+        root_path: str,
+        image_size: tuple,
+        batch_size: int,
+        train: bool = True,
+):
+    normalize = transforms.Normalize(
+            std=[0.5, 0.5, 0.5],
+            mean=[0.5, 0.5, 0.5],
+        )
+    if train:
+        transform_train = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+        ])
+
+        train_d = VOC2012DataSet(root=root_path,
+                                 train=True,
+                                 image_size=image_size,
+                                 transform=transform_train)
+
+        train_l = DataLoader(train_d,
+                             batch_size=batch_size,
+                             collate_fn=VOC2012DataSet.collate_fn,
+                             shuffle=True)
+        return train_l
+    else:
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+        ])
+
+        test_d = VOC2012DataSet(root=root_path,
+                                train=False,
+                                image_size=image_size,
+                                transform=transform_test)
+
+        test_l = DataLoader(test_d,
+                            batch_size=batch_size,
+                            collate_fn=VOC2012DataSet.collate_fn,
+                            shuffle=False)
+        return test_l
+
+
+def get_image_net_224_loader(
+        root_path: str,
+        batch_size: int,
+        train: bool = True,
+):
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+    if train:
+        transform_train = transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        train_set = get_imagenet_dataset(
+            root=root_path,
+            transform=transform_train,
+            train=True
+        )
+
+        train_loader = DataLoader(
+            train_set,
+            batch_size=batch_size,
+            shuffle=True,
+        )
+        return train_loader
+
+    else:
+        transform_test = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            normalize,
+        ])
+        test_set = get_imagenet_dataset(
+            root=root_path,
+            transform=transform_test,
+            train=False
+        )
+        test_loader = DataLoader(
+            test_set,
+            batch_size=batch_size,
+            shuffle=False,
+        )
+        return test_loader
+
+
+def get_image_net_448_loader(
+        root_path: str,
+        batch_size: int,
+        train: bool = True,
+):
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+    if train:
+        transform_train = transforms.Compose([
+            transforms.RandomResizedCrop((448, 448)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+
+        ])
+
+        train_set = get_imagenet_dataset(
+            root=root_path,
+            transform=transform_train,
+            train=True
+        )
+
+        train_loader = DataLoader(
+            train_set,
+            batch_size=batch_size,
+            shuffle=True,
+        )
+        return train_loader
+    else:
+        transform_test = transforms.Compose([
+            transforms.Resize((448, 448)),
+            transforms.ToTensor(),
+            normalize
+        ])
+
+        test_set = get_imagenet_dataset(
+            root=root_path,
+            transform=transform_test,
+            train=False
+        )
+
+        test_loader = DataLoader(
+            test_set,
+            batch_size=batch_size,
+            shuffle=False,
+        )
+        return test_loader

@@ -12,6 +12,27 @@ def arc_sigmoid(x: torch.Tensor) -> torch.Tensor:
 class YOLOV2Tools:
 
     @staticmethod
+    def image_np_to_tensor(
+            image: np.ndarray
+    ) -> torch.Tensor:
+        image = CV2.cvtColorToRGB(image)  # (H, W, C)
+        image = ((image / 255.0) - 0.5)*2  # (H, W, C)
+        image = np.transpose(image, axes=(2, 0, 1))  # (C, H, W)
+        return torch.tensor(image, dtype=torch.float32)
+
+    @staticmethod
+    def image_tensor_to_np(
+            img: torch.Tensor
+    ) -> np.ndarray:
+        img = (img.cpu().detach().numpy().copy() * 0.5 + 0.5) * 255  # type:np.ndarray
+        # (C, H, W)
+        img = np.transpose(img, axes=(1, 2, 0))  # type:np.ndarray
+        # (H, W, C)
+        img = np.array(img, np.uint8)  # type:np.ndarray
+        img = CV2.cvtColorToBGR(img)
+        return img
+
+    @staticmethod
     def compute_iou_m_to_n(
             bbox1: Union[torch.Tensor, np.ndarray, list],
             bbox2: Union[torch.Tensor, np.ndarray, list]
@@ -102,6 +123,27 @@ class YOLOV2Tools:
             kinds_name: list,
             need_abs: bool = False
     ) -> torch.Tensor:
+        '''
+
+        Args:
+            labels: [
+                [obj, obj, obj, ...],               --> one image
+                ...
+            ]
+                obj = [kind_name: str, x, y, x, y]  --> one obj
+            anchor_pre_wh: [
+                [w0, h0],
+                [w1, h1],
+                ...
+            ]
+            image_wh: [image_w, image_h]
+            grid_number: [grid_w, grid_h]
+            kinds_name: [kind_name0, kinds_name1, ... ]
+            need_abs: Position type, (x, y, x, y) or (tx, ty, tw, th) ?
+
+        Returns:
+            (N, a_n * (5 + kinds_number), H, W)
+        '''
 
         kinds_number = len(kinds_name)
         N, a_n, H, W = len(labels), len(anchor_pre_wh), grid_number[1], grid_number[0]
@@ -149,9 +191,9 @@ class YOLOV2Tools:
 
         position = x[..., 0:4]  # N * H * W * a_n * 4
         conf = x[..., 4]  # N * H * W * a_n
-        scores = x[..., 5:]  # N * H * W * a_n * ...
+        cls_prob = x[..., 5:]  # N * H * W * a_n * ...
 
-        return position, conf, scores
+        return position, conf, cls_prob
 
     @staticmethod
     def get_grid(
@@ -251,39 +293,6 @@ class YOLOV2Tools:
         return torch.cat((txy, twh), dim=-1)
 
     @staticmethod
-    def translate_to_abs_position(
-            position: torch.Tensor,
-            anchor_pre_wh: tuple,
-            image_wh: tuple,
-            grid_number: tuple,
-    ) -> torch.Tensor:
-        N, H, W, a_n, _ = position.shape
-        position_abs = torch.zeros(size=position.shape).to(position.device)
-
-        for i in range(N):
-            for r in range(H):
-                for c in range(W):
-                    for a in range(a_n):
-                        pos = position[i, r, c,  a, :]
-
-                        p = (pos[0].item(), pos[1].item(), pos[2].item(), pos[3].item())
-                        p_trans = PositionTranslate(
-                            p,
-                            types='center_offset',
-                            image_size=image_wh,
-                            pre_box_w_h=anchor_pre_wh[a],
-                            grid_index=(c, r),
-                            grid_number=grid_number
-                        )
-                        x0, y0, x1, y1 = p_trans.abs_double_position.get_position()
-                        position_abs[i, r, c, a, 0] = x0
-                        position_abs[i, r, c, a, 1] = y0
-                        position_abs[i, r, c, a, 2] = x1
-                        position_abs[i, r, c, a, 3] = y1
-
-        return position_abs
-
-    @staticmethod
     def nms(
             position_abs: torch.Tensor,
             conf: torch.Tensor,
@@ -320,23 +329,6 @@ class YOLOV2Tools:
             order = order[idx + 1]  #
 
         return torch.tensor(keep, dtype=torch.long)
-
-    @staticmethod
-    def decode_out(
-            out: torch.Tensor,
-            anchor_pre_wh: tuple,
-            image_wh: tuple,
-            grid_number: tuple,
-            kins_name: list,
-            iou_th: float = 0.5,
-            conf_th: float = 0.1,
-            prob_th: float = 0.1,
-            use_score: bool = True,
-            use_conf: bool = False,
-            out_is_target: bool = False,
-    ) -> list:
-        ' see YOLOV2Trainer --> decode_out()'
-        pass
 
     @staticmethod
     def calculate_pr(gt_num, tp_list, confidence_score):
@@ -462,11 +454,7 @@ class YOLOV2Tools:
         assert len(img.shape) == 3
 
         if not isinstance(img, np.ndarray):
-
-            img = (img.cpu().detach().numpy().copy()*0.5 + 0.5) * 255  # type:np.ndarray
-            img = np.transpose(img, axes=(1, 2, 0))  # type:np.ndarray
-            img = np.array(img, np.uint8)  # type:np.ndarray
-            img = CV2.cvtColorToBGR(img)
+            img = YOLOV2Tools.image_tensor_to_np(img)
 
         for box in predict_name_pos_score:
             predict_kind_name, abs_double_pos, prob_score = box
@@ -598,10 +586,3 @@ class YOLOV2Tools:
         )
         mAP = ap_vec[ap_vec >= 0].mean()
         return mAP
-
-
-
-
-
-
-

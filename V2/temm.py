@@ -1,6 +1,6 @@
 #
-# from UTILS import CV2, XMLTranslate
-# from V2.UTILS.position_translate import Position, PositionTranslate
+# from Tool import CV2, XMLTranslate
+# from V2.Tool.position_translate import Position, PositionTranslate
 #
 #
 # x = XMLTranslate('E:/yolo/', '2007_000032.xml')

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from V1.tools.position_translate import PositionTranslate
-from UTILS import CV2
+from Tool import CV2
 
 
 class YoLoV1Predictor:

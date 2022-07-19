@@ -10,7 +10,7 @@ torch.cuda.set_device(0)
 trainer_opt = TrainConfig()
 data_opt = DataSetConfig()
 
-dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/UTILS/darknet19_72.96.pth')
+dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/Tool/darknet19_72.96.pth')
 net = YOLOV2Net(dark_net)
 
 trainer = YOLOV2Trainer(

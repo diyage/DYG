@@ -10,7 +10,7 @@ torch.cuda.set_device(1)
 trainer_opt = TrainConfig()
 data_opt = DataSetConfig()
 
-dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/UTILS/darknet19_72.96.pth')
+dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/Tool/darknet19_72.96.pth')
 net = YOLOV2Net(dark_net)
 
 trainer = YOLOV2Trainer(
@@ -42,5 +42,12 @@ trainer.train_object_detector(
 #     voc_train_loader,
 #     saved_dir='tmp/'
 # )
-# 2 problems
-# 1, loss 2,position
+
+# if reconstruct this project：
+# Five parts：YOLOV2Loss, Trainer, Predictor, Visualizer, Evaluator
+
+#                    | YOLOV2Loss   ---> use model out_put and gt to compute loss
+#                    | Trainer      ---> use train_dataloader to train the model
+# YOLOV2BaseTools ---| Predictor    ---> decode the out_put to get kps(kind_name, position, scores)
+#                    | Visualizer   ---> use kps to plot each figure
+#                    | Evaluator    ---> compute mAP and accuracy
