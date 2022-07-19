@@ -47,8 +47,8 @@ class TrainConfig:
 
     batch_size = 32
     lr: float = 1e-3
-    conf_th: float = 0.7
-    prob_th: float = 0.7
+    conf_th: float = 0.6
+    prob_th: float = 0.6
     score_th: float = 0.5
     iou_th: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
