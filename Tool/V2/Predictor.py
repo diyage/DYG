@@ -9,6 +9,7 @@ class Predictor:
             iou_th: float,
             prob_th: float,
             conf_th: float,
+            score_th: float,
             pre_anchor_w_h: tuple,
             kinds_name: list,
             image_size: tuple,
@@ -18,6 +19,7 @@ class Predictor:
         self.iou_th = iou_th
         self.prob_th = prob_th
         self.conf_th = conf_th
+        self.score_th = score_th
         self.kinds_name = kinds_name
         self.image_size = image_size
         self.grid_number = grid_number
@@ -25,7 +27,8 @@ class Predictor:
     def __nms(
             self,
             position_abs_: torch.Tensor,
-            scores_: torch.Tensor
+            scores_max_value: torch.Tensor,
+            scores_max_index: torch.Tensor
     ):
 
         def for_response(
@@ -49,8 +52,6 @@ class Predictor:
                 )
 
             return res
-
-        scores_max_value, scores_max_index = scores_.max(dim=-1)
 
         iou_th = self.iou_th
         kinds_name = self.kinds_name
@@ -112,18 +113,25 @@ class Predictor:
         scores_ = cls_prob_ * conf_.unsqueeze(-1).expand_as(cls_prob_)
         # (-1, kinds_num)
 
-        cls_prob_max_value = cls_prob_.max(dim=-1)[0]  # type: torch.Tensor
+        cls_prob_mask = cls_prob_.max(dim=-1)[0] > self.prob_th   # type: torch.Tensor
         # (-1, )
-        cls_prob_mask = cls_prob_max_value > self.prob_th   # type: torch.Tensor
-        # (-1, )
+
         conf_mask = conf_ > self.conf_th  # type: torch.Tensor
         # (-1, )
 
-        mask = (conf_mask.float() * cls_prob_mask.float()).bool()
+        scores_max_value, scores_max_index = scores_.max(dim=-1)
+        # (-1, )
+
+        scores_mask = scores_max_value > self.score_th  # type: torch.Tensor
+        # (-1, )
+
+        mask = (conf_mask.float() * cls_prob_mask.float() * scores_mask.float()).bool()
+        # (-1, )
 
         return self.__nms(
             position_abs_[mask],
-            scores_[mask],
+            scores_max_value[mask],
+            scores_max_index[mask]
         )
 
     def decode(

@@ -40,11 +40,11 @@ class Helper:
             self.opt_trainer.iou_th,
             self.opt_trainer.prob_th,
             self.opt_trainer.conf_th,
+            self.opt_trainer.score_th,
             self.opt_data_set.pre_anchor_w_h,
             self.opt_data_set.kinds_name,
             self.opt_data_set.image_size,
             self.opt_data_set.grid_number
-
         )
 
         self.visualizer = Visualizer(
