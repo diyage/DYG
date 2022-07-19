@@ -393,8 +393,8 @@ class YOLOV2Tools:
         scores: torch.Tensor,
         threshold: float = 0.5
     ):
-        position_abs = position_abs.cpu().detach().numpy().clone()
-        scores = scores.cpu().detach().numpy().clone()
+        position_abs = position_abs.cpu().detach().numpy().copy()
+        scores = scores.cpu().detach().numpy().copy()
         """"Pure Python NMS baseline."""
         x1 = position_abs[:, 0]  # xmin
         y1 = position_abs[:, 1]  # ymin
