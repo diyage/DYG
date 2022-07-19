@@ -60,8 +60,8 @@ class PositionTranslate:
             grid_index_to_y_axis = int(abs_center_y // self.grid_size[1])
             self.grid_index_to_x_y_axis = (grid_index_to_x_axis, grid_index_to_y_axis)
 
-            a_ = arc_sigmoid(abs_center_x/self.image_size[0] * self.grid_number[0] - grid_index_to_x_axis)
-            b_ = arc_sigmoid(abs_center_y/self.image_size[1] * self.grid_number[1] - grid_index_to_y_axis)
+            a_ = self.arc_sigmoid(abs_center_x/self.image_size[0] * self.grid_number[0] - grid_index_to_x_axis)
+            b_ = self.arc_sigmoid(abs_center_y/self.image_size[1] * self.grid_number[1] - grid_index_to_y_axis)
             m_ = np.log(obj_w/self.image_size[0]*self.grid_number[0]/self.pre_box_w_h[0])
             n_ = np.log(obj_h/self.image_size[1]*self.grid_number[1]/self.pre_box_w_h[1])
 
