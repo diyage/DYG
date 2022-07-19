@@ -140,6 +140,21 @@ class YOLOV2Loss(nn.Module):
     #
     #     return loss
 
+    @staticmethod
+    def iou_(bboxes_a, bboxes_b):
+        """
+            bbox_1 : [B*N, 4] = [x1, y1, x2, y2]
+            bbox_2 : [B*N, 4] = [x1, y1, x2, y2]
+        """
+        tl = torch.max(bboxes_a[..., :2], bboxes_b[..., :2])
+        br = torch.min(bboxes_a[..., 2:], bboxes_b[..., 2:])
+        area_a = torch.prod(bboxes_a[..., 2:] - bboxes_a[..., :2], dim=-1)
+        area_b = torch.prod(bboxes_b[..., 2:] - bboxes_b[..., :2], dim=-1)
+
+        en = (tl < br).type(tl.type()).prod(dim=-1)
+        area_i = torch.prod(br - tl, dim=-1) * en  # * ((tl < br).all())
+        return area_i / (area_a + area_b - area_i)
+
     def forward(self,
                 out: torch.Tensor,
                 gt: torch.Tensor):
@@ -168,10 +183,9 @@ class YOLOV2Loss(nn.Module):
         position_loss = self.mse(o_xyxy[mask], g_xyxy[mask])
 
         # conf loss
-        iou = YOLOV2Tools.compute_iou(
-            o_xyxy,
-            g_xyxy
-        )  # (N, H, W, a_n)
+        iou = self.iou_(o_xyxy, g_xyxy)
+        assert len(iou.shape) == 4
+        # (N, H, W, a_n)
         mask = positive_mask  # N * H * W * a_n
         has_obj_conf_loss = self.mse(o_conf[mask], iou[mask].detach().clone())
 

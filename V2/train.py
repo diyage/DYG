@@ -96,7 +96,7 @@ class Helper:
 
             print_info = '\n\n epoch: {}, loss info-->\n'.format(epoch)
             for key, val in loss_dict.items():
-                print_info += '    {}:{:.6f}.\n'.format(key, val)
+                print_info += '{:^35}:{:^10.6f}.\n'.format(key, val)
             tqdm.write(print_info)
 
             if epoch % 10 == 0:
