@@ -1,5 +1,5 @@
 
-from UTILS import CV2, XMLTranslate
+from pre_trained import CV2, XMLTranslate
 from V2.UTILS.position_translate import Position, PositionTranslate
 from V2.UTILS.others import YOLOV2Tools
 from V2.UTILS.config_define import *

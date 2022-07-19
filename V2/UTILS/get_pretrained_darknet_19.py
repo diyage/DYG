@@ -115,7 +115,7 @@ class DarkNet_19(nn.Module):
 
 
 def get_pretained_dark_net_19(
-        path: str = '/home/dell/PycharmProjects/YOLO/Tool/darknet19_72.96.pth'
+        path: str = '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
 )->DarkNet_19:
     print('init pre-trained dark net 19'.center(50, '*'))
     saved_state_dict = torch.load(path)

@@ -1,7 +1,7 @@
 import torch
 from typing import Union
 import numpy as np
-from Tool import CV2
+from Tool.BaseTools.cv2_ import CV2
 from V2.UTILS.position_translate import PositionTranslate
 
 

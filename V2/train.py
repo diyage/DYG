@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from Tool.V2 import YOLOV2Trainer, Predictor, Visualizer, Evaluator, YOLOV2Loss, DataSetConfig, TrainConfig
 from Tool.BaseTools import get_voc_data_loader
 from V2.UTILS.get_pretrained_darknet_19 import get_pretained_dark_net_19
-from V2.UTILS.model_define import YOLOV2Net
+from V2.UTILS.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -113,8 +113,9 @@ torch.cuda.set_device(1)
 trainer_opt = TrainConfig()
 data_opt = DataSetConfig()
 
-dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/Tool/darknet19_72.96.pth')
-net = YOLOV2Net(dark_net)
+# dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth')
+dark_net_19 = DarkNet19()
+net = YOLOV2Net(dark_net_19)
 
 helper = Helper(
     net,
