@@ -253,6 +253,7 @@ def get_voc_trainval_data_loader(
         image_size: tuple,
         batch_size: int,
         train: bool = True,
+        num_workers: int = 0,
 ):
 
     normalize = transforms.Normalize(
@@ -273,10 +274,13 @@ def get_voc_trainval_data_loader(
             transform=transform_train
         )
 
-        train_l = DataLoader(train_d,
-                             batch_size=batch_size,
-                             collate_fn=VOCTrainValDataSet.collate_fn,
-                             shuffle=True)
+        train_l = DataLoader(
+            train_d,
+            batch_size=batch_size,
+            collate_fn=VOCTrainValDataSet.collate_fn,
+            shuffle=True,
+            num_workers=num_workers
+                             )
         return train_l
     else:
         transform_test = transforms.Compose([
@@ -292,10 +296,13 @@ def get_voc_trainval_data_loader(
             transform=transform_test
         )
 
-        test_l = DataLoader(test_d,
-                            batch_size=batch_size,
-                            collate_fn=VOCTrainValDataSet.collate_fn,
-                            shuffle=False)
+        test_l = DataLoader(
+            test_d,
+            batch_size=batch_size,
+            collate_fn=VOCTrainValDataSet.collate_fn,
+            shuffle=False,
+            num_workers=num_workers
+        )
         return test_l
 
 
