@@ -75,13 +75,16 @@ class Helper:
         )
         # already trained dark_net 19
         # so just train detector
-        # optimizer = torch.optim.Adam(self.detector.parameters(), lr=self.opt_trainer.lr)
-        optimizer = torch.optim.SGD(
+        optimizer = torch.optim.Adam(
             self.detector.parameters(),
-            lr=self.opt_trainer.lr,
-            momentum=0.9,
-            weight_decay=5e-4
+            lr=self.opt_trainer.lr
         )
+        # optimizer = torch.optim.SGD(
+        #     self.detector.parameters(),
+        #     lr=self.opt_trainer.lr,
+        #     momentum=0.9,
+        #     weight_decay=5e-4
+        # )
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
                           desc='training detector',
@@ -120,14 +123,14 @@ class Helper:
                 )
 
 
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 trainer_opt = YOLOV2TrainerConfig()
 data_opt = YOLOV2DataSetConfig()
 
-# dark_net_19 = get_pretained_dark_net_19(
-#     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
-# )
-dark_net_19 = DarkNet19()
+dark_net_19 = get_pretained_dark_net_19(
+    '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
+)
+# dark_net_19 = DarkNet19()
 net = YOLOV2Net(dark_net_19)
 
 helper = Helper(

@@ -160,58 +160,60 @@ class VOCDataSet(Dataset):
         return torch.stack(imgs), labels
 
 
-class VOC2012DataSet(Dataset):
-    def __init__(self,
-                 root: str,
-                 train: bool = True,
-                 image_size: tuple = (448, 448),
-                 transform: torchvision.transforms.Compose = None):
+class VOCTrainValDataSet(Dataset):
+    def __init__(
+            self,
+            root: str,
+            year: str,
+            train: bool = True,
+            image_size: tuple = (448, 448),
+            transform: torchvision.transforms.Compose = None
+    ):
         super().__init__()
-
-        self.root = root
-        if not self.root.endswith('/'):
-            self.root += '/'
-
+        assert year in ['2012', '2007']
         self.train = train
+        self.data_type = 'trainval'
+        self.data_path = os.path.join(root, year, self.data_type)
         self.image_size = image_size
         self.transform = transform
-        self.images, self.labels = self.__get_images_and_labels()
+        self.xml_file_names = self.__get_image_xml_file_names()
 
-    def __get_images_and_labels(self) -> tuple:
-        images = []
-        labels = []
+    def __get_image_xml_file_names(self) -> list:
+        txt_file_name = os.path.join(
+            self.data_path,
+            'ImageSets',
+            'Main',
+            '{}.txt'.format(self.data_type)
+        )
 
-        train_or_val_txt_file_name = self.root + 'ImageSets/Main/' + 'trainval.txt'
-
-        with open(train_or_val_txt_file_name, 'r') as f:
+        with open(txt_file_name, 'r') as f:
             temp = f.readlines()
-            xml_file_names = [val[:-1]+'.xml' for val in temp]
+            xml_file_names = [val[:-1] + '.xml' for val in temp]
 
         n = len(xml_file_names)
-        random_index = np.random.choice(n, size=(n,), replace=False)
-
-        for i in range(n):
-            ind = random_index[i]
-            val = xml_file_names[ind]
-
-            xml_trans = XMLTranslate(root_path=self.root, file_name=val)
-            xml_trans.resize(new_size=self.image_size)
-            images.append(xml_trans.img)
-            labels.append(xml_trans.objects)
-        total = len(images)
-        cut = int(0.8*total)
+        cut = int(0.8 * n)
         if self.train:
-            return images[0: cut], labels[0: cut]
+            return xml_file_names[0: cut]
         else:
-            return images[cut:], labels[cut:]
+            return xml_file_names[cut:]
 
     def __len__(self):
-        return len(self.images)
+        return len(self.xml_file_names)
+
+    def __get_image_label(
+            self,
+            xml_file_name: str,
+    ) -> tuple:
+        xml_trans = XMLTranslate(
+            root_path=self.data_path,
+            file_name=xml_file_name
+        )
+        xml_trans.resize(new_size=self.image_size)
+        return xml_trans.img, xml_trans.objects
 
     def __getitem__(self, index):
+        img, label = self.__get_image_label(self.xml_file_names[index])
 
-        label = self.labels[index]
-        img = self.images[index]
         img = CV2.cvtColorToRGB(img)
         if self.transform is not None:
             img = Image.fromarray(img)
@@ -263,8 +265,9 @@ def get_voc_trainval_data_loader(
             normalize
         ])
 
-        train_d = VOC2012DataSet(
+        train_d = VOCTrainValDataSet(
             root=root_path,
+            year=year,
             train=True,
             image_size=image_size,
             transform=transform_train
@@ -272,7 +275,7 @@ def get_voc_trainval_data_loader(
 
         train_l = DataLoader(train_d,
                              batch_size=batch_size,
-                             collate_fn=VOC2012DataSet.collate_fn,
+                             collate_fn=VOCTrainValDataSet.collate_fn,
                              shuffle=True)
         return train_l
     else:
@@ -281,8 +284,9 @@ def get_voc_trainval_data_loader(
             normalize
         ])
 
-        test_d = VOC2012DataSet(
+        test_d = VOCTrainValDataSet(
             root=root_path,
+            year=year,
             train=False,
             image_size=image_size,
             transform=transform_test
@@ -290,7 +294,7 @@ def get_voc_trainval_data_loader(
 
         test_l = DataLoader(test_d,
                             batch_size=batch_size,
-                            collate_fn=VOC2012DataSet.collate_fn,
+                            collate_fn=VOCTrainValDataSet.collate_fn,
                             shuffle=False)
         return test_l
 
