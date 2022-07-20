@@ -199,11 +199,11 @@ class VOC2012DataSet(Dataset):
             images.append(xml_trans.img)
             labels.append(xml_trans.objects)
         total = len(images)
-        cut = int(0.7*total)
+        cut = int(0.8*total)
         if self.train:
             return images[0: cut], labels[0: cut]
         else:
-            return images[cut: ], labels[cut: ]
+            return images[cut:], labels[cut:]
 
     def __len__(self):
         return len(self.images)
@@ -243,6 +243,54 @@ def get_imagenet_dataset(
     return ImageFolder(path, transform)
 
 #######################################################
+
+
+def get_voc_trainval_data_loader(
+        root_path: str,
+        image_size: tuple,
+        batch_size: int,
+        train: bool = True,
+):
+    normalize = transforms.Normalize(
+        std=[0.5, 0.5, 0.5],
+        mean=[0.5, 0.5, 0.5],
+    )
+    if train:
+        transform_train = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+        ])
+
+        train_d = VOC2012DataSet(
+            root=root_path,
+            train=True,
+            image_size=image_size,
+            transform=transform_train
+        )
+
+        train_l = DataLoader(train_d,
+                             batch_size=batch_size,
+                             collate_fn=VOC2012DataSet.collate_fn,
+                             shuffle=True)
+        return train_l
+    else:
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+        ])
+
+        test_d = VOC2012DataSet(
+            root=root_path,
+            train=False,
+            image_size=image_size,
+            transform=transform_test
+        )
+
+        test_l = DataLoader(test_d,
+                            batch_size=batch_size,
+                            collate_fn=VOC2012DataSet.collate_fn,
+                            shuffle=False)
+        return test_l
 
 
 def get_voc_data_loader(

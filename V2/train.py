@@ -4,7 +4,7 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 from Tool.V2 import *
-from Tool.BaseTools import get_voc_data_loader
+from Tool.BaseTools import get_voc_data_loader, get_voc_trainval_data_loader
 from V2.UTILS.get_pretrained_darknet_19 import get_pretained_dark_net_19
 from V2.UTILS.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
@@ -120,7 +120,7 @@ class Helper:
                 )
 
 
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 trainer_opt = YOLOV2TrainerConfig()
 data_opt = YOLOV2DataSetConfig()
 
@@ -136,16 +136,14 @@ helper = Helper(
     trainer_opt
 )
 
-voc_train_loader = get_voc_data_loader(
+voc_train_loader = get_voc_trainval_data_loader(
     data_opt.root_path,
-    data_opt.year,
     data_opt.image_size,
     trainer_opt.batch_size,
     train=True
 )
-voc_test_loader = get_voc_data_loader(
+voc_test_loader = get_voc_trainval_data_loader(
     data_opt.root_path,
-    data_opt.year,
     data_opt.image_size,
     trainer_opt.batch_size,
     train=False
