@@ -4,23 +4,20 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 from typing import Union
-from .Predictor import YOLOV2Predictor
-from .Tools import YOLOV2Tools
+from .Predictor import YOLOV1Predictor
+from .Tools import YOLOV1Tools
 
 
-class YOLOV2Visualizer:
+class YOLOV1Visualizer:
     def __init__(
             self,
             model: nn.Module,
-            predictor: YOLOV2Predictor,
+            predictor: YOLOV1Predictor,
             class_colors: list
     ):
         self.detector = model  # type: nn.Module
         self.detector.cuda()
 
-        self.dark_net = model.darknet19  # type: nn.Module
-        self.dark_net.cuda()
-        # be careful, darknet19 is not the detector
         self.predictor = predictor
         self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
         self.image_size = self.predictor.image_size
@@ -33,13 +30,14 @@ class YOLOV2Visualizer:
             self,
             labels,
             need_abs: bool = False,
-    ):
-        return YOLOV2Tools.make_targets(labels,
-                                        self.pre_anchor_w_h,
-                                        self.image_size,
-                                        self.grid_number,
-                                        self.kinds_name,
-                                        need_abs)
+    ) -> torch.Tensor:
+        return YOLOV1Tools.make_targets(
+            labels,
+            self.image_size,
+            self.grid_number,
+            self.kinds_name,
+            need_abs
+        )
 
     def detect_one_image(
             self,
@@ -47,14 +45,14 @@ class YOLOV2Visualizer:
             saved_path: str
     ):
         if isinstance(image, np.ndarray):
-            image = YOLOV2Tools.image_np_to_tensor(image)
+            image = YOLOV1Tools.image_np_to_tensor(image)
 
         out = self.detector(image.unsqueeze(0).cuda())[0]
         pre_kps_s = self.predictor.decode_out_one_image(
             out,
             out_is_target=False
         )
-        YOLOV2Tools.visualize(
+        YOLOV1Tools.visualize(
             image,
             pre_kps_s,
             saved_path=''.format(saved_path),
@@ -85,7 +83,7 @@ class YOLOV2Visualizer:
 
             for image_index in range(images.shape[0]):
 
-                YOLOV2Tools.visualize(
+                YOLOV1Tools.visualize(
                     images[image_index],
                     gt_decode[image_index],
                     saved_path='{}/{}_{}_gt.png'.format(saved_dir, batch_id, image_index),
@@ -93,7 +91,7 @@ class YOLOV2Visualizer:
                     kinds_name=self.kinds_name
                 )
 
-                YOLOV2Tools.visualize(
+                YOLOV1Tools.visualize(
                     images[image_index],
                     pre_decode[image_index],
                     saved_path='{}/{}_{}_predict.png'.format(saved_dir, batch_id, image_index),

@@ -1,9 +1,9 @@
 import torch
-from .Tools import YOLOV2Tools
+from .Tools import YOLOV1Tools
 from Tool.BaseTools import BasePredictor
 
 
-class YOLOV2Predictor(BasePredictor):
+class YOLOV1Predictor(BasePredictor):
     def __init__(
             self,
             iou_th: float,
@@ -37,33 +37,29 @@ class YOLOV2Predictor(BasePredictor):
             out_put: (_, H, W)
             out_is_target: bool
 
-        Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
-            [
-            (kind_name, (x, y, x, y), score),
-            (kind_name, (x, y, x, y), score)
-             ...
-             ]
-
+        Returns: kps_s(what is kps_s, please self.nms() --> base method )
         '''
+
         assert len(out_put.shape) == 3
         #  _ * H * W
         out_put = out_put.unsqueeze(dim=0)
         #  1 * _ * H * W
-        a_n = len(self.pre_anchor_w_h)
-        position, conf, cls_prob = YOLOV2Tools.split_output(
+
+        position, conf, cls_prob = YOLOV1Tools.split_output(
             out_put,
-            a_n
         )
 
         if not out_is_target:
+            position = torch.sigmoid(position)
             conf = torch.sigmoid(conf)
             cls_prob = torch.softmax(cls_prob, dim=-1)
-            position_abs = YOLOV2Tools.xywh_to_xyxy(
+
+            position_abs = YOLOV1Tools.xywh_to_xyxy(
                 position,
-                self.pre_anchor_w_h,
                 self.image_size,
                 self.grid_number
             )
+
         else:
             position_abs = position
 
@@ -73,7 +69,7 @@ class YOLOV2Predictor(BasePredictor):
         scores_ = cls_prob_ * conf_.unsqueeze(-1).expand_as(cls_prob_)
         # (-1, kinds_num)
 
-        cls_prob_mask = cls_prob_.max(dim=-1)[0] > self.prob_th   # type: torch.Tensor
+        cls_prob_mask = cls_prob_.max(dim=-1)[0] > self.prob_th  # type: torch.Tensor
         # (-1, )
 
         conf_mask = conf_ > self.conf_th  # type: torch.Tensor
@@ -93,3 +89,5 @@ class YOLOV2Predictor(BasePredictor):
             scores_max_value[mask],
             scores_max_index[mask]
         )
+
+

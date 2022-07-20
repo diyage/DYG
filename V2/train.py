@@ -3,7 +3,7 @@ import torch.nn as nn
 from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
-from Tool.V2 import YOLOV2Trainer, Predictor, Visualizer, Evaluator, YOLOV2Loss, DataSetConfig, TrainConfig
+from Tool.V2 import *
 from Tool.BaseTools import get_voc_data_loader
 from V2.UTILS.get_pretrained_darknet_19 import get_pretained_dark_net_19
 from V2.UTILS.model_define import YOLOV2Net, DarkNet19
@@ -15,8 +15,8 @@ class Helper:
     def __init__(
             self,
             model: nn.Module,
-            opt_data_set: DataSetConfig,
-            opt_trainer: TrainConfig,
+            opt_data_set: YOLOV2DataSetConfig,
+            opt_trainer: YOLOV2TrainerConfig,
     ):
         self.detector = model  # type: nn.Module
         self.detector.cuda()
@@ -36,7 +36,7 @@ class Helper:
             self.opt_data_set.kinds_name
         )
 
-        self.predictor = Predictor(
+        self.predictor = YOLOV2Predictor(
             self.opt_trainer.iou_th,
             self.opt_trainer.prob_th,
             self.opt_trainer.conf_th,
@@ -47,13 +47,13 @@ class Helper:
             self.opt_data_set.grid_number
         )
 
-        self.visualizer = Visualizer(
+        self.visualizer = YOLOV2Visualizer(
             model,
             self.predictor,
             self.opt_data_set.class_colors
         )
 
-        self.evaluator = Evaluator(
+        self.evaluator = YOLOV2Evaluator(
             model,
             self.predictor
         )
@@ -121,13 +121,13 @@ class Helper:
 
 
 torch.cuda.set_device(1)
-trainer_opt = TrainConfig()
-data_opt = DataSetConfig()
+trainer_opt = YOLOV2TrainerConfig()
+data_opt = YOLOV2DataSetConfig()
 
-dark_net_19 = get_pretained_dark_net_19(
-    '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
-)
-# dark_net_19 = DarkNet19()
+# dark_net_19 = get_pretained_dark_net_19(
+#     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
+# )
+dark_net_19 = DarkNet19()
 net = YOLOV2Net(dark_net_19)
 
 helper = Helper(
@@ -150,5 +150,6 @@ voc_test_loader = get_voc_data_loader(
     trainer_opt.batch_size,
     train=False
 )
+
 helper.go(voc_train_loader, voc_test_loader)
 

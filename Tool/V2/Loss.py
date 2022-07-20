@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from .BaseTools import YOLOV2Tools
+from .Tools import YOLOV2Tools
 
 
 class YOLOV2Loss(nn.Module):

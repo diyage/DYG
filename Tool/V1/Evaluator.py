@@ -3,24 +3,21 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
-from .Predictor import YOLOV2Predictor
-from .Tools import YOLOV2Tools
+from .Predictor import YOLOV1Predictor
+from .Tools import YOLOV1Tools
 from Tool.BaseTools import BaseEvaluator
 
 
-class YOLOV2Evaluator(BaseEvaluator):
+class YOLOV1Evaluator(BaseEvaluator):
     def __init__(
             self,
             model: nn.Module,
-            predictor: YOLOV2Predictor
+            predictor: YOLOV1Predictor
     ):
         super().__init__()
         self.detector = model  # type: nn.Module
         self.detector.cuda()
 
-        self.dark_net = model.darknet19  # type: nn.Module
-        self.dark_net.cuda()
-        # be careful, darknet19 is not the detector
         self.predictor = predictor
         self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
         self.image_size = self.predictor.image_size
@@ -33,34 +30,13 @@ class YOLOV2Evaluator(BaseEvaluator):
             labels,
             need_abs: bool = False,
     ):
-        return YOLOV2Tools.make_targets(
+        return YOLOV1Tools.make_targets(
             labels,
-            self.pre_anchor_w_h,
             self.image_size,
             self.grid_number,
             self.kinds_name,
             need_abs
         )
-
-    def eval_classifier(
-            self,
-            data_loader_test: DataLoader,
-            desc: str = 'eval classifier'
-    ):
-        vec = []
-        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
-                                                         desc=desc,
-                                                         position=0)):
-            self.dark_net.eval()
-            images = images.cuda()  # type: torch.Tensor
-            labels = labels.cuda()  # type: torch.Tensor
-
-            output = self.dark_net(images)  # type: torch.Tensor
-            acc = (output.argmax(dim=-1) == labels).float().mean()
-            vec.append(acc)
-
-        accuracy = sum(vec) / len(vec)
-        print('Acc: {:.2%}'.format(accuracy.item()))
 
     def eval_detector_mAP(
             self,
@@ -86,7 +62,7 @@ class YOLOV2Evaluator(BaseEvaluator):
 
             for image_index in range(images.shape[0]):
 
-                res = YOLOV2Tools.get_pre_kind_name_tp_score_and_gt_num(
+                res = YOLOV1Tools.get_pre_kind_name_tp_score_and_gt_num(
                     pre_decode[image_index],
                     gt_decode[image_index],
                     kinds_name=self.kinds_name,
@@ -104,8 +80,8 @@ class YOLOV2Evaluator(BaseEvaluator):
         ap_vec = []
         for kind_name in self.kinds_name:
             tp_list, score_list, gt_num = record[kind_name]
-            recall, precision = YOLOV2Tools.calculate_pr(gt_num, tp_list, score_list)
-            kind_name_ap = YOLOV2Tools.voc_ap(recall, precision)
+            recall, precision = YOLOV1Tools.calculate_pr(gt_num, tp_list, score_list)
+            kind_name_ap = YOLOV1Tools.voc_ap(recall, precision)
             ap_vec.append(kind_name_ap)
 
         mAP = np.mean(ap_vec)
