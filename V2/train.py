@@ -96,7 +96,7 @@ class Helper:
 
             print_info = '\n\n epoch: {}, loss info-->\n'.format(epoch)
             for key, val in loss_dict.items():
-                print_info += '{:^35}:{:^10.6f}.\n'.format(key, val)
+                print_info += '{:^30}:{:^15.6f}.\n'.format(key, val)
             tqdm.write(print_info)
 
             if epoch % 10 == 0:
@@ -124,8 +124,10 @@ torch.cuda.set_device(1)
 trainer_opt = TrainConfig()
 data_opt = DataSetConfig()
 
-# dark_net = get_pretained_dark_net_19('/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth')
-dark_net_19 = DarkNet19()
+dark_net_19 = get_pretained_dark_net_19(
+    '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
+)
+# dark_net_19 = DarkNet19()
 net = YOLOV2Net(dark_net_19)
 
 helper = Helper(
@@ -136,12 +138,14 @@ helper = Helper(
 
 voc_train_loader = get_voc_data_loader(
     data_opt.root_path,
+    data_opt.year,
     data_opt.image_size,
     trainer_opt.batch_size,
     train=True
 )
 voc_test_loader = get_voc_data_loader(
     data_opt.root_path,
+    data_opt.year,
     data_opt.image_size,
     trainer_opt.batch_size,
     train=False

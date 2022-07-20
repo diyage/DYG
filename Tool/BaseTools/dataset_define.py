@@ -1,3 +1,5 @@
+import os.path
+
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import Compose
 import torch
@@ -79,6 +81,76 @@ class XMLTranslate:
         print("objects:")
         for val in self.objects:
             print("kind: {}, box: ({},{},{},{})".format(val[0], val[1], val[2], val[3], val[4]))
+
+
+class VOCDataSet(Dataset):
+    def __init__(
+            self,
+            root: str,
+            year: str,
+            train: bool = True,
+            image_size: tuple = (448, 448),
+            transform: torchvision.transforms.Compose = None
+    ):
+        super().__init__()
+        assert year in ['2012', '2007']
+        self.train = train
+        if self.train:
+            self.data_type = 'trainval'
+
+        else:
+            self.data_type = 'test'
+
+        self.data_path = os.path.join(root, year, self.data_type)
+        self.image_size = image_size
+        self.transform = transform
+        self.xml_file_names = self.__get_image_xml_file_names()
+
+    def __get_image_xml_file_names(self) -> list:
+
+        txt_file_name = os.path.join(
+            self.data_path,
+            'ImageSets',
+            'Main',
+            '{}.txt'.format(self.data_type)
+        )
+
+        with open(txt_file_name, 'r') as f:
+            temp = f.readlines()
+            xml_file_names = [val[:-1] + '.xml' for val in temp]
+
+        return xml_file_names
+
+    def __len__(self):
+        return len(self.xml_file_names)
+
+    def __get_image_label(
+            self,
+            xml_file_name: str,
+    ) -> tuple:
+        xml_trans = XMLTranslate(root_path=self.data_path, file_name=xml_file_name)
+        xml_trans.resize(new_size=self.image_size)
+        return xml_trans.img, xml_trans.objects
+
+    def __getitem__(self, index):
+        img, label = self.__get_image_label(self.xml_file_names[index])
+
+        img = CV2.cvtColorToRGB(img)
+        if self.transform is not None:
+            img = Image.fromarray(img)
+            img = self.transform(img)
+        else:
+            img = img / 255.0
+        return img, label
+
+    @staticmethod
+    def collate_fn(batch):
+        # batch是一个列表，其中是一个一个的元组，每个元组是dataset中_getitem__的结果
+        batch = list(zip(*batch))
+        imgs = batch[0]
+        labels = batch[1]
+        del batch
+        return torch.stack(imgs), labels
 
 
 class VOC2012DataSet(Dataset):
@@ -168,6 +240,7 @@ def get_imagenet_dataset(
 
 def get_voc_data_loader(
         root_path: str,
+        year: str,
         image_size: tuple,
         batch_size: int,
         train: bool = True,
@@ -182,14 +255,17 @@ def get_voc_data_loader(
             normalize
         ])
 
-        train_d = VOC2012DataSet(root=root_path,
-                                 train=True,
-                                 image_size=image_size,
-                                 transform=transform_train)
+        train_d = VOCDataSet(
+            root=root_path,
+            year=year,
+            train=True,
+            image_size=image_size,
+            transform=transform_train
+        )
 
         train_l = DataLoader(train_d,
                              batch_size=batch_size,
-                             collate_fn=VOC2012DataSet.collate_fn,
+                             collate_fn=VOCDataSet.collate_fn,
                              shuffle=True)
         return train_l
     else:
@@ -198,14 +274,17 @@ def get_voc_data_loader(
             normalize
         ])
 
-        test_d = VOC2012DataSet(root=root_path,
-                                train=False,
-                                image_size=image_size,
-                                transform=transform_test)
+        test_d = VOCDataSet(
+            root=root_path,
+            year=year,
+            train=False,
+            image_size=image_size,
+            transform=transform_test
+        )
 
         test_l = DataLoader(test_d,
                             batch_size=batch_size,
-                            collate_fn=VOC2012DataSet.collate_fn,
+                            collate_fn=VOCDataSet.collate_fn,
                             shuffle=False)
         return test_l
 

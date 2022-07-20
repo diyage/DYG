@@ -105,4 +105,4 @@ class Evaluator:
             ap_vec.append(kind_name_ap)
 
         mAP = np.mean(ap_vec)
-        print('mAP:{:.2%}'.format(mAP))
+        print('\nmAP:{:.2%}'.format(mAP))

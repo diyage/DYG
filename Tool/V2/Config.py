@@ -18,7 +18,8 @@ import numpy as np
 
 
 class DataSetConfig:
-    root_path: str = '/home/dell/下载/VOCtrainval_11-May-2012/VOCdevkit/VOC2012/'
+    root_path: str = '/home/dell/data/DataSet/VOC/'
+    year: str = '2012'
     image_net_dir: str = '/home/dell/data/DataSet/imageNet/data/'
     # data set root dir
     image_size: tuple = (416, 416)
