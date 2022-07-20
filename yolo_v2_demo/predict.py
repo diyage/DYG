@@ -91,7 +91,7 @@ data_opt = YOLOV2DataSetConfig()
 # dark_net_19 = get_pretained_dark_net_19(
 #     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
 # )
-dark_net_19 = DarkNet_19()
+dark_net_19 = DarkNet19()
 net = YOLOV2Net(dark_net_19)
 
 helper = Helper(
