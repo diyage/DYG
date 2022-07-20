@@ -72,6 +72,7 @@ class Helper:
             self.opt_data_set.grid_number,
             self.opt_data_set.image_size,
             iou_th=self.opt_trainer.iou_th,
+            loss_type=1
         )
         # already trained dark_net 19
         # so just train detector
@@ -155,7 +156,7 @@ if __name__ == '__main__':
         trainer_opt.batch_size,
         train=False
     )
-    helper.detector.load_state_dict(
-        torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/30.pth')
-    )
+    # helper.detector.load_state_dict(
+    #     torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/30.pth')
+    # )
     helper.go(voc_train_loader, voc_test_loader)

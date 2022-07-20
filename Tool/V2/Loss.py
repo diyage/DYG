@@ -137,7 +137,7 @@ class YOLOV2Loss(nn.Module):
         # conf loss
         # # part one
         mask = positive_mask  # N * H * W * a_n
-        has_obj_conf_loss = self.mse(o_conf[mask], g_conf[mask])
+        has_obj_conf_loss = self.mse(o_conf[mask], iou[mask].detach().clone())
         # # part two
         mask = negative_mask  # N * H * W * a_n
         masked_o_conf = o_conf[mask]
