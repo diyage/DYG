@@ -55,7 +55,6 @@ class BaseTrainer:
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                return {}
             else:
                 loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss = loss_tuple
                 optimizer.zero_grad()
@@ -67,9 +66,10 @@ class BaseTrainer:
                 loss_dict_vec['no_obj_conf_loss'].append(no_obj_conf_loss.item())
                 loss_dict_vec['cls_prob_loss'].append(cls_prob_loss.item())
                 loss_dict_vec['total_loss'].append(loss.item())
-                loss_dict = {}
-                for key, val in loss_dict_vec.items():
-                    loss_dict[key] = sum(val) / len(val)
-                return loss_dict
+
+        loss_dict = {}
+        for key, val in loss_dict_vec.items():
+            loss_dict[key] = sum(val) / len(val) if len(val) != 0 else 0.0
+        return loss_dict
 
 
