@@ -252,7 +252,7 @@ def get_voc_trainval_data_loader(
         batch_size: int,
         train: bool = True,
 ):
-    root_path = '{}/{}/'.format(root_path, year)
+    root_path = '{}/{}/trainval/'.format(root_path, year)
     normalize = transforms.Normalize(
         std=[0.5, 0.5, 0.5],
         mean=[0.5, 0.5, 0.5],
