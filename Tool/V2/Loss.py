@@ -99,6 +99,7 @@ class YOLOV2Loss(nn.Module):
 
         # compute iou and iou mask for each box
         iou = self.iou_1(o_xyxy.detach(), g_xyxy.detach())  # N * H * W * a_n
+        assert len(iou.shape) == 4
         iou_max_index = iou.max(-1)[1]  # N * H * W
         iou_max = F.one_hot(iou_max_index, a_n)   # N * H * W * a_n
         iou_smaller_than_iou_th = (iou < self.iou_th).float()  # N * H * W * a_n
@@ -203,7 +204,7 @@ class YOLOV2Loss(nn.Module):
         position_loss = self.mse(o_xyxy[mask], g_xyxy[mask])
 
         # conf loss
-        iou = self.iou_(o_xyxy, g_xyxy)
+        iou = self.iou_0(o_xyxy, g_xyxy)
         assert len(iou.shape) == 4
         # (N, H, W, a_n)
         mask = positive_mask  # N * H * W * a_n
