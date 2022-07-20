@@ -72,6 +72,16 @@ class Helper:
             data_loader_test,
             saved_dir
         )
+        # eval mAP
+        self.evaluator.eval_detector_mAP(
+            data_loader_train
+        )
+
+        # eval mAP
+        self.evaluator.eval_detector_mAP(
+            data_loader_test
+        )
+
 
 
 torch.cuda.set_device(1)
