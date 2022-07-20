@@ -107,17 +107,24 @@ class VOCDataSet(Dataset):
         self.xml_file_names = self.__get_image_xml_file_names()
 
     def __get_image_xml_file_names(self) -> list:
+        if self.train:
+            txt_file_name = os.path.join(
+                self.data_path,
+                'ImageSets',
+                'Main',
+                '{}.txt'.format(self.data_type)
+            )
 
-        txt_file_name = os.path.join(
-            self.data_path,
-            'ImageSets',
-            'Main',
-            '{}.txt'.format(self.data_type)
-        )
-
-        with open(txt_file_name, 'r') as f:
-            temp = f.readlines()
-            xml_file_names = [val[:-1] + '.xml' for val in temp]
+            with open(txt_file_name, 'r') as f:
+                temp = f.readlines()
+                xml_file_names = [val[:-1] + '.xml' for val in temp]
+        else:
+            # test.txt is not strict response to Annotations
+            anno_path = os.path.join(
+                self.data_path,
+                'Annotations',
+            )
+            xml_file_names = os.listdir(anno_path)
 
         return xml_file_names
 
