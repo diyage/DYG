@@ -5,8 +5,8 @@ import os
 from torch.utils.data import DataLoader
 from Tool.V2 import *
 from Tool.BaseTools import get_voc_data_loader, get_voc_trainval_data_loader
-from .utils.get_pretrained_darknet_19 import get_pretained_dark_net_19
-from .utils.model_define import YOLOV2Net, DarkNet19
+from yolo_v2_demo.utils.get_pretrained_darknet_19 import get_pretained_dark_net_19
+from yolo_v2_demo.utils.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
