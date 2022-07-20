@@ -123,36 +123,40 @@ class Helper:
                 )
 
 
-torch.cuda.set_device(0)
-trainer_opt = YOLOV2TrainerConfig()
-data_opt = YOLOV2DataSetConfig()
+if __name__ == '__main__':
 
-# dark_net_19 = get_pretained_dark_net_19(
-#     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
-# )
-dark_net_19 = DarkNet19()
-net = YOLOV2Net(dark_net_19)
+    torch.cuda.set_device(1)
+    trainer_opt = YOLOV2TrainerConfig()
+    data_opt = YOLOV2DataSetConfig()
 
-helper = Helper(
-    net,
-    data_opt,
-    trainer_opt
-)
+    # dark_net_19 = get_pretained_dark_net_19(
+    #     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
+    # )
+    dark_net_19 = DarkNet19()
+    net = YOLOV2Net(dark_net_19)
 
-voc_train_loader = get_voc_trainval_data_loader(
-    data_opt.root_path,
-    data_opt.year,
-    data_opt.image_size,
-    trainer_opt.batch_size,
-    train=True
-)
-voc_test_loader = get_voc_trainval_data_loader(
-    data_opt.root_path,
-    data_opt.year,
-    data_opt.image_size,
-    trainer_opt.batch_size,
-    train=False
-)
+    helper = Helper(
+        net,
+        data_opt,
+        trainer_opt
+    )
 
-helper.go(voc_train_loader, voc_test_loader)
+    voc_train_loader = get_voc_trainval_data_loader(
+        data_opt.root_path,
+        data_opt.year,
+        data_opt.image_size,
+        trainer_opt.batch_size,
+        train=True
+    )
+    voc_test_loader = get_voc_trainval_data_loader(
+        data_opt.root_path,
+        data_opt.year,
+        data_opt.image_size,
+        trainer_opt.batch_size,
+        train=False
+    )
+    helper.detector.load_state_dict(
+        torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/30.pth')
+    )
+    helper.go(voc_train_loader, voc_test_loader)
 
