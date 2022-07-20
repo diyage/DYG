@@ -5,8 +5,8 @@ import os
 from torch.utils.data import DataLoader
 from Tool.V2 import *
 from Tool.BaseTools import get_voc_data_loader, get_voc_trainval_data_loader
-from V2.UTILS.get_pretrained_darknet_19 import get_pretained_dark_net_19
-from V2.UTILS.model_define import YOLOV2Net, DarkNet19
+from .utils.get_pretrained_darknet_19 import get_pretained_dark_net_19
+from .utils.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -159,4 +159,3 @@ if __name__ == '__main__':
         torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/30.pth')
     )
     helper.go(voc_train_loader, voc_test_loader)
-

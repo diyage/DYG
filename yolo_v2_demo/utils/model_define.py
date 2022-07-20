@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from typing import Union
-from V2.UTILS.get_pretrained_darknet_19 import DarkNet_19
+from .get_pretrained_darknet_19 import DarkNet_19
 
 
 def make_conv_bn_active_layer(
