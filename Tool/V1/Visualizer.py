@@ -6,6 +6,7 @@ import numpy as np
 from typing import Union
 from .Predictor import YOLOV1Predictor
 from .Tools import YOLOV1Tools
+from Tool.BaseTools import CV2
 
 
 class YOLOV1Visualizer:
@@ -45,7 +46,10 @@ class YOLOV1Visualizer:
             saved_path: str
     ):
         if isinstance(image, np.ndarray):
-            image = YOLOV1Tools.image_np_to_tensor(image)
+            image = CV2.resize(image, new_size=(416, 416))
+            print('We resize the image to (416, 416), that may not be what you want!' +
+                  'please resize your image before using this method!')
+            image = YOLOV2Tools.image_np_to_tensor(image)
 
         out = self.detector(image.unsqueeze(0).cuda())[0]
         pre_kps_s = self.predictor.decode_out_one_image(

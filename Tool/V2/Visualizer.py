@@ -6,6 +6,7 @@ import numpy as np
 from typing import Union
 from .Predictor import YOLOV2Predictor
 from .Tools import YOLOV2Tools
+from Tool.BaseTools import CV2
 
 
 class YOLOV2Visualizer:
@@ -44,9 +45,12 @@ class YOLOV2Visualizer:
     def detect_one_image(
             self,
             image: Union[torch.Tensor, np.ndarray],
-            saved_path: str
+            saved_path: str,
     ):
         if isinstance(image, np.ndarray):
+            image = CV2.resize(image, new_size=(416, 416))
+            print('We resize the image to (416, 416), that may not be what you want!' +
+                  'please resize your image before using this method!')
             image = YOLOV2Tools.image_np_to_tensor(image)
 
         out = self.detector(image.unsqueeze(0).cuda())[0]
