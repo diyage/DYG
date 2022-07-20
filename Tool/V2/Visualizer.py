@@ -104,4 +104,3 @@ class YOLOV2Visualizer:
                     class_colors=self.class_colors,
                     kinds_name=self.kinds_name
                 )
-            break

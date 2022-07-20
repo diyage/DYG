@@ -49,7 +49,7 @@ class YOLOV1Visualizer:
             image = CV2.resize(image, new_size=(416, 416))
             print('We resize the image to (416, 416), that may not be what you want!' +
                   'please resize your image before using this method!')
-            image = YOLOV2Tools.image_np_to_tensor(image)
+            image = YOLOV1Tools.image_np_to_tensor(image)
 
         out = self.detector(image.unsqueeze(0).cuda())[0]
         pre_kps_s = self.predictor.decode_out_one_image(
@@ -102,4 +102,4 @@ class YOLOV1Visualizer:
                     class_colors=self.class_colors,
                     kinds_name=self.kinds_name
                 )
-            break
+
