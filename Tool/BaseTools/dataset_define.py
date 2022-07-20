@@ -247,10 +247,12 @@ def get_imagenet_dataset(
 
 def get_voc_trainval_data_loader(
         root_path: str,
+        year: str,
         image_size: tuple,
         batch_size: int,
         train: bool = True,
 ):
+    root_path = '{}/{}/'.format(root_path, year)
     normalize = transforms.Normalize(
         std=[0.5, 0.5, 0.5],
         mean=[0.5, 0.5, 0.5],

@@ -138,12 +138,14 @@ helper = Helper(
 
 voc_train_loader = get_voc_trainval_data_loader(
     data_opt.root_path,
+    data_opt.year,
     data_opt.image_size,
     trainer_opt.batch_size,
     train=True
 )
 voc_test_loader = get_voc_trainval_data_loader(
     data_opt.root_path,
+    data_opt.year,
     data_opt.image_size,
     trainer_opt.batch_size,
     train=False
