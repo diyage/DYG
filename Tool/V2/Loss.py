@@ -30,7 +30,7 @@ class YOLOV2Loss(nn.Module):
 
         self.iou_th = iou_th
 
-        self.mse = nn.MSELoss()
+        self.mse = nn.MSELoss(reduction='none')
         self._grid = YOLOV2Tools.get_grid(grid_number)  # H * W * 2
         self._pre_wh = torch.tensor(anchor_pre_wh, dtype=torch.float32)  # a_n *2
 
@@ -98,23 +98,23 @@ class YOLOV2Loss(nn.Module):
         g_xyxy = self.xywh_xyxy(g_position, is_target=True)  # N * H * W * a_n * 4
 
         # compute iou and iou mask for each box
-        iou = self.iou_1(o_xyxy.detach(), g_xyxy.detach())  # N * H * W * a_n
+        iou = YOLOV2Tools.compute_iou(o_xyxy.detach(), g_xyxy.detach())  # N * H * W * a_n
         assert len(iou.shape) == 4
-        iou_max_index = iou.max(-1)[1]  # N * H * W
-        iou_max = F.one_hot(iou_max_index, a_n)   # N * H * W * a_n
-        iou_smaller_than_iou_th = (iou < self.iou_th).float()  # N * H * W * a_n
+        # iou_max_index = iou.max(-1)[1]  # N * H * W
+        # iou_max = F.one_hot(iou_max_index, a_n)   # N * H * W * a_n
+        # iou_smaller_than_iou_th = (iou < self.iou_th).float()  # N * H * W * a_n
 
         # compute box mask
-        # some boxes positive , some negative and ! other are free!
-        positive = (g_conf > 0).float() * iou_max  # N * H * W * a_n
-        negative = (g_conf <= 0).float() + (g_conf > 0).float() * iou_smaller_than_iou_th  # N * H * W * a_n
-        positive_mask = positive.bool()
-        negative_mask = negative.bool()
+        positive = g_conf
+        negative = (g_conf <= 0).float()  # N * H * W * a_n
 
         # position loss
         # # part one, compute the response d box position loss
-        mask = positive_mask.unsqueeze(-1).expand_as(o_xyxy)  # N * H * W * a_n * 4
-        position_loss_one = self.mse(o_xyxy[mask], g_xyxy[mask])
+
+        position_loss_one = self.mse(o_xyxy, g_xyxy).sum(dim=-1)
+        position_loss_one = torch.sum(
+            position_loss_one * positive
+        )/N
 
         if self.iteration < 12800:
             self.iteration += 1
@@ -128,29 +128,39 @@ class YOLOV2Loss(nn.Module):
             # anchor position is not the ground truth, it is offset position.
             anchor_xyxy = self.xywh_xyxy(anchor_position, is_target=False)  # N * H * W * a_n * 2
 
-            position_loss_two = self.mse(o_xyxy, anchor_xyxy)
+            position_loss_two = self.mse(o_xyxy, anchor_xyxy).sum(dim=-1)
+
+            position_loss_two = torch.sum(position_loss_two) / N
+
         else:
             position_loss_two = 0
 
         # position loss
-        position_loss = position_loss_one + position_loss_two
+        position_loss = position_loss_one + 0.01 * position_loss_two
 
         # conf loss
         # # part one
-        mask = positive_mask  # N * H * W * a_n
-        has_obj_conf_loss = self.mse(o_conf[mask], iou[mask].detach().clone())
+
+        has_obj_conf_loss = self.mse(o_conf, iou.detach().clone())
+        has_obj_conf_loss = torch.sum(
+            has_obj_conf_loss * positive
+        )/N
+
         # # part two
-        mask = negative_mask  # N * H * W * a_n
-        masked_o_conf = o_conf[mask]
-        masked_g_conf = torch.zeros_like(masked_o_conf).to(masked_o_conf.device)
+
         no_obj_conf_loss = self.mse(
-            masked_o_conf,
-            masked_g_conf,
+            o_conf,
+            torch.zeros_like(o_conf).to(o_conf.device),
         )
+        no_obj_conf_loss = torch.sum(
+            no_obj_conf_loss * negative
+        )/N
 
         # cls_prob loss
-        mask = positive_mask.unsqueeze(-1).expand_as(o_cls_prob)  # N * H * W * a_n * kind_number
-        cls_prob_loss = self.mse(o_cls_prob[mask], g_cls_prob[mask])
+        cls_prob_loss = self.mse(o_cls_prob, g_cls_prob).sum(dim=-1)
+        cls_prob_loss = torch.sum(
+            cls_prob_loss * positive
+        )/N
 
         loss = self.weight_position * position_loss + \
             self.weight_conf_has_obj * has_obj_conf_loss + \
@@ -193,34 +203,40 @@ class YOLOV2Loss(nn.Module):
         g_xyxy = self.xywh_xyxy(g_position, is_target=True)  # N * H * W * a_n * 4
 
         # compute box mask
-        positive = (g_conf > 0).float()  # N * H * W * a_n
-        negative = (g_conf <= 0).float()  # N * H * W * a_n
-        positive_mask = positive.bool()
-        negative_mask = negative.bool()
+        positive = g_conf
+        negative = (g_conf <= 0).float()   # N * H * W * a_n
 
         # position loss
 
-        mask = positive_mask.unsqueeze(-1).expand_as(o_xyxy)  # N * H * W * a_n * 4
-        position_loss = self.mse(o_xyxy[mask], g_xyxy[mask])
+        position_loss = self.mse(o_xyxy, g_xyxy).sum(dim=-1)
+        position_loss = torch.sum(
+            position_loss * positive
+        )/N
 
         # conf loss
         iou = self.iou_0(o_xyxy, g_xyxy)
         assert len(iou.shape) == 4
         # (N, H, W, a_n)
-        mask = positive_mask  # N * H * W * a_n
-        has_obj_conf_loss = self.mse(o_conf[mask], iou[mask].detach().clone())
 
-        mask = negative_mask  # N * H * W * a_n
-        masked_o_conf = o_conf[mask]
-        masked_g_conf = torch.zeros_like(masked_o_conf).to(masked_o_conf.device)
+        has_obj_conf_loss = self.mse(o_conf, iou.detach().clone())
+        has_obj_conf_loss = torch.sum(
+            has_obj_conf_loss * positive
+        )/N
+
         no_obj_conf_loss = self.mse(
-            masked_o_conf,
-            masked_g_conf,
+            o_conf,
+            torch.zeros_like(o_conf).to(o_conf.device),
         )
+        no_obj_conf_loss = torch.sum(
+            no_obj_conf_loss * negative
+        )/N
 
         # cls_prob loss
-        mask = positive_mask.unsqueeze(-1).expand_as(o_cls_prob)  # N * H * W * a_n * kind_number
-        cls_prob_loss = self.mse(o_cls_prob[mask], g_cls_prob[mask])
+
+        cls_prob_loss = self.mse(o_cls_prob, g_cls_prob).sum(dim=-1)
+        cls_prob_loss = torch.sum(
+            cls_prob_loss * positive
+        )/N
 
         loss = self.weight_position * position_loss + \
             self.weight_conf_has_obj * has_obj_conf_loss + \

@@ -103,6 +103,36 @@ class YOLOV2Tools(BaseTools):
         super().__init__()
 
     @staticmethod
+    def compute_anchor_response_result(
+            anchor_pre_wh: tuple,
+            abs_gt_pos: tuple,
+            grid_number: tuple,
+            image_wh: tuple,
+    ):
+        best_index = 0
+        best_iou = 0
+        weight_vec = []
+        for index, val in enumerate(anchor_pre_wh):
+            anchor_w = val[0] / grid_number[0] * image_wh[0]
+            anchor_h = val[1] / grid_number[1] * image_wh[1]
+            gt_w = abs_gt_pos[2] - abs_gt_pos[0]
+            gt_h = abs_gt_pos[3] - abs_gt_pos[1]
+
+            s0 = anchor_w * anchor_h
+            s1 = gt_w * gt_h
+            inter = min(anchor_w, gt_w) * min(anchor_h, gt_h)
+            union = s0 + s1 - inter
+            iou = inter/union
+            if iou >= best_iou:
+                best_index = index
+                best_iou = iou
+            weight_vec.append(
+                2.0 - (gt_w / image_wh[0]) * (gt_h / image_wh[1])
+            )
+
+        return best_index, weight_vec[best_index]
+
+    @staticmethod
     def make_targets(
             labels: list,
             anchor_pre_wh: tuple,
@@ -142,26 +172,35 @@ class YOLOV2Tools(BaseTools):
             for obj_index, obj in enumerate(label):  # many objects
                 kind_int = kinds_name.index(obj[0])
                 abs_pos = obj[1:]
-                for pre_box_index, pre_box_w_h in enumerate(anchor_pre_wh):
-                    pos_trans = PositionTranslate(abs_pos,
-                                                  types='abs_double',
-                                                  image_size=image_wh,
-                                                  pre_box_w_h=pre_box_w_h,
-                                                  grid_number=grid_number)
+                best_index, weight = YOLOV2Tools.compute_anchor_response_result(
+                    anchor_pre_wh,
+                    abs_pos,
+                    grid_number,
+                    image_wh
+                )
 
-                    if need_abs:
-                        pos = pos_trans.abs_double_position.get_position()  # type: tuple
-                    else:
-                        pos = pos_trans.center_offset_position.get_position()  # type: tuple
+                pos_trans = PositionTranslate(
+                    abs_pos,
+                    types='abs_double',
+                    image_size=image_wh,
+                    pre_box_w_h=anchor_pre_wh[best_index],
+                    grid_number=grid_number
+                )
 
-                    grid_index = pos_trans.grid_index_to_x_y_axis  # type: tuple
+                if need_abs:
+                    pos = pos_trans.abs_double_position.get_position()  # type: tuple
+                else:
+                    pos = pos_trans.center_offset_position.get_position()  # type: tuple
 
-                    targets[batch_index, pre_box_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
-                        pos)
+                grid_index = pos_trans.grid_index_to_x_y_axis  # type: tuple
 
-                    targets[batch_index, pre_box_index, 4, grid_index[1], grid_index[0]] = 1.0
+                targets[batch_index, best_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
+                    pos)
 
-                    targets[batch_index, pre_box_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                targets[batch_index, best_index, 4, grid_index[1], grid_index[0]] = weight
+                # has obj / weight
+
+                targets[batch_index, best_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
 
         return targets.view(N, -1, H, W)
 
