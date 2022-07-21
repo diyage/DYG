@@ -72,7 +72,7 @@ class Helper:
             self.opt_data_set.grid_number,
             self.opt_data_set.image_size,
             iou_th=self.opt_trainer.iou_th,
-            loss_type=1
+            loss_type=LOSS_TYPE
         )
         # already trained dark_net 19
         # so just train detector
@@ -125,9 +125,10 @@ class Helper:
 
 
 if __name__ == '__main__':
-
+    GUP_ID = 1
+    LOSS_TYPE = 1
     fast_load = True
-    torch.cuda.set_device(1)
+    torch.cuda.set_device(GUP_ID)
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
 
