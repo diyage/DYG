@@ -65,6 +65,7 @@ class YOLOV2Predictor(BasePredictor):
                 self.grid_number
             )
         else:
+            conf = torch.clamp(conf, 0.0, 1.0)
             position_abs = position
 
         position_abs_ = position_abs.contiguous().view(-1, 4)
