@@ -107,7 +107,8 @@ class YOLOV2Loss(nn.Module):
         # compute box mask
         weight = g_conf
         positive = (g_conf > 0).float()
-        negative = 1.0 - positive  # N * H * W * a_n
+        ignore = (g_conf == -1.0).float()
+        negative = 1.0 - positive - ignore  # N * H * W * a_n
 
         # position loss
         # # part one, compute the response d box position loss
@@ -191,7 +192,8 @@ class YOLOV2Loss(nn.Module):
         # compute box mask
         weight = g_conf
         positive = (g_conf > 0).float()
-        negative = 1.0 - positive   # N * H * W * a_n
+        ignore = (g_conf == -1.0).float()
+        negative = 1.0 - positive - ignore  # N * H * W * a_n
 
         # position loss
 

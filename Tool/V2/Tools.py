@@ -108,6 +108,7 @@ class YOLOV2Tools(BaseTools):
             abs_gt_pos: tuple,
             grid_number: tuple,
             image_wh: tuple,
+            iou_th: float = 0.6,
     ):
         best_index = 0
         best_iou = 0
@@ -129,8 +130,14 @@ class YOLOV2Tools(BaseTools):
             weight_vec.append(
                 2.0 - (gt_w / image_wh[0]) * (gt_h / image_wh[1])
             )
+        for weight_index in range(len(weight_vec)):
+            if weight_index != best_index:
+                if weight_vec[weight_index] >= iou_th:
+                    weight_vec[weight_index] = - 1.0  # ignore this anchor
+                else:
+                    weight_vec[weight_index] = 0.0  # negative anchor
 
-        return best_index, weight_vec[best_index]
+        return best_index, weight_vec
 
     @staticmethod
     def make_targets(
@@ -172,13 +179,13 @@ class YOLOV2Tools(BaseTools):
             for obj_index, obj in enumerate(label):  # many objects
                 kind_int = kinds_name.index(obj[0])
                 abs_pos = obj[1:]
-                best_index, weight = YOLOV2Tools.compute_anchor_response_result(
+
+                best_index, weight_vec = YOLOV2Tools.compute_anchor_response_result(
                     anchor_pre_wh,
                     abs_pos,
                     grid_number,
                     image_wh
                 )
-
                 pos_trans = PositionTranslate(
                     abs_pos,
                     types='abs_double',
@@ -194,13 +201,20 @@ class YOLOV2Tools(BaseTools):
 
                 grid_index = pos_trans.grid_index_to_x_y_axis  # type: tuple
 
-                targets[batch_index, best_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
-                    pos)
+                for weight_index, weight_value in enumerate(weight_vec):
+                    if weight_index == best_index:
+                        # just one box response
+                        # weight index is also the anchor(box) index
+                        targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
+                            pos)
 
-                targets[batch_index, best_index, 4, grid_index[1], grid_index[0]] = weight
-                # has obj / weight
+                        targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
+                        # conf / weight
 
-                targets[batch_index, best_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                        targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                    else:  # weight_value == 0.0 or -1.0
+                        targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
+                        # conf / weight
 
         return targets.view(N, -1, H, W)
 
