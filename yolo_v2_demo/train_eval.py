@@ -126,6 +126,7 @@ class Helper:
 
 if __name__ == '__main__':
 
+    fast_load = True
     torch.cuda.set_device(1)
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
@@ -147,14 +148,16 @@ if __name__ == '__main__':
         data_opt.year,
         data_opt.image_size,
         trainer_opt.batch_size,
-        train=True
+        train=True,
+        fast_load=fast_load,
     )
     voc_test_loader = get_voc_trainval_data_loader(
         data_opt.root_path,
         data_opt.year,
         data_opt.image_size,
         trainer_opt.batch_size,
-        train=False
+        train=False,
+        fast_load=fast_load,
     )
     # helper.detector.load_state_dict(
     #     torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/V2/model_pth_detector/30.pth')

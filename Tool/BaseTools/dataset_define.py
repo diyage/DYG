@@ -167,7 +167,8 @@ class VOCTrainValDataSet(Dataset):
             year: str,
             train: bool = True,
             image_size: tuple = (448, 448),
-            transform: torchvision.transforms.Compose = None
+            transform: torchvision.transforms.Compose = None,
+            fast_load: bool = False,
     ):
         super().__init__()
         assert year in ['2012', '2007']
@@ -177,6 +178,15 @@ class VOCTrainValDataSet(Dataset):
         self.image_size = image_size
         self.transform = transform
         self.xml_file_names = self.__get_image_xml_file_names()
+
+        self.fast_load = fast_load
+        self.images = []
+        self.labels = []
+        if self.fast_load:
+            for xml_name in self.xml_file_names:
+                a, b = self.__get_image_label(xml_name)
+                self.images.append(a)
+                self.labels.append(b)
 
     def __get_image_xml_file_names(self) -> list:
         txt_file_name = os.path.join(
@@ -212,7 +222,10 @@ class VOCTrainValDataSet(Dataset):
         return xml_trans.img, xml_trans.objects
 
     def __getitem__(self, index):
-        img, label = self.__get_image_label(self.xml_file_names[index])
+        if self.fast_load:
+            img, label = self.images[index], self.labels[index]
+        else:
+            img, label = self.__get_image_label(self.xml_file_names[index])
 
         img = CV2.cvtColorToRGB(img)
         if self.transform is not None:
@@ -254,6 +267,7 @@ def get_voc_trainval_data_loader(
         batch_size: int,
         train: bool = True,
         num_workers: int = 0,
+        fast_load: bool = False
 ):
 
     normalize = transforms.Normalize(
@@ -271,7 +285,8 @@ def get_voc_trainval_data_loader(
             year=year,
             train=True,
             image_size=image_size,
-            transform=transform_train
+            transform=transform_train,
+            fast_load=fast_load,
         )
 
         train_l = DataLoader(
@@ -293,7 +308,8 @@ def get_voc_trainval_data_loader(
             year=year,
             train=False,
             image_size=image_size,
-            transform=transform_test
+            transform=transform_test,
+            fast_load=fast_load,
         )
 
         test_l = DataLoader(
