@@ -202,19 +202,27 @@ class YOLOV2Tools(BaseTools):
                 grid_index = pos_trans.grid_index_to_x_y_axis  # type: tuple
 
                 for weight_index, weight_value in enumerate(weight_vec):
-                    if weight_index == best_index:
-                        # just one box response
-                        # weight index is also the anchor(box) index
-                        targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
-                            pos)
+                    targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
+                        pos)
 
-                        targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
-                        # conf / weight
+                    targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = 1.0
+                    # conf / weight
 
-                        targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
-                    else:  # weight_value == 0.0 or -1.0
-                        targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
-                        # conf / weight
+                    targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+
+                    # if weight_index == best_index:
+                    #     # just one box response
+                    #     # weight index is also the anchor(box) index
+                    #     targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
+                    #         pos)
+                    #
+                    #     targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
+                    #     # conf / weight
+                    #
+                    #     targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                    # else:  # weight_value == 0.0 or -1.0
+                    #     targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
+                    #     # conf / weight
 
         return targets.view(N, -1, H, W)
 
