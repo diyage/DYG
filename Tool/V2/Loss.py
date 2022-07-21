@@ -65,7 +65,7 @@ class YOLOV2Loss(nn.Module):
             )/self.image_size[0]
 
     @staticmethod
-    def iou_1(
+    def iou_just_wh(
             boxes0: torch.Tensor,
             boxes1: torch.Tensor,
     ):
@@ -169,21 +169,6 @@ class YOLOV2Loss(nn.Module):
 
         return loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss
 
-    @staticmethod
-    def iou_0(bboxes_a, bboxes_b):
-        """
-            bbox_1 : [B*N, 4] = [x1, y1, x2, y2]
-            bbox_2 : [B*N, 4] = [x1, y1, x2, y2]
-        """
-        tl = torch.max(bboxes_a[..., :2], bboxes_b[..., :2])
-        br = torch.min(bboxes_a[..., 2:], bboxes_b[..., 2:])
-        area_a = torch.prod(bboxes_a[..., 2:] - bboxes_a[..., :2], dim=-1)
-        area_b = torch.prod(bboxes_b[..., 2:] - bboxes_b[..., :2], dim=-1)
-
-        en = (tl < br).type(tl.type()).prod(dim=-1)
-        area_i = torch.prod(br - tl, dim=-1) * en  # * ((tl < br).all())
-        return area_i / (area_a + area_b - area_i)
-
     def forward_0(
             self,
             out: torch.Tensor,
@@ -214,7 +199,7 @@ class YOLOV2Loss(nn.Module):
         )/N
 
         # conf loss
-        iou = self.iou_0(o_xyxy, g_xyxy)
+        iou = YOLOV2Tools.compute_iou(o_xyxy, g_xyxy)
         assert len(iou.shape) == 4
         # (N, H, W, a_n)
 
