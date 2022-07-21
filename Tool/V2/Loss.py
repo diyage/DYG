@@ -143,7 +143,10 @@ class YOLOV2Loss(nn.Module):
         # conf loss
         # # part one
 
-        has_obj_conf_loss = self.mse(o_conf, iou.detach().clone())
+        has_obj_conf_loss = self.mse(
+            o_conf,
+            torch.ones_like(o_conf).to(o_conf.device),
+        )
         has_obj_conf_loss = torch.sum(
             has_obj_conf_loss * positive
         )/N
@@ -207,7 +210,10 @@ class YOLOV2Loss(nn.Module):
         assert len(iou.shape) == 4
         # (N, H, W, a_n)
 
-        has_obj_conf_loss = self.mse(o_conf, iou.detach().clone())
+        has_obj_conf_loss = self.mse(
+            o_conf,
+            torch.ones_like(o_conf).to(o_conf.device),
+        )
         has_obj_conf_loss = torch.sum(
             has_obj_conf_loss * positive
         )/N
