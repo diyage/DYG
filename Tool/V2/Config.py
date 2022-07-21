@@ -40,7 +40,7 @@ class YOLOV2TrainerConfig:
     max_epoch_on_detector = 1000
 
     batch_size = 32
-    lr: float = 1e-3
+    lr: float = 1e-4
     conf_th: float = 0.5
     prob_th: float = 0.5
     score_th: float = 0.5

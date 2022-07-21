@@ -105,15 +105,16 @@ class YOLOV2Loss(nn.Module):
         # iou_smaller_than_iou_th = (iou < self.iou_th).float()  # N * H * W * a_n
 
         # compute box mask
-        positive = g_conf
-        negative = (g_conf <= 0).float()  # N * H * W * a_n
+        weight = g_conf
+        positive = (g_conf > 0).float()
+        negative = 1.0 - positive  # N * H * W * a_n
 
         # position loss
         # # part one, compute the response d box position loss
 
         position_loss_one = self.mse(o_xyxy, g_xyxy).sum(dim=-1)
         position_loss_one = torch.sum(
-            position_loss_one * positive
+            position_loss_one * positive * weight
         )/N
 
         if self.iteration < 12800:
@@ -188,14 +189,15 @@ class YOLOV2Loss(nn.Module):
         g_xyxy = self.xywh_xyxy(g_position, is_target=True)  # N * H * W * a_n * 4
 
         # compute box mask
-        positive = g_conf
-        negative = (g_conf <= 0).float()   # N * H * W * a_n
+        weight = g_conf
+        positive = (g_conf > 0).float()
+        negative = 1.0 - positive   # N * H * W * a_n
 
         # position loss
 
         position_loss = self.mse(o_xyxy, g_xyxy).sum(dim=-1)
         position_loss = torch.sum(
-            position_loss * positive
+            position_loss * positive * weight
         )/N
 
         # conf loss
