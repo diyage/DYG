@@ -21,8 +21,8 @@ class Helper:
         self.detector = model  # type: nn.Module
         self.detector.cuda()
 
-        self.dark_net = model.darknet19  # type: nn.Module
-        self.dark_net.cuda()
+        self.backbone = model.backbone  # type: nn.Module
+        self.backbone.cuda()
         # be careful, darknet19 is not the detector
 
         self.opt_data_set = opt_data_set

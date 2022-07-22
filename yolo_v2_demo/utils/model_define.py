@@ -75,7 +75,7 @@ class YOLOV2Net(nn.Module):
                  darknet19: Union[DarkNet19, DarkNet_19]):
         super().__init__()
 
-        self.darknet19 = darknet19
+        self.backbone = darknet19
 
         self.pass_through_conv = nn.Sequential(
             nn.Conv2d(512, 64, kernel_size=(1, 1))
@@ -120,10 +120,10 @@ class YOLOV2Net(nn.Module):
         N = x.shape[0]
         assert x.shape == (N, 3, 416, 416)
 
-        a = self.darknet19.feature_extractor_top(x)  # N * 512 * 26 * 26
+        a = self.backbone.feature_extractor_top(x)  # N * 512 * 26 * 26
         a_ = self.pass_through(a)  # N * 256 * 13 * 13
 
-        b = self.darknet19.feature_extractor_down(a)  # N * 1024 * 13 * 13
+        b = self.backbone.feature_extractor_down(a)  # N * 1024 * 13 * 13
         b_ = self.conv3_1024(b)  # N * 1024 * 13 * 13
 
         d = torch.cat((b_, a_), dim=1)  # N * (1024 + 256) * 13 * 13

@@ -23,8 +23,8 @@ class YOLOV2Trainer(BaseTrainer):
             kinds_name
         )
 
-        self.dark_net = model.darknet19  # type: nn.Module
-        self.dark_net.cuda()
+        self.backbone = model.backbone  # type: nn.Module
+        self.backbone.cuda()
         # be careful, darknet19 is not the detector
 
     def make_targets(
@@ -51,11 +51,11 @@ class YOLOV2Trainer(BaseTrainer):
         for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
                                                          desc=desc,
                                                          position=0)):
-            self.dark_net.train()
+            self.backbone.train()
             images = images.cuda()
             labels = labels.cuda()
 
-            output = self.dark_net(images)  # type: torch.Tensor
+            output = self.backbone(images)  # type: torch.Tensor
             loss = ce_loss_func(output, labels)  # type: torch.Tensor
             optimizer.zero_grad()
             loss.backward()
