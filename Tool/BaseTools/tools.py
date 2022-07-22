@@ -72,6 +72,21 @@ class BaseTools:
         return iou
 
     @staticmethod
+    def iou_score(bboxes_a, bboxes_b):
+        """
+            bbox_1 : [B*N, 4] = [x1, y1, x2, y2]
+            bbox_2 : [B*N, 4] = [x1, y1, x2, y2]
+        """
+        tl = torch.max(bboxes_a[..., :2], bboxes_b[..., :2])
+        br = torch.min(bboxes_a[..., 2:], bboxes_b[..., 2:])
+        area_a = torch.prod(bboxes_a[..., 2:] - bboxes_a[..., :2], dim=-1)
+        area_b = torch.prod(bboxes_b[..., 2:] - bboxes_b[..., :2], dim=-1)
+
+        en = (tl < br).type(tl.type()).prod(dim=-1)
+        area_i = torch.prod(br - tl, dim=-1) * en  # * ((tl < br).all())
+        return area_i / (area_a + area_b - area_i)
+
+    @staticmethod
     def compute_iou(
             boxes0: Union[torch.Tensor, np.ndarray, list],
             boxes1: Union[torch.Tensor, np.ndarray, list]
@@ -86,28 +101,28 @@ class BaseTools:
         # -1 is boxes number
 
         # 4 if (x, y, x, y)
-
-        w0 = boxes0[..., 2] - boxes0[..., 0]  # -1
-        h0 = boxes0[..., 3] - boxes0[..., 1]  # -1
-        s0 = w0 * h0  # -1
-
-        w1 = boxes1[..., 2] - boxes1[..., 0]  # -1
-        h1 = boxes1[..., 3] - boxes1[..., 1]  # -1
-        s1 = w1 * h1  # -1
-
-        boxes = torch.stack((boxes0, boxes1), dim=-1)  # # -1 * 4 * 2
-
-        inter_boxes_a_b = torch.max(boxes[..., 0:2, :], dim=-1)[0]  # # -1 * 2
-
-        inter_boxes_m_n = torch.min(boxes[..., 2:4, :], dim=-1)[0]  # # -1 * 2
-
-        inter_boxes_w_h = inter_boxes_m_n - inter_boxes_a_b  # # -1 * 2
-        inter_boxes_w_h[inter_boxes_w_h < 0] = 0.0  # # -1 * 2
-        inter_boxes_s = inter_boxes_w_h[..., 0] * inter_boxes_w_h[..., 1]  # # -1
-
-        union_boxes_s = s0 + s1 - inter_boxes_s
-        iou = inter_boxes_s / union_boxes_s
-        return iou.clamp_(0.0, 1.0)  # -1
+        return BaseTools.iou_score(boxes0, boxes1)
+        # w0 = boxes0[..., 2] - boxes0[..., 0]  # -1
+        # h0 = boxes0[..., 3] - boxes0[..., 1]  # -1
+        # s0 = w0 * h0  # -1
+        #
+        # w1 = boxes1[..., 2] - boxes1[..., 0]  # -1
+        # h1 = boxes1[..., 3] - boxes1[..., 1]  # -1
+        # s1 = w1 * h1  # -1
+        #
+        # boxes = torch.stack((boxes0, boxes1), dim=-1)  # # -1 * 4 * 2
+        #
+        # inter_boxes_a_b = torch.max(boxes[..., 0:2, :], dim=-1)[0]  # # -1 * 2
+        #
+        # inter_boxes_m_n = torch.min(boxes[..., 2:4, :], dim=-1)[0]  # # -1 * 2
+        #
+        # inter_boxes_w_h = inter_boxes_m_n - inter_boxes_a_b  # # -1 * 2
+        # inter_boxes_w_h[inter_boxes_w_h < 0] = 0.0  # # -1 * 2
+        # inter_boxes_s = inter_boxes_w_h[..., 0] * inter_boxes_w_h[..., 1]  # # -1
+        #
+        # union_boxes_s = s0 + s1 - inter_boxes_s
+        # iou = inter_boxes_s / union_boxes_s
+        # return iou.clamp_(0.0, 1.0)  # -1
 
     @staticmethod
     def get_grid(
