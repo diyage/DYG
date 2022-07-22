@@ -115,14 +115,18 @@ class YOLOV2Tools(BaseTools):
         best_iou = 0
         weight_vec = []
         iou_vec = []
+        gt_w = abs_gt_pos[2] - abs_gt_pos[0]
+        gt_h = abs_gt_pos[3] - abs_gt_pos[1]
+
+        if gt_w < 1e-4 or gt_h < 1e-4:
+            return -1, []
+
+        s1 = gt_w * gt_h
         for index, val in enumerate(anchor_pre_wh):
             anchor_w = val[0] / grid_number[0] * image_wh[0]
             anchor_h = val[1] / grid_number[1] * image_wh[1]
-            gt_w = abs_gt_pos[2] - abs_gt_pos[0]
-            gt_h = abs_gt_pos[3] - abs_gt_pos[1]
 
             s0 = anchor_w * anchor_h
-            s1 = gt_w * gt_h
             inter = min(anchor_w, gt_w) * min(anchor_h, gt_h)
             union = s0 + s1 - inter
             iou = inter / (union + 1e-8)
@@ -190,6 +194,8 @@ class YOLOV2Tools(BaseTools):
                     grid_number,
                     image_wh
                 )
+                if best_index == -1:
+                    continue
                 pos_trans = PositionTranslate(
                     abs_pos,
                     types='abs_double',
@@ -206,24 +212,19 @@ class YOLOV2Tools(BaseTools):
                 grid_index = pos_trans.grid_index_to_x_y_axis  # type: tuple
 
                 for weight_index, weight_value in enumerate(weight_vec):
-                    # targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
-                    #     pos)
-                    #
-                    # targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = 1.0
-                    # # conf / weight
-                    #
-                    # targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                    if weight_index == best_index:
 
-                    # just one box response
-                    # weight index is also the anchor(box) index
-                    # weight_val is -1, 0, or >0
-                    targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
-                        pos)
+                        targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
+                            pos)
 
-                    targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
-                    # conf / weight
+                        targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
+                        # conf / weight
 
-                    targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                        targets[batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+
+                    else:
+                        targets[batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
+                        # conf / weight
 
         return targets.view(N, -1, H, W)
 
