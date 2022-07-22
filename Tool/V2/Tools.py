@@ -110,9 +110,11 @@ class YOLOV2Tools(BaseTools):
             image_wh: tuple,
             iou_th: float = 0.6,
     ):
+
         best_index = 0
         best_iou = 0
         weight_vec = []
+        iou_vec = []
         for index, val in enumerate(anchor_pre_wh):
             anchor_w = val[0] / grid_number[0] * image_wh[0]
             anchor_h = val[1] / grid_number[1] * image_wh[1]
@@ -123,19 +125,21 @@ class YOLOV2Tools(BaseTools):
             s1 = gt_w * gt_h
             inter = min(anchor_w, gt_w) * min(anchor_h, gt_h)
             union = s0 + s1 - inter
-            iou = inter/union
+            iou = inter / (union + 1e-8)
             if iou >= best_iou:
                 best_index = index
                 best_iou = iou
             weight_vec.append(
                 2.0 - (gt_w / image_wh[0]) * (gt_h / image_wh[1])
             )
-        for weight_index in range(len(weight_vec)):
-            if weight_index != best_index:
-                if weight_vec[weight_index] >= iou_th:
-                    weight_vec[weight_index] = - 1.0  # ignore this anchor
+            iou_vec.append(iou)
+
+        for iou_index in range(len(iou_vec)):
+            if iou_index != best_index:
+                if iou_vec[iou_index] >= iou_th:
+                    weight_vec[iou_index] = - 1.0  # ignore this anchor
                 else:
-                    weight_vec[weight_index] = 0.0  # negative anchor
+                    weight_vec[iou_index] = 0.0  # negative anchor
 
         return best_index, weight_vec
 
