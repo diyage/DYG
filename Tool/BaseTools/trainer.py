@@ -12,6 +12,7 @@ class BaseTrainer:
             image_size: tuple,
             grid_number: tuple,
             kinds_name: list,
+            iou_th: float = 0.6
     ):
         self.detector = model  # type: nn.Module
         self.device = next(model.parameters()).device
@@ -19,11 +20,11 @@ class BaseTrainer:
         self.grid_number = grid_number
         self.kinds_name = kinds_name
         self.pre_anchor_w_h = pre_anchor_w_h
+        self.iou_th = iou_th
 
     def make_targets(
             self,
             labels,
-            need_abs: bool = False,
     ) -> torch.Tensor:
         pass
 
@@ -40,7 +41,7 @@ class BaseTrainer:
                                                          position=0)):
             self.detector.train()
             images = images.to(self.device)
-            targets = self.make_targets(labels, need_abs=True).to(self.device)
+            targets = self.make_targets(labels).to(self.device)
             output = self.detector(images)
             loss_res = yolo_loss_func(output, targets)
             if not isinstance(loss_res, dict):

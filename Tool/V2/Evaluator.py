@@ -29,8 +29,7 @@ class YOLOV2Evaluator(BaseEvaluator):
 
     def make_targets(
             self,
-            labels,
-            need_abs: bool = False,
+            labels
     ):
         return YOLOV2Tools.make_targets(
             labels,
@@ -38,7 +37,7 @@ class YOLOV2Evaluator(BaseEvaluator):
             self.image_size,
             self.grid_number,
             self.kinds_name,
-            need_abs
+            iou_th=self.iou_th,
         )
 
     def eval_detector_mAP(
@@ -57,7 +56,7 @@ class YOLOV2Evaluator(BaseEvaluator):
             self.detector.eval()
             images = images.to(self.device)
 
-            targets = self.make_targets(labels, need_abs=True).to(self.device)
+            targets = self.make_targets(labels).to(self.device)
             output = self.detector(images)
 
             gt_decode = self.predictor.decode(targets, out_is_target=True)

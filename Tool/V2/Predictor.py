@@ -1,6 +1,7 @@
 import torch
 from .Tools import YOLOV2Tools
 from Tool.BaseTools import BasePredictor
+import torch.nn.functional as F
 
 
 class YOLOV2Predictor(BasePredictor):
@@ -34,7 +35,7 @@ class YOLOV2Predictor(BasePredictor):
         '''
 
         Args:
-            out_put: (_, H, W)
+            out_put: (_, H, W) or (H, W, a_n, 11)
             out_is_target: bool
 
         Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
@@ -45,28 +46,36 @@ class YOLOV2Predictor(BasePredictor):
              ]
 
         '''
-        assert len(out_put.shape) == 3
-        #  _ * H * W
+        if out_is_target:
+            assert len(out_put.shape) == 4
+        else:
+            assert len(out_put.shape) == 3
+
         out_put = out_put.unsqueeze(dim=0)
-        #  1 * _ * H * W
         a_n = len(self.pre_anchor_w_h)
-        position, conf, cls_prob = YOLOV2Tools.split_output(
+
+        res_dict = YOLOV2Tools.split_output(
             out_put,
-            a_n
+            a_n,
+            is_target=out_is_target
         )
 
         if not out_is_target:
-            conf = torch.sigmoid(conf)
-            cls_prob = torch.softmax(cls_prob, dim=-1)
+            conf = torch.sigmoid(res_dict.get('conf'))
+            cls_prob = torch.softmax(res_dict.get('cls_prob'), dim=-1)
+            position = res_dict.get('position')[0]
             position_abs = YOLOV2Tools.xywh_to_xyxy(
                 position,
                 self.pre_anchor_w_h,
                 self.image_size,
                 self.grid_number
-            )
+            )  # scaled on image
         else:
-            conf = torch.clamp(conf, 0.0, 1.0)
-            position_abs = position
+            conf = res_dict.get('conf')
+            cls_prob = F.one_hot(res_dict.get('cls_ind'), len(self.kinds_name))
+
+            position_abs = res_dict.get('position')[1] * self.image_size[0]
+            # scaled on image
 
         position_abs_ = position_abs.contiguous().view(-1, 4)
         conf_ = conf.contiguous().view(-1, )  # type: torch.Tensor

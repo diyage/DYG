@@ -14,21 +14,21 @@ class YOLOV2Trainer(BaseTrainer):
             image_size: tuple,
             grid_number: tuple,
             kinds_name: list,
+            iou_th:float = 0.6
     ):
         super().__init__(
             model,
             pre_anchor_w_h,
             image_size,
             grid_number,
-            kinds_name
+            kinds_name,
+            iou_th
         )
-
         self.backbone = model.backbone  # type: nn.Module
 
     def make_targets(
             self,
             labels,
-            need_abs: bool = False,
     ):
         return YOLOV2Tools.make_targets(
             labels,
@@ -36,7 +36,7 @@ class YOLOV2Trainer(BaseTrainer):
             self.image_size,
             self.grid_number,
             self.kinds_name,
-            need_abs
+            self.iou_th,
         )
 
 

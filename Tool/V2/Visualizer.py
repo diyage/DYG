@@ -32,14 +32,15 @@ class YOLOV2Visualizer(BaseVisualizer):
     def make_targets(
             self,
             labels,
-            need_abs: bool = False,
     ):
-        return YOLOV2Tools.make_targets(labels,
-                                        self.pre_anchor_w_h,
-                                        self.image_size,
-                                        self.grid_number,
-                                        self.kinds_name,
-                                        need_abs)
+        return YOLOV2Tools.make_targets(
+            labels,
+            self.pre_anchor_w_h,
+            self.image_size,
+            self.grid_number,
+            self.kinds_name,
+            self.iou_th,
+            )
 
     def detect_one_image(
             self,
@@ -80,7 +81,7 @@ class YOLOV2Visualizer(BaseVisualizer):
 
             self.detector.eval()
             images = images.to(self.device)
-            targets = self.make_targets(labels, need_abs=True).to(self.device)
+            targets = self.make_targets(labels).to(self.device)
             output = self.detector(images)
 
             gt_decode = self.predictor.decode(targets, out_is_target=True)
