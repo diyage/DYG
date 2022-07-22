@@ -41,9 +41,9 @@ class YOLOV2TrainerConfig:
 
     batch_size = 32
     lr: float = 1e-4
-    conf_th: float = 0.5
-    prob_th: float = 0.5
-    score_th: float = 0.5
+    conf_th: float = 0.0
+    prob_th: float = 0.0
+    score_th: float = 0.1
     iou_th: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
     weight_position: float = 1.0
