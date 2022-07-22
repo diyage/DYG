@@ -84,7 +84,11 @@ class BaseTools:
 
         en = (tl < br).type(tl.type()).prod(dim=-1)
         area_i = torch.prod(br - tl, dim=-1) * en  # * ((tl < br).all())
-        return area_i / (area_a + area_b - area_i)
+
+        area_union = area_a + area_b - area_i
+        iou = area_i / (area_union + 1e-8)
+
+        return iou
 
     @staticmethod
     def compute_iou(
@@ -121,7 +125,7 @@ class BaseTools:
         # inter_boxes_s = inter_boxes_w_h[..., 0] * inter_boxes_w_h[..., 1]  # # -1
         #
         # union_boxes_s = s0 + s1 - inter_boxes_s
-        # iou = inter_boxes_s / union_boxes_s
+        # iou = inter_boxes_s / (union_boxes_s + 1e-8)
         # return iou.clamp_(0.0, 1.0)  # -1
 
     @staticmethod
