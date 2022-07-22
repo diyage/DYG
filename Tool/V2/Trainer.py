@@ -41,23 +41,4 @@ class YOLOV2Trainer(BaseTrainer):
             need_abs
         )
 
-    def train_classifier_one_epoch(
-            self,
-            data_loader_train: DataLoader,
-            ce_loss_func,
-            optimizer: torch.optim.Optimizer,
-            desc: str = ''
-    ):
-        for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
-                                                         desc=desc,
-                                                         position=0)):
-            self.backbone.train()
-            images = images.cuda()
-            labels = labels.cuda()
-
-            output = self.backbone(images)  # type: torch.Tensor
-            loss = ce_loss_func(output, labels)  # type: torch.Tensor
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
 

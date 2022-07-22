@@ -34,13 +34,7 @@ class BaseTrainer:
             optimizer: torch.optim.Optimizer,
             desc: str = '',
     ):
-        loss_dict_vec = {
-            'position_loss': [],
-            'has_obj_conf_loss': [],
-            'no_obj_conf_loss': [],
-            'cls_prob_loss': [],
-            'total_loss': [],
-        }
+        loss_dict_vec = {}
         for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
                                                          desc=desc,
                                                          position=0)):
@@ -48,24 +42,20 @@ class BaseTrainer:
             images = images.cuda()
             targets = self.make_targets(labels, need_abs=True).cuda()
             output = self.detector(images)
-            loss_tuple = yolo_loss_func(output, targets)
-            if isinstance(loss_tuple, torch.Tensor) or len(loss_tuple) != 5:
+            loss_res = yolo_loss_func(output, targets)
+            if not isinstance(loss_res, dict):
                 print('You have not use our provided loss func, please overwrite method train_detector_one_epoch')
-                loss = loss_tuple if isinstance(loss_tuple, torch.Tensor) else loss_tuple[0]
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+                pass
             else:
-                loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss = loss_tuple
+                loss = loss_res['total_loss']
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-                loss_dict_vec['position_loss'].append(position_loss.item())
-                loss_dict_vec['has_obj_conf_loss'].append(has_obj_conf_loss.item())
-                loss_dict_vec['no_obj_conf_loss'].append(no_obj_conf_loss.item())
-                loss_dict_vec['cls_prob_loss'].append(cls_prob_loss.item())
-                loss_dict_vec['total_loss'].append(loss.item())
+                for key, val in loss_res.items():
+                    if key not in loss_dict_vec.keys():
+                        loss_dict_vec[key] = []
+                    loss_dict_vec[key].append(val.item())
 
         loss_dict = {}
         for key, val in loss_dict_vec.items():

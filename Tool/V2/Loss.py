@@ -11,6 +11,7 @@ class YOLOV2Loss(nn.Module):
                  weight_conf_has_obj: float = 1.0,
                  weight_conf_no_obj: float = 1.0,
                  weight_cls_prob: float = 1.0,
+                 weight_iou_loss: float = 1.0,
                  grid_number: tuple = (13, 13),
                  image_size: tuple = (416, 416),
                  iou_th: float = 0.6,
@@ -31,6 +32,8 @@ class YOLOV2Loss(nn.Module):
         self.iou_th = iou_th
 
         self.mse = nn.MSELoss(reduction='none')
+        self.iou_loss_function = nn.SmoothL1Loss(reduction='none')
+
         self._grid = YOLOV2Tools.get_grid(grid_number)  # H * W * 2
         self._pre_wh = torch.tensor(anchor_pre_wh, dtype=torch.float32)  # a_n *2
 
@@ -178,7 +181,14 @@ class YOLOV2Loss(nn.Module):
             self.weight_conf_no_obj * no_obj_conf_loss + \
             self.weight_cls_prob * cls_prob_loss
 
-        return loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss
+        loss_dict = {
+            'total_loss': loss,
+            'position_loss': position_loss,
+            'has_obj_conf_loss': has_obj_conf_loss,
+            'no_obj_conf_loss': no_obj_conf_loss,
+            'cls_prob_loss': cls_prob_loss
+        }
+        return loss_dict
 
     def forward_0(
             self,
@@ -245,12 +255,26 @@ class YOLOV2Loss(nn.Module):
             cls_prob_loss * positive
         )/N
 
+        # iou_loss
+        iou_loss = self.iou_loss_function(iou, positive)
+        iou_loss = torch.sum(
+            iou_loss * positive
+        )/N
+
         loss = self.weight_position * position_loss + \
             self.weight_conf_has_obj * has_obj_conf_loss + \
             self.weight_conf_no_obj * no_obj_conf_loss + \
-            self.weight_cls_prob * cls_prob_loss
+            self.weight_cls_prob * cls_prob_loss + iou_loss
 
-        return loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss
+        loss_dict = {
+            'total_loss': loss,
+            'position_loss': position_loss,
+            'has_obj_conf_loss': has_obj_conf_loss,
+            'no_obj_conf_loss': no_obj_conf_loss,
+            'cls_prob_loss': cls_prob_loss,
+            'iou_loss': iou_loss
+        }
+        return loss_dict
 
     def forward(
             self,

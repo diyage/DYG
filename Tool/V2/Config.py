@@ -50,5 +50,6 @@ class YOLOV2TrainerConfig:
     weight_conf_has_obj: float = 5.0
     weight_conf_no_obj: float = 1.0
     weight_cls_prob: float = 1.0
+    weight_iou_loss: float = 1.0
     # saved model or images dir(part of )
     # if you want save something to now path, please set ABS_PATH = ''
