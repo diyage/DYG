@@ -198,7 +198,7 @@ class YOLOV2Loss(nn.Module):
     ):
         # split output
         o_txtytwth, o_conf, o_cls_prob = self.split(out)
-        o_conf = torch.sigmoid(o_conf)
+        o_conf = torch.clamp(torch.sigmoid(o_conf), 1e-4, 1.0 - 1e-4)
         o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
 
         g_xyxy, g_conf, g_cls_prob = self.split(gt)
