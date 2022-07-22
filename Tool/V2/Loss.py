@@ -217,7 +217,11 @@ class YOLOV2Loss(nn.Module):
         )/N
 
         # conf loss
+        if torch.any(torch.isnan(o_xyxy)):
+            print(1)
         iou = YOLOV2Tools.compute_iou(o_xyxy, g_xyxy)
+        if torch.any(torch.isnan(iou)):
+            print(2)
         assert len(iou.shape) == 4
         # (N, H, W, a_n)
 
@@ -225,6 +229,7 @@ class YOLOV2Loss(nn.Module):
             o_conf,
             iou.detach().clone(),
         )
+
         has_obj_conf_loss = torch.sum(
             has_obj_conf_loss * positive
         )/N
@@ -249,6 +254,8 @@ class YOLOV2Loss(nn.Module):
             self.weight_conf_no_obj * no_obj_conf_loss + \
             self.weight_cls_prob * cls_prob_loss
 
+        if torch.isnan(loss):
+            print(loss)
         return loss, position_loss, has_obj_conf_loss, no_obj_conf_loss, cls_prob_loss
 
     def forward(
