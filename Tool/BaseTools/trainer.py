@@ -14,7 +14,7 @@ class BaseTrainer:
             kinds_name: list,
     ):
         self.detector = model  # type: nn.Module
-        self.detector.cuda()
+        self.device = next(model.parameters()).device
         self.image_size = image_size
         self.grid_number = grid_number
         self.kinds_name = kinds_name
@@ -39,8 +39,8 @@ class BaseTrainer:
                                                          desc=desc,
                                                          position=0)):
             self.detector.train()
-            images = images.cuda()
-            targets = self.make_targets(labels, need_abs=True).cuda()
+            images = images.to(self.device)
+            targets = self.make_targets(labels, need_abs=True).to(self.device)
             output = self.detector(images)
             loss_res = yolo_loss_func(output, targets)
             if not isinstance(loss_res, dict):

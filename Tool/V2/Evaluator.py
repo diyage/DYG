@@ -16,10 +16,9 @@ class YOLOV2Evaluator(BaseEvaluator):
     ):
         super().__init__()
         self.detector = model  # type: nn.Module
-        self.detector.cuda()
-
         self.backbone = model.backbone  # type: nn.Module
-        self.backbone.cuda()
+        self.device = next(model.parameters()).device
+
         # be careful, darknet19 is not the detector
         self.predictor = predictor
         self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
@@ -56,9 +55,9 @@ class YOLOV2Evaluator(BaseEvaluator):
                                                          desc=desc,
                                                          position=0)):
             self.detector.eval()
-            images = images.cuda()
+            images = images.to(self.device)
 
-            targets = self.make_targets(labels, need_abs=True).cuda()
+            targets = self.make_targets(labels, need_abs=True).to(self.device)
             output = self.detector(images)
 
             gt_decode = self.predictor.decode(targets, out_is_target=True)

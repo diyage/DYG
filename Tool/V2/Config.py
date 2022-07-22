@@ -39,6 +39,7 @@ class YOLOV2TrainerConfig:
     max_epoch_on_image_net_448 = 10
     max_epoch_on_detector = 1000
 
+    device: str = 'cuda:0'
     batch_size = 32
     lr: float = 1e-4
     conf_th: float = 0.0

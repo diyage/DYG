@@ -19,10 +19,9 @@ class Helper:
             opt_trainer: YOLOV2TrainerConfig,
     ):
         self.detector = model  # type: nn.Module
-        self.detector.cuda()
-
+        self.device = next(model.parameters()).device
         self.backbone = model.backbone  # type: nn.Module
-        self.backbone.cuda()
+
         # be careful, darknet19 is not the detector
 
         self.opt_data_set = opt_data_set
@@ -126,12 +125,13 @@ class Helper:
 
 
 if __name__ == '__main__':
-    GUP_ID = 1
+    GPU_ID = 1
     LOSS_TYPE = 1
     fast_load = True
-    torch.cuda.set_device(GUP_ID)
+
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
+    trainer_opt.device = 'cuda:{}'.format(GPU_ID)
 
     # dark_net_19 = get_pretained_dark_net_19(
     #     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
@@ -139,6 +139,7 @@ if __name__ == '__main__':
     dark_net_19 = DarkNet19()
     net = YOLOV2Net(dark_net_19)
 
+    net.to(trainer_opt.device)
     helper = Helper(
         net,
         data_opt,

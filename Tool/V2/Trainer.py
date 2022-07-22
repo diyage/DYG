@@ -24,8 +24,6 @@ class YOLOV2Trainer(BaseTrainer):
         )
 
         self.backbone = model.backbone  # type: nn.Module
-        self.backbone.cuda()
-        # be careful, darknet19 is not the detector
 
     def make_targets(
             self,

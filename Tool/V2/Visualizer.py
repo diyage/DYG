@@ -18,10 +18,8 @@ class YOLOV2Visualizer(BaseVisualizer):
     ):
         super().__init__()
         self.detector = model  # type: nn.Module
-        self.detector.cuda()
-
+        self.device = next(model.parameters()).device
         self.backbone = model.backbone  # type: nn.Module
-        self.backbone.cuda()
         # be careful, darknet19 is not the detector
         self.predictor = predictor
         self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
@@ -54,7 +52,7 @@ class YOLOV2Visualizer(BaseVisualizer):
                   'please resize your image before using this method!')
             image = YOLOV2Tools.image_np_to_tensor(image)
 
-        out = self.detector(image.unsqueeze(0).cuda())[0]
+        out = self.detector(image.unsqueeze(0).to(self.device))[0]
         pre_kps_s = self.predictor.decode_out_one_image(
             out,
             out_is_target=False
@@ -81,8 +79,8 @@ class YOLOV2Visualizer(BaseVisualizer):
                 break
 
             self.detector.eval()
-            images = images.cuda()
-            targets = self.make_targets(labels, need_abs=True).cuda()
+            images = images.to(self.device)
+            targets = self.make_targets(labels, need_abs=True).to(self.device)
             output = self.detector(images)
 
             gt_decode = self.predictor.decode(targets, out_is_target=True)
