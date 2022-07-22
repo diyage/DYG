@@ -333,6 +333,6 @@ class YOLOV2Tools(BaseTools):
         # be careful ,we do not use arc_sigmoid method
         # if you use txy(in model output), please make sure (use sigmoid)
 
-        twh = torch.log(w_h/image_wh[0]*grid_number[0]/pre_wh.expand_as(w_h))
+        twh = torch.log(w_h/image_wh[0]*grid_number[0]/pre_wh.expand_as(w_h) + 1e-8)
 
         return torch.cat((txy_s, twh), dim=-1)
