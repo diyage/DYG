@@ -74,7 +74,7 @@ class YOLOV2Loss(nn.Module):
         return YOLOV2Tools.split_output(
             x,
             self.anchor_number,
-            is_target= is_target
+            is_target=is_target
         )
 
     def txtytwth_xyxy(
@@ -120,7 +120,8 @@ class YOLOV2Loss(nn.Module):
             'total_loss': loss,
             'position_loss': position_loss,
             'conf_loss': conf_loss,
-            'cls_prob_loss': cls_prob_loss
+            'cls_prob_loss': cls_prob_loss,
+            'iou_loss': iou_loss,
         }
         return loss_dict
 
@@ -131,13 +132,13 @@ class YOLOV2Loss(nn.Module):
         # split output
         out_split_dict = self.split(out, is_target=False)
         o_txtytwth = out_split_dict.get('position')[0]
+        o_xyxy = self.txtytwth_xyxy(o_txtytwth) / self.image_size[0]  # scaled in (0, 1)
 
         gt_split_dict = self.split(gt, is_target=True)
         g_conf = gt_split_dict.get('conf')
         g_cls_ind = gt_split_dict.get('cls_ind')
         g_weight = gt_split_dict.get('weight')
 
-        o_xyxy = self.txtytwth_xyxy(o_txtytwth) / self.image_size[0]  # scaled in (0, 1)
         g_txty_s_twth = gt_split_dict.get('position')[0]
         g_xyxy = gt_split_dict.get('position')[1]  # scaled in (0, 1)
 
@@ -190,88 +191,94 @@ class YOLOV2Loss(nn.Module):
             out: torch.Tensor,
             gt: torch.Tensor
     ):
-        return {}
         # split output
-        # o_txtytwth, o_conf, o_cls_prob = self.split(out)
-        # o_conf = torch.clamp(torch.sigmoid(o_conf), 1e-4, 1.0 - 1e-4)
-        # o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
+        N = out.shape[0]
+        out_split_dict = self.split(out, is_target=False)
+        o_txtytwth = out_split_dict.get('position')[0]
+        o_txty_s_twth = torch.cat(
+            (torch.sigmoid(o_txtytwth[..., 0:2]), o_txtytwth[..., 2:4]),
+            dim=-1
+        )
+        o_xyxy = self.txtytwth_xyxy(o_txtytwth) / self.image_size[0]  # scaled in (0, 1)
+
+        o_conf = out_split_dict.get('conf')
+        o_conf = torch.clamp(torch.sigmoid(o_conf), 1e-4, 1.0 - 1e-4)
+
+        o_cls_prob = out_split_dict.get('cls_prob')
+        o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
+
+        gt_split_dict = self.split(gt, is_target=True)
+        g_cls_ind = gt_split_dict.get('cls_ind')
+        g_cls_prob = F.one_hot(g_cls_ind.long(), o_cls_prob.shape[-1])
+        g_weight = gt_split_dict.get('weight')
+
+        g_txty_s_twth = gt_split_dict.get('position')[0]
+        g_xyxy = gt_split_dict.get('position')[1]  # scaled in (0, 1)
+
+        # compute
+        # compute box mask
+        weight = g_weight
+        positive = (weight > 0).float()
+        ignore = (weight == -1.0).float()
+        negative = 1.0 - positive - ignore  # N * H * W * a_n
+
+        # position loss
+
+        position_loss = self.mse(o_txty_s_twth, g_txty_s_twth).sum(dim=-1)
+        position_loss = torch.sum(
+            position_loss * positive * weight
+        )/N
+
+        # conf loss
+        iou = YOLOV2Tools.compute_iou(o_xyxy, g_xyxy)
+        assert len(iou.shape) == 4
+        # (N, H, W, a_n)
         #
-        # g_xyxy, g_conf, g_cls_prob = self.split(gt)
-        #
-        # N, H, W, a_n, _ = o_txtytwth.shape
-        #
-        # # translate position
-        # o_xyxy = self.txtytwth_xyxy(o_txtytwth)  # N * H * W * a_n * 4
-        #
-        # g_txty_s_twth = self.xyxy_txty_s_twth(g_xyxy)
-        # o_txty_s_twth = torch.cat(
-        #     (torch.sigmoid(o_txtytwth[..., 0:2]), o_txtytwth[..., 2:4]),
-        #     dim=-1
-        # )
-        #
-        # # compute box mask
-        # weight = g_conf
-        # positive = (g_conf > 0).float()
-        # ignore = (g_conf == -1.0).float()
-        # negative = 1.0 - positive - ignore  # N * H * W * a_n
-        #
-        # # position loss
-        #
-        # position_loss = self.mse(o_txty_s_twth, g_txty_s_twth).sum(dim=-1)
-        # position_loss = torch.sum(
-        #     position_loss * positive * weight
-        # )/N
-        #
-        # # conf loss
-        # iou = YOLOV2Tools.compute_iou(o_xyxy, g_xyxy)
-        # assert len(iou.shape) == 4
-        # # (N, H, W, a_n)
-        #
-        # has_obj_conf_loss = self.mse(
-        #     o_conf,
-        #     iou.detach().clone(),
-        # )
-        #
-        # has_obj_conf_loss = torch.sum(
-        #     has_obj_conf_loss * positive
-        # )/N
-        #
-        # no_obj_conf_loss = self.mse(
-        #     o_conf,
-        #     torch.zeros_like(o_conf).to(o_conf.device),
-        # )
-        # no_obj_conf_loss = torch.sum(
-        #     no_obj_conf_loss * negative
-        # )/N
-        #
-        # # cls_prob loss
-        #
-        # cls_prob_loss = self.mse(o_cls_prob, g_cls_prob).sum(dim=-1)
-        # cls_prob_loss = torch.sum(
-        #     cls_prob_loss * positive
-        # )/N
-        #
-        # # iou_loss
-        # iou_loss = self.iou_loss_function(iou, positive)
-        # iou_loss = torch.sum(
-        #     iou_loss * positive
-        # )/N
-        #
-        # loss = self.weight_position * position_loss + \
-        #     self.weight_conf_has_obj * has_obj_conf_loss + \
-        #     self.weight_conf_no_obj * no_obj_conf_loss + \
-        #     self.weight_cls_prob * cls_prob_loss + \
-        #     self.weight_iou_loss * iou_loss
-        #
-        # loss_dict = {
-        #     'total_loss': loss,
-        #     'position_loss': position_loss,
-        #     'has_obj_conf_loss': has_obj_conf_loss,
-        #     'no_obj_conf_loss': no_obj_conf_loss,
-        #     'cls_prob_loss': cls_prob_loss,
-        #     'iou_loss': iou_loss
-        # }
-        # return loss_dict
+        has_obj_conf_loss = self.mse(
+            o_conf,
+            iou.detach().clone(),
+        )
+
+        has_obj_conf_loss = torch.sum(
+            has_obj_conf_loss * positive
+        )/N
+
+        no_obj_conf_loss = self.mse(
+            o_conf,
+            torch.zeros_like(o_conf).to(o_conf.device),
+        )
+        no_obj_conf_loss = torch.sum(
+            no_obj_conf_loss * negative
+        )/N
+
+        # cls_prob loss
+
+        cls_prob_loss = self.mse(o_cls_prob, g_cls_prob).sum(dim=-1)
+        cls_prob_loss = torch.sum(
+            cls_prob_loss * positive
+        )/N
+
+        # iou_loss
+        iou_loss = self.iou_loss_function(iou, positive)
+        iou_loss = torch.sum(
+            iou_loss * positive
+        )/N
+
+        loss = self.weight_position * position_loss + \
+            self.weight_conf_has_obj * has_obj_conf_loss + \
+            self.weight_conf_no_obj * no_obj_conf_loss + \
+            self.weight_cls_prob * cls_prob_loss + \
+            self.weight_iou_loss * iou_loss
+
+        loss_dict = {
+            'total_loss': loss,
+            'position_loss': position_loss,
+            'has_obj_conf_loss': has_obj_conf_loss,
+            'no_obj_conf_loss': no_obj_conf_loss,
+            'cls_prob_loss': cls_prob_loss,
+            'iou_loss': iou_loss
+        }
+        return loss_dict
 
     def forward(
             self,
