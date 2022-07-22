@@ -463,22 +463,46 @@ class YOLOV2Tools(BaseTools):
             x: torch.Tensor,
             anchor_number,
             is_target: bool = False,
+            kinds_number: int = 20
     ) -> dict:
         if not is_target:
-            N, C, H, W = x.shape
-            K = C // anchor_number   # K = (x, y, w, h, conf, kinds0, kinds1, ...)
-            # C = anchor_number * K
-            x = x.view(N, anchor_number, K, H, W)
-            x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
+            # N, C, H, W = x.shape
+            # K = C // anchor_number   # K = (x, y, w, h, conf, kinds0, kinds1, ...)
+            # # C = anchor_number * K
+            # x = x.view(N, anchor_number, K, H, W)
+            # x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
+            #
+            # position = [x[..., 0:4], None]  # N * H * W * a_n * 4
+            # conf = x[..., 4]  # N * H * W * a_n
+            # cls_prob = x[..., 5:]  # N * H * W * a_n * ...
+            # res = {
+            #     'position': position,
+            #     'conf': conf,
+            #     'cls_prob': cls_prob
+            # }
 
-            position = [x[..., 0:4], None]  # N * H * W * a_n * 4
-            conf = x[..., 4]  # N * H * W * a_n
-            cls_prob = x[..., 5:]  # N * H * W * a_n * ...
+            # [B, num_anchor * C, H, W] -> [B, H, W, num_anchor * C] -> [B, H*W, num_anchor*C]
+            B, abC, H, W = x.shape
+            prediction = x.permute(0, 2, 3, 1).contiguous().view(B, H * W, abC)
+
+            # 从pred中分离出objectness预测、类别class预测、bbox的txtytwth预测
+            # [B, H*W*num_anchor, 1]
+            conf_pred = prediction[:, :, :1 * anchor_number].contiguous().view(B, H,  W, anchor_number)
+            # [B, H*W, num_anchor, num_cls]
+            cls_pred = prediction[:, :,
+                       1 * anchor_number: (1 + kinds_number) * anchor_number].contiguous().view(
+                B, H , W , anchor_number, kinds_number)
+            # [B, H*W, num_anchor, 4]
+            txtytwth_pred = prediction[:, :, (1 + kinds_number) * anchor_number:].contiguous().view(
+                B, H, W, anchor_number, 4
+            )
+
             res = {
-                'position': position,
-                'conf': conf,
-                'cls_prob': cls_prob
+                'position': [txtytwth_pred, None],
+                'conf': conf_pred,
+                'cls_prob': cls_pred
             }
+
         else:
             N, H, W, a_n, _ = x.shape
             conf = x[..., 0]
