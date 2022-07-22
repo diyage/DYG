@@ -18,8 +18,8 @@ class YOLOV2Evaluator(BaseEvaluator):
         self.detector = model  # type: nn.Module
         self.detector.cuda()
 
-        self.dark_net = model.darknet19  # type: nn.Module
-        self.dark_net.cuda()
+        self.backbone = model.backbone  # type: nn.Module
+        self.backbone.cuda()
         # be careful, darknet19 is not the detector
         self.predictor = predictor
         self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
@@ -41,26 +41,6 @@ class YOLOV2Evaluator(BaseEvaluator):
             self.kinds_name,
             need_abs
         )
-
-    def eval_classifier(
-            self,
-            data_loader_test: DataLoader,
-            desc: str = 'eval classifier'
-    ):
-        vec = []
-        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
-                                                         desc=desc,
-                                                         position=0)):
-            self.dark_net.eval()
-            images = images.cuda()  # type: torch.Tensor
-            labels = labels.cuda()  # type: torch.Tensor
-
-            output = self.dark_net(images)  # type: torch.Tensor
-            acc = (output.argmax(dim=-1) == labels).float().mean()
-            vec.append(acc)
-
-        accuracy = sum(vec) / len(vec)
-        print('Acc: {:.2%}'.format(accuracy.item()))
 
     def eval_detector_mAP(
             self,
