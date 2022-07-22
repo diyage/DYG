@@ -113,7 +113,7 @@ class BasePredictor:
         '''
 
         Args:
-            out_put: (N, _, H, W)
+            out_put: (N, _, H, W)/(N,H,W,a_n,11)
             out_is_target: bool
 
         Returns: [kps_s, kps_s, ...]
@@ -124,7 +124,10 @@ class BasePredictor:
         ]
 
         '''
-        assert len(out_put.shape) == 4
+        if out_is_target:
+            assert len(out_put.shape) == 5
+        else:
+            assert len(out_put.shape) == 4
         res = []
         for i in range(out_put.shape[0]):
             pre_ = self.decode_out_one_image(
