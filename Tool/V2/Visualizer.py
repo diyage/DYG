@@ -19,8 +19,8 @@ class YOLOV2Visualizer:
         self.detector = model  # type: nn.Module
         self.detector.cuda()
 
-        self.dark_net = model.darknet19  # type: nn.Module
-        self.dark_net.cuda()
+        self.backbone = model.backbone  # type: nn.Module
+        self.backbone.cuda()
         # be careful, darknet19 is not the detector
         self.predictor = predictor
         self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
