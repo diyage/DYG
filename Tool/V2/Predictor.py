@@ -72,7 +72,7 @@ class YOLOV2Predictor(BasePredictor):
             )  # scaled on image
         else:
             conf = res_dict.get('conf')
-            cls_prob = F.one_hot(res_dict.get('cls_ind'), len(self.kinds_name))
+            cls_prob = F.one_hot(res_dict.get('cls_ind').long(), len(self.kinds_name))
 
             position_abs = res_dict.get('position')[1] * self.image_size[0]
             # scaled on image
