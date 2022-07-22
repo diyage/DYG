@@ -275,7 +275,7 @@ class YOLOV2Tools(BaseTools):
         m_n = position[..., 2:4]  # -1 * a_n * 2
 
         center_x_y = (torch.sigmoid(a_b) + grid_index) / grid_number[0] * image_wh[0]
-        w_h = torch.exp(m_n) * pre_wh.expand_as(m_n) / grid_number[0] * image_wh[0]
+        w_h = (torch.exp(m_n) - 1e-8) * pre_wh.expand_as(m_n) / grid_number[0] * image_wh[0]
 
         x_y_0 = center_x_y - 0.5 * w_h
         # x_y_0[x_y_0 < 0] = 0
