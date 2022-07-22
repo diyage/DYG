@@ -5,4 +5,5 @@ from .position import Position
 from .predictor import BasePredictor
 from .tools import BaseTools
 from .trainer import BaseTrainer
+from .visualizer import BaseVisualizer
 

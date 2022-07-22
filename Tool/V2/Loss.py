@@ -24,6 +24,7 @@ class YOLOV2Loss(nn.Module):
         self.weight_conf_has_obj = weight_conf_has_obj
         self.weight_conf_no_obj = weight_conf_no_obj
         self.weight_cls_prob = weight_cls_prob
+        self.weight_iou_loss = weight_iou_loss
 
         self.grid_number = grid_number
 
@@ -264,7 +265,8 @@ class YOLOV2Loss(nn.Module):
         loss = self.weight_position * position_loss + \
             self.weight_conf_has_obj * has_obj_conf_loss + \
             self.weight_conf_no_obj * no_obj_conf_loss + \
-            self.weight_cls_prob * cls_prob_loss + iou_loss
+            self.weight_cls_prob * cls_prob_loss + \
+            self.weight_iou_loss * iou_loss
 
         loss_dict = {
             'total_loss': loss,

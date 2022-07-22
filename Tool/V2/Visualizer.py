@@ -6,16 +6,17 @@ import numpy as np
 from typing import Union
 from .Predictor import YOLOV2Predictor
 from .Tools import YOLOV2Tools
-from Tool.BaseTools import CV2
+from Tool.BaseTools import CV2, BaseVisualizer
 
 
-class YOLOV2Visualizer:
+class YOLOV2Visualizer(BaseVisualizer):
     def __init__(
             self,
             model: nn.Module,
             predictor: YOLOV2Predictor,
             class_colors: list
     ):
+        super().__init__()
         self.detector = model  # type: nn.Module
         self.detector.cuda()
 
