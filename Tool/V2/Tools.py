@@ -326,8 +326,13 @@ class YOLOV2Tools(BaseTools):
 
         w_h = m_n - a_b
 
-        txy = arc_sigmoid(center_x_y / image_wh[0] * grid_number[0] - grid_index)
+        # txy = arc_sigmoid(center_x_y / image_wh[0] * grid_number[0] - grid_index)
+        txy_s = center_x_y / image_wh[0] * grid_number[0] - grid_index
+        # center_xy = (sigmoid(txy) + grid_index) / grid_number * image_wh
+        # we define txy_s = sigmoid(txy)
+        # be careful ,we do not use arc_sigmoid method
+        # if you use txy(in model output), please make sure (use sigmoid)
 
         twh = torch.log(w_h/image_wh[0]*grid_number[0]/pre_wh.expand_as(w_h))
 
-        return torch.cat((txy, twh), dim=-1)
+        return torch.cat((txy_s, twh), dim=-1)

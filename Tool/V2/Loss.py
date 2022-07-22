@@ -46,23 +46,30 @@ class YOLOV2Loss(nn.Module):
         # conf (N, H, W, a_n)
         # cls_prob  (N, H, W, a_n, cls_num)
 
-    def xywh_xyxy(
+    def txtytwth_xyxy(
             self,
-            position: torch.Tensor,
-            is_target: bool = False
+            txtytwth: torch.Tensor,
     ) -> torch.Tensor:
-        if is_target:
-            # gt position is already abs position
-            return position/self.image_size[0]
-        else:
-            # offset position to abs position
-            # (but it is scaled on image size what we need is scaled on [0, 1])
-            return YOLOV2Tools.xywh_to_xyxy(
-                position,
-                self.anchor_pre_wh,
-                self.image_size,
-                self.grid_number
-            )/self.image_size[0]
+        # offset position to abs position
+        return YOLOV2Tools.xywh_to_xyxy(
+            txtytwth,
+            self.anchor_pre_wh,
+            self.image_size,
+            self.grid_number
+        )
+
+    def xyxy_txty_s_twth(
+            self,
+            xyxy: torch.Tensor,
+    ) -> torch.Tensor:
+        # abs position to offset position
+        # but txty do not use arc_sigmoid
+        return YOLOV2Tools.xyxy_to_xywh(
+            xyxy,
+            self.anchor_pre_wh,
+            self.image_size,
+            self.grid_number
+        )
 
     @staticmethod
     def iou_just_wh(
@@ -85,24 +92,26 @@ class YOLOV2Loss(nn.Module):
             gt: torch.Tensor
     ):
         # split output
-        o_position, o_conf, o_cls_prob = self.split(out)
+        o_txtytwth, o_conf, o_cls_prob = self.split(out)
         o_conf = torch.sigmoid(o_conf)
         o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
 
-        g_position, g_conf, g_cls_prob = self.split(gt)
+        g_xyxy, g_conf, g_cls_prob = self.split(gt)
 
-        N, H, W, a_n, _ = o_position.shape
+        N, H, W, a_n, _ = o_txtytwth.shape
 
-        # translate position from xywh to xyxy
-        o_xyxy = self.xywh_xyxy(o_position, is_target=False)   # N * H * W * a_n * 4
-        g_xyxy = self.xywh_xyxy(g_position, is_target=True)  # N * H * W * a_n * 4
+        # translate position
+        o_xyxy = self.txtytwth_xyxy(o_txtytwth)   # N * H * W * a_n * 4
+
+        g_txty_s_twth = self.xyxy_txty_s_twth(g_xyxy)
+        o_txty_s_twth = torch.cat(
+            (torch.sigmoid(o_txtytwth[..., 0:2]), o_txtytwth[..., 2:4]),
+            dim=-1
+        )
 
         # compute iou and iou mask for each box
         iou = YOLOV2Tools.compute_iou(o_xyxy.detach(), g_xyxy.detach())  # N * H * W * a_n
         assert len(iou.shape) == 4
-        # iou_max_index = iou.max(-1)[1]  # N * H * W
-        # iou_max = F.one_hot(iou_max_index, a_n)   # N * H * W * a_n
-        # iou_smaller_than_iou_th = (iou < self.iou_th).float()  # N * H * W * a_n
 
         # compute box mask
         weight = g_conf
@@ -113,7 +122,7 @@ class YOLOV2Loss(nn.Module):
         # position loss
         # # part one, compute the response d box position loss
 
-        position_loss_one = self.mse(o_xyxy, g_xyxy).sum(dim=-1)
+        position_loss_one = self.mse(o_txty_s_twth, g_txty_s_twth).sum(dim=-1)
         position_loss_one = torch.sum(
             position_loss_one * positive * weight
         )/N
@@ -123,14 +132,11 @@ class YOLOV2Loss(nn.Module):
             # # part two, compute all predicted box position loss
             # # regression to the anchor box
 
-            anchor_txy = torch.empty(size=(*o_xyxy.shape[: -1], 2)).fill_(-torch.inf)  # N * H * W * a_n * 2
-            anchor_twh = torch.zeros_like(anchor_txy)  # N * H * W * a_n * 2
-
-            anchor_position = torch.cat((anchor_txy, anchor_twh), dim=-1).to(o_position.device)  # N * H * W * a_n * 4
-            # anchor position is not the ground truth, it is offset position.
-            anchor_xyxy = self.xywh_xyxy(anchor_position, is_target=False)  # N * H * W * a_n * 2
-
-            position_loss_two = self.mse(o_xyxy, anchor_xyxy).sum(dim=-1)
+            anchor_txty_s_twth = torch.zeros_like(o_txty_s_twth).to(o_txty_s_twth.device)
+            position_loss_two = self.mse(
+                o_txty_s_twth,
+                anchor_txty_s_twth
+            ).sum(dim=-1)
 
             position_loss_two = torch.sum(position_loss_two) / N
 
@@ -145,7 +151,7 @@ class YOLOV2Loss(nn.Module):
 
         has_obj_conf_loss = self.mse(
             o_conf,
-            torch.ones_like(o_conf).to(o_conf.device),
+            iou.detach().clone(),
         )
         has_obj_conf_loss = torch.sum(
             has_obj_conf_loss * positive
@@ -180,17 +186,22 @@ class YOLOV2Loss(nn.Module):
             gt: torch.Tensor
     ):
         # split output
-        o_position, o_conf, o_cls_prob = self.split(out)
+        o_txtytwth, o_conf, o_cls_prob = self.split(out)
         o_conf = torch.sigmoid(o_conf)
         o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
 
-        g_position, g_conf, g_cls_prob = self.split(gt)
+        g_xyxy, g_conf, g_cls_prob = self.split(gt)
 
-        N, H, W, a_n, _ = o_position.shape
+        N, H, W, a_n, _ = o_txtytwth.shape
 
-        # translate position from xywh to xyxy
-        o_xyxy = self.xywh_xyxy(o_position, is_target=False)  # N * H * W * a_n * 4
-        g_xyxy = self.xywh_xyxy(g_position, is_target=True)  # N * H * W * a_n * 4
+        # translate position
+        o_xyxy = self.txtytwth_xyxy(o_txtytwth)  # N * H * W * a_n * 4
+
+        g_txty_s_twth = self.xyxy_txty_s_twth(g_xyxy)
+        o_txty_s_twth = torch.cat(
+            (torch.sigmoid(o_txtytwth[..., 0:2]), o_txtytwth[..., 2:4]),
+            dim=-1
+        )
 
         # compute box mask
         weight = g_conf
@@ -200,7 +211,7 @@ class YOLOV2Loss(nn.Module):
 
         # position loss
 
-        position_loss = self.mse(o_xyxy, g_xyxy).sum(dim=-1)
+        position_loss = self.mse(o_txty_s_twth, g_txty_s_twth).sum(dim=-1)
         position_loss = torch.sum(
             position_loss * positive * weight
         )/N
@@ -212,7 +223,7 @@ class YOLOV2Loss(nn.Module):
 
         has_obj_conf_loss = self.mse(
             o_conf,
-            torch.ones_like(o_conf).to(o_conf.device),
+            iou.detach().clone(),
         )
         has_obj_conf_loss = torch.sum(
             has_obj_conf_loss * positive
