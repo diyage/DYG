@@ -173,7 +173,9 @@ class YOLOV2Loss(nn.Module):
         conf_loss = conf_loss_function(pred_conf, gt_conf, gt_obj)
 
         # 类别损失
-        cls_loss = torch.sum(cls_loss_function(pred_cls, gt_cls) * gt_mask) / batch_size
+        p_cls = pred_cls.view(-1, pred_cls.shape[-1])
+        g_cls = gt_cls.view(-1, )
+        cls_loss = torch.sum(cls_loss_function(p_cls, g_cls) * gt_mask.view(-1, )) / batch_size
 
         # 边界框的位置损失
         txty_loss = torch.sum(
