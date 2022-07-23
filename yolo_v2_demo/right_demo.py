@@ -296,9 +296,18 @@ class MyEvaluator(YOLOV2Evaluator):
             self.detector.trainable = False
 
             images = images.to(self.device)
-
             targets = self.make_targets(labels).to(self.device)
-            bboxes, scores, cls_inds, output = self.detector(images, targets)
+
+            output_vec = []
+
+            for image_index in range(images.shape[0]):
+                bboxes, scores, cls_inds, output = self.detector(
+                    images[image_index].unsqueeze(dim=0),
+                    targets[image_index].unsqueeze(dim=0)
+                )
+                output_vec.append(output)
+
+            output = torch.cat(output_vec, dim=0).to(images.device)
 
             gt_decode = self.predictor.decode(targets, out_is_target=True)
             pre_decode = self.predictor.decode(output, out_is_target=False)
@@ -342,7 +351,7 @@ if __name__ == '__main__':
     data_opt = YOLOV2DataSetConfig()
 
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
-    trainer_opt.lr = 1e-3
+    trainer_opt.lr = 1e-4
 
     net = YOLOv2(
         device=trainer_opt.device,
@@ -370,7 +379,7 @@ if __name__ == '__main__':
     )
     optimizer = torch.optim.SGD(
         net.parameters(),
-        lr=1e-3,
+        lr=1e-4,
         momentum=0.9,
         weight_decay=5e-4
     )
