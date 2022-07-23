@@ -135,7 +135,7 @@ class YOLOV2Loss(nn.Module):
         o_xyxy = self.txtytwth_xyxy(o_txtytwth) / self.image_size[0]  # scaled in (0, 1)
 
         gt_split_dict = self.split(gt, is_target=True)
-        g_conf = gt_split_dict.get('conf')
+
         g_cls_ind = gt_split_dict.get('cls_ind')
         g_weight = gt_split_dict.get('weight')
 
@@ -156,8 +156,8 @@ class YOLOV2Loss(nn.Module):
         iou_loss_function = nn.SmoothL1Loss(reduction='none')
 
         # 标签
-        gt_conf = pred_iou.detach().clone()
-        gt_obj = (g_conf > 0).float()
+        gt_conf = pred_iou.detach().clone()  # be careful !!!
+        gt_obj = gt_split_dict.get('conf')  # be careful !!!
         gt_cls = g_cls_ind.long()
         gt_txty = g_txty_s_twth[..., 0:2]
         gt_twth = g_txty_s_twth[..., 2:4]
