@@ -11,6 +11,7 @@ import torchvision.transforms.transforms as transforms
 import numpy as np
 from .cv2_ import CV2
 from PIL import Image
+from typing import List
 
 
 class XMLTranslate:
@@ -341,10 +342,12 @@ def get_voc_data_loader(
         image_size: tuple,
         batch_size: int,
         train: bool = True,
+        mean: List[float] = [0.5, 0.5, 0.5],
+        std: List[float] = [0.5, 0.5, 0.5],
 ):
     normalize = transforms.Normalize(
-            std=[0.5, 0.5, 0.5],
-            mean=[0.5, 0.5, 0.5],
+            mean=mean,
+            std=std,
         )
     if train:
         transform_train = transforms.Compose([

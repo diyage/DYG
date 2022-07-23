@@ -363,12 +363,17 @@ if __name__ == '__main__':
     )
     net.to(trainer_opt.device)
 
+    mean = [0.406, 0.456, 0.485]
+    std = [0.225, 0.224, 0.229]
+
     voc_train_loader = get_voc_data_loader(
         data_opt.root_path,
         ['2012'],
         data_opt.image_size,
         trainer_opt.batch_size,
         train=True,
+        mean=mean,
+        std=std
     )
     voc_test_loader = get_voc_data_loader(
         data_opt.root_path,
@@ -376,6 +381,8 @@ if __name__ == '__main__':
         data_opt.image_size,
         trainer_opt.batch_size,
         train=False,
+        mean=mean,
+        std=std
     )
     optimizer = torch.optim.SGD(
         net.parameters(),
