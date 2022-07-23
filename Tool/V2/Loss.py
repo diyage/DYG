@@ -271,175 +271,18 @@ class YOLOV2Loss(nn.Module):
             out: torch.Tensor,
             gt: torch.Tensor
     ):
-        conf_loss, cls_prob_loss, position_loss, iou_loss = self.loss(
-            out,
-            gt
+        loss_func = RightLoss(
+            self.anchor_pre_wh,
+            device=out.device,
         )
-
-        loss = conf_loss + cls_prob_loss + position_loss
-
-        loss_dict = {
-            'total_loss': loss,
-            'position_loss': position_loss,
-            'conf_loss': conf_loss,
-            'cls_prob_loss': cls_prob_loss,
-            'iou_loss': iou_loss,
-        }
-        return loss_dict
-
-    def loss(self,
-             out,
-             gt,
-             ):
-        # split output
-        out_split_dict = self.split(out, is_target=False)
-        o_txtytwth = out_split_dict.get('position')[0]
-
-        o_xyxy = self.txtytwth_xyxy(o_txtytwth) / self.image_size[0]  # scaled in (0, 1)
-        o_xyxy = o_xyxy.detach().clone()  # be careful !!!
-
-        gt_split_dict = self.split(gt, is_target=True)
-
-        g_cls_ind = gt_split_dict.get('cls_ind')
-        g_weight = gt_split_dict.get('weight')
-
-        g_txty_s_twth = gt_split_dict.get('position')[0]
-        g_xyxy = gt_split_dict.get('position')[1]  # scaled in (0, 1)
-
-        pred_conf = out_split_dict.get('conf')
-        pred_cls = out_split_dict.get('cls_prob')
-        pred_txty = o_txtytwth[..., 0:2]
-        pred_twth = o_txtytwth[..., 2:4]
-        pred_iou = YOLOV2Tools.compute_iou(o_xyxy, g_xyxy)
-
-        # 损失函数
-        conf_loss_function = MSEWithLogitsLoss(reduction='mean')
-        cls_loss_function = nn.CrossEntropyLoss(reduction='none')
-        txty_loss_function = nn.BCEWithLogitsLoss(reduction='none')
-        twth_loss_function = nn.MSELoss(reduction='none')
-        iou_loss_function = nn.SmoothL1Loss(reduction='none')
-
-        # 标签
-        gt_conf = pred_iou.detach().clone()  # be careful !!!
-        gt_obj = gt_split_dict.get('conf')  # be careful !!!
-        gt_cls = g_cls_ind.long()
-        gt_txty = g_txty_s_twth[..., 0:2]
-        gt_twth = g_txty_s_twth[..., 2:4]
-        gt_box_scale_weight = g_weight
-        gt_iou = (gt_box_scale_weight > 0.).float()
-        gt_mask = (gt_box_scale_weight > 0.).float()
-
-        batch_size = pred_conf.size(0)
-        # 置信度损失
-        conf_loss = conf_loss_function(pred_conf, gt_conf, gt_obj)
-
-        # 类别损失
-        p_cls = pred_cls.reshape(-1, pred_cls.shape[-1])
-        g_cls = gt_cls.view(-1, )
-        cls_loss = torch.sum(cls_loss_function(p_cls, g_cls) * gt_mask.reshape(-1, )) / batch_size
-
-        # 边界框的位置损失
-        txty_loss = torch.sum(
-            torch.sum(txty_loss_function(pred_txty, gt_txty), dim=-1) * gt_box_scale_weight * gt_mask) / batch_size
-        twth_loss = torch.sum(
-            torch.sum(twth_loss_function(pred_twth, gt_twth), dim=-1) * gt_box_scale_weight * gt_mask) / batch_size
-        bbox_loss = txty_loss + twth_loss
-
-        # iou 损失
-        iou_loss = torch.sum(iou_loss_function(pred_iou, gt_iou) * gt_mask) / batch_size
-
-        return conf_loss, cls_loss, bbox_loss, iou_loss
+        return loss_func(out, gt)
 
     def forward_0(
             self,
             out: torch.Tensor,
             gt: torch.Tensor
     ):
-
-        N = out.shape[0]
-        # split output
-        out_split_dict = self.split(out, is_target=False)
-        o_txtytwth = out_split_dict.get('position')[0]
-        o_txty_s_twth = torch.cat(
-            (torch.sigmoid(o_txtytwth[..., 0:2]), o_txtytwth[..., 2:4]),
-            dim=-1
-        )
-        o_xyxy = self.txtytwth_xyxy(o_txtytwth)  # not scaled
-
-        o_conf = out_split_dict.get('conf')
-        o_conf = torch.clamp(torch.sigmoid(o_conf), 1e-4, 1.0 - 1e-4)
-
-        o_cls_prob = out_split_dict.get('cls_prob')
-        o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
-        # split gt
-        gt_split_dict = self.split(gt, is_target=True)
-        g_weight = gt_split_dict.get('conf')
-        g_cls_prob = gt_split_dict.get('cls_prob')
-
-        g_xyxy = gt_split_dict.get('position')[1]  # not scaled
-        g_txty_s_twth = self.xyxy_txty_s_twth(g_xyxy)
-        # compute
-        # compute box mask
-        weight = g_weight
-        positive = (weight > 0).float()
-        ignore = (weight == -1.0).float()
-        negative = 1.0 - positive - ignore  # N * H * W * a_n
-
-        # position loss
-
-        position_loss = self.mse(o_txty_s_twth, g_txty_s_twth).sum(dim=-1)
-        position_loss = torch.sum(
-            position_loss * positive * weight
-        )/N
-
-        # conf loss
-        iou = YOLOV2Tools.compute_iou(o_xyxy, g_xyxy)
-        assert len(iou.shape) == 4
-        # (N, H, W, a_n)
-        #
-        has_obj_conf_loss = self.mse(
-            o_conf,
-            iou.detach().clone(),
-        )
-
-        has_obj_conf_loss = torch.sum(
-            has_obj_conf_loss * positive
-        )/N
-
-        no_obj_conf_loss = self.mse(
-            o_conf,
-            torch.zeros_like(o_conf).to(o_conf.device),
-        )
-        no_obj_conf_loss = torch.sum(
-            no_obj_conf_loss * negative
-        )/N
-
-        # cls_prob loss
-
-        cls_prob_loss = self.mse(o_cls_prob, g_cls_prob).sum(dim=-1)
-        cls_prob_loss = torch.sum(
-            cls_prob_loss * positive
-        )/N
-
-        # iou_loss
-        iou_loss = self.iou_loss_function(iou, positive)
-        iou_loss = torch.sum(
-            iou_loss * positive
-        )/N
-
-        loss = self.weight_position * position_loss + \
-            self.weight_conf_has_obj * has_obj_conf_loss + \
-            self.weight_conf_no_obj * no_obj_conf_loss + \
-            self.weight_cls_prob * cls_prob_loss + \
-            self.weight_iou_loss * iou_loss
-
         loss_dict = {
-            'total_loss': loss,
-            'position_loss': position_loss,
-            'has_obj_conf_loss': has_obj_conf_loss,
-            'no_obj_conf_loss': no_obj_conf_loss,
-            'cls_prob_loss': cls_prob_loss,
-            'iou_loss': iou_loss
         }
         return loss_dict
 

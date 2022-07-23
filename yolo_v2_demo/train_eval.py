@@ -63,26 +63,18 @@ class Helper:
             data_loader_train: DataLoader,
             data_loader_test: DataLoader,
     ):
-        from Tool.V2.Loss import RightLoss
-        loss_func = RightLoss(
+        loss_func = YOLOV2Loss(
             self.opt_data_set.pre_anchor_w_h,
-            len(self.opt_data_set.kinds_name),
+            self.opt_trainer.weight_position,
+            self.opt_trainer.weight_conf_has_obj,
+            self.opt_trainer.weight_conf_no_obj,
+            self.opt_trainer.weight_cls_prob,
+            self.opt_trainer.weight_iou_loss,
             self.opt_data_set.grid_number,
-            self.opt_data_set.image_size,
-            self.opt_trainer.device
+            image_size=self.opt_data_set.image_size,
+            iou_th=self.opt_trainer.iou_th,
+            loss_type=LOSS_TYPE
         )
-        # loss_func = YOLOV2Loss(
-        #     self.opt_data_set.pre_anchor_w_h,
-        #     self.opt_trainer.weight_position,
-        #     self.opt_trainer.weight_conf_has_obj,
-        #     self.opt_trainer.weight_conf_no_obj,
-        #     self.opt_trainer.weight_cls_prob,
-        #     self.opt_trainer.weight_iou_loss,
-        #     self.opt_data_set.grid_number,
-        #
-        #     iou_th=self.opt_trainer.iou_th,
-        #     loss_type=LOSS_TYPE
-        # )
         # already trained dark_net 19
         # so just train detector
         # optimizer = torch.optim.Adam(
@@ -112,7 +104,7 @@ class Helper:
                 print_info += '{:^30}:{:^15.6f}.\n'.format(key, val)
             tqdm.write(print_info)
 
-            if epoch % 10 == 0:
+            if True:
                 # save model
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
@@ -143,7 +135,7 @@ if __name__ == '__main__':
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
-
+    trainer_opt.lr = 1e-3
     # dark_net_19 = get_pretained_dark_net_19(
     #     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
     # )
@@ -166,14 +158,14 @@ if __name__ == '__main__':
 
     voc_train_loader = get_voc_data_loader(
         data_opt.root_path,
-        data_opt.years,
+        ['2012'],
         data_opt.image_size,
         trainer_opt.batch_size,
         train=True,
     )
     voc_test_loader = get_voc_data_loader(
         data_opt.root_path,
-        ['2007'],
+        ['2012'],
         data_opt.image_size,
         trainer_opt.batch_size,
         train=False,
