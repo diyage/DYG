@@ -187,6 +187,7 @@ class YOLOv2(nn.Module):
         out = prediction
 
         B, abC, H, W = prediction.size()
+        target = target.view(B, H*W*self.num_anchors, -1)
 
         # [B, num_anchor * C, H, W] -> [B, H, W, num_anchor * C] -> [B, H*W, num_anchor*C]
         prediction = prediction.permute(0, 2, 3, 1).contiguous().view(B, H * W, abC)
