@@ -388,8 +388,8 @@ class YOLOV2Tools(BaseTools):
                 grid_size = (image_wh[0] // grid_number[0], image_wh[1] // grid_number[1])
 
                 grid_index = (
-                    (abs_pos[0] + abs_pos[2]) * 0.5 // grid_size[0],  # w -- on x-axis
-                    (abs_pos[1] + abs_pos[3]) * 0.5 // grid_size[1]  # h -- on y-axis
+                    int((abs_pos[0] + abs_pos[2]) * 0.5 // grid_size[0]),  # w -- on x-axis
+                    int((abs_pos[1] + abs_pos[3]) * 0.5 // grid_size[1])  # h -- on y-axis
                 )
                 pos = tuple(abs_pos)
 
