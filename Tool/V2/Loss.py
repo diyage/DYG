@@ -89,20 +89,17 @@ class YOLOV2Loss(nn.Module):
             self.grid_number
         )
 
-    @staticmethod
-    def iou_just_wh(
-            boxes0: torch.Tensor,
-            boxes1: torch.Tensor,
-    ):
-        boxes0_wh = boxes0[..., 2:4] - boxes0[..., 0:2]  # (..., 2)
+    def xyxy_txty_s_twth(
+            self,
+            xyxy: torch.Tensor,
+    ) -> torch.Tensor:
 
-        boxes1_wh = boxes1[..., 2:4] - boxes1[..., 0:2]  # (..., 2)
-        s0 = boxes0_wh[..., 0] * boxes0_wh[..., 1]
-        s1 = boxes1_wh[..., 0] * boxes1_wh[..., 1]
-        inter = torch.min(boxes0_wh[..., 0], boxes1_wh[..., 0]) * torch.min(boxes0_wh[..., 1], boxes1_wh[..., 1])
-        union = s0 + s1 - inter
-        return inter/union
-        # iou --> (N, H, W, a_n)
+        return YOLOV2Tools.xyxy_to_xywh(
+            xyxy,
+            self.anchor_pre_wh,
+            self.image_size,
+            self.grid_number
+        )
 
     def forward_1(
             self,
@@ -191,30 +188,29 @@ class YOLOV2Loss(nn.Module):
             out: torch.Tensor,
             gt: torch.Tensor
     ):
-        # split output
+
         N = out.shape[0]
+        # split output
         out_split_dict = self.split(out, is_target=False)
         o_txtytwth = out_split_dict.get('position')[0]
         o_txty_s_twth = torch.cat(
             (torch.sigmoid(o_txtytwth[..., 0:2]), o_txtytwth[..., 2:4]),
             dim=-1
         )
-        o_xyxy = self.txtytwth_xyxy(o_txtytwth) / self.image_size[0]  # scaled in (0, 1)
+        o_xyxy = self.txtytwth_xyxy(o_txtytwth)  # not scaled
 
         o_conf = out_split_dict.get('conf')
         o_conf = torch.clamp(torch.sigmoid(o_conf), 1e-4, 1.0 - 1e-4)
 
         o_cls_prob = out_split_dict.get('cls_prob')
         o_cls_prob = torch.softmax(o_cls_prob, dim=-1)
-
+        # split gt
         gt_split_dict = self.split(gt, is_target=True)
-        g_cls_ind = gt_split_dict.get('cls_ind')
-        g_cls_prob = F.one_hot(g_cls_ind.long(), o_cls_prob.shape[-1])
-        g_weight = gt_split_dict.get('weight')
+        g_weight = gt_split_dict.get('conf')
+        g_cls_prob = gt_split_dict.get('cls_prob')
 
-        g_txty_s_twth = gt_split_dict.get('position')[0]
-        g_xyxy = gt_split_dict.get('position')[1]  # scaled in (0, 1)
-
+        g_xyxy = gt_split_dict.get('position')[1]  # not scaled
+        g_txty_s_twth = self.xyxy_txty_s_twth(g_xyxy)
         # compute
         # compute box mask
         weight = g_weight
