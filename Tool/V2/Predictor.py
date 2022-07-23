@@ -69,7 +69,8 @@ class YOLOV2Predictor(BasePredictor):
                 self.pre_anchor_w_h,
                 self.image_size,
                 self.grid_number
-            )  # scaled on image
+            ).clamp_(0, self.image_size[0]-1)
+            # scaled on image
         else:
             conf = res_dict.get('conf')
             cls_prob = F.one_hot(res_dict.get('cls_ind').long(), len(self.kinds_name))
