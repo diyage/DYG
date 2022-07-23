@@ -3,9 +3,6 @@ import numpy as np
 from Tool.BaseTools import Position, BaseTools
 
 
-TYPE = 1
-
-
 class PositionTranslate:
     def __init__(self,
                  p: tuple,
@@ -102,6 +99,8 @@ class PositionTranslate:
 
 
 class YOLOV2Tools(BaseTools):
+    TYPE = 1
+
     def __init__(self):
         super().__init__()
 
@@ -416,7 +415,7 @@ class YOLOV2Tools(BaseTools):
             kinds_name: list,
             iou_th: float = 0.6,
     ) -> torch.Tensor:
-        if TYPE == 0:
+        if YOLOV2Tools.TYPE == 0:
             return YOLOV2Tools.make_targets_0(
                 labels,
                 anchor_pre_wh,
@@ -489,7 +488,7 @@ class YOLOV2Tools(BaseTools):
             *args,
             **kwargs
     ) -> dict:
-        if TYPE == 1:
+        if YOLOV2Tools.TYPE == 1:
             return YOLOV2Tools.split_output_1(
                 x,
                 anchor_number,
