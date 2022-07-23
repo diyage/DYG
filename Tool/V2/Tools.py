@@ -561,7 +561,8 @@ class YOLOV2Tools(BaseTools):
         x_y_1 = center_x_y + 0.5 * w_h
         # x_y_1[x_y_1 > grid_number] = grid_number
         res = torch.cat((x_y_0, x_y_1), dim=-1)
-        return res
+        # return res
+        return res.clamp_(0.0, image_wh[0]-1)
 
     # @staticmethod
     # def xyxy_to_xywh(
