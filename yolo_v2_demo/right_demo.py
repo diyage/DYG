@@ -7,10 +7,11 @@ import numpy as np
 import tools
 from Tool.V2 import *
 from Tool.BaseTools import get_voc_data_loader
+from tqdm import tqdm
 
 
 class YOLOv2(nn.Module):
-    def __init__(self, device, input_size=None, num_classes=20, trainable=False, conf_thresh=0.001, nms_thresh=0.6,
+    def __init__(self, device, input_size=None, num_classes=20, trainable=False, conf_thresh=0.1, nms_thresh=0.6,
                  anchor_size=None):
         super(YOLOv2, self).__init__()
         self.device = device
@@ -291,7 +292,7 @@ class MyEvaluator(YOLOV2Evaluator):
             key: [[], [], 0] for key in self.kinds_name
             # kind_name: [tp_list, score_list, gt_num]
         }
-        for batch_id, (images, labels) in enumerate(data_loader_test):
+        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test)):
             self.detector.eval()
             self.detector.trainable = False
 
@@ -375,6 +376,7 @@ if __name__ == '__main__':
         mean=mean,
         std=std
     )
+
     voc_test_loader = get_voc_data_loader(
         data_opt.root_path,
         ['2012'],

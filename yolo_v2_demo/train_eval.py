@@ -135,7 +135,7 @@ if __name__ == '__main__':
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
-    trainer_opt.lr = 1e-3
+    trainer_opt.lr = 1e-4
     # dark_net_19 = get_pretained_dark_net_19(
     #     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
     # )
@@ -155,13 +155,16 @@ if __name__ == '__main__':
         data_opt,
         trainer_opt
     )
-
+    mean = [0.406, 0.456, 0.485]
+    std = [0.225, 0.224, 0.229]
     voc_train_loader = get_voc_data_loader(
         data_opt.root_path,
-        ['2012'],
+        ['2007', '2012'],
         data_opt.image_size,
         trainer_opt.batch_size,
         train=True,
+        mean=mean,
+        std=std
     )
     voc_test_loader = get_voc_data_loader(
         data_opt.root_path,
@@ -169,6 +172,8 @@ if __name__ == '__main__':
         data_opt.image_size,
         trainer_opt.batch_size,
         train=False,
+        mean=mean,
+        std=std
     )
     # helper.detector.load_state_dict(
     #     torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/yolo_v2_demo/model_pth_detector/30.pth')

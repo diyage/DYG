@@ -7,21 +7,31 @@ from typing import Union
 class BaseTools:
     @staticmethod
     def image_np_to_tensor(
-            image: np.ndarray
+            image: np.ndarray,
+            mean=[0.406, 0.456, 0.485],
+            std=[0.225, 0.224, 0.229]
     ) -> torch.Tensor:
+        mean = np.array(mean, dtype=np.float32)
+        std = np.array(std, dtype=np.float32)
+
         image = CV2.cvtColorToRGB(image)  # (H, W, C)
-        image = ((image / 255.0) - 0.5) * 2  # (H, W, C)
+        image = ((image / 255.0) - mean) / std  # (H, W, C)
         image = np.transpose(image, axes=(2, 0, 1))  # (C, H, W)
         return torch.tensor(image, dtype=torch.float32)
 
     @staticmethod
     def image_tensor_to_np(
-            img: torch.Tensor
+            img: torch.Tensor,
+            mean=[0.406, 0.456, 0.485],
+            std=[0.225, 0.224, 0.229]
     ) -> np.ndarray:
-        img = (img.cpu().detach().numpy().copy() * 0.5 + 0.5) * 255  # type:np.ndarray
+        mean = np.array(mean, dtype=np.float32)
+        std = np.array(std, dtype=np.float32)
+        img = img.cpu().detach().numpy().copy()  # type:np.ndarray
         # (C, H, W)
         img = np.transpose(img, axes=(1, 2, 0))  # type:np.ndarray
         # (H, W, C)
+        img = ((img * std) + mean) * 255.0
         img = np.array(img, np.uint8)  # type:np.ndarray
         img = CV2.cvtColorToBGR(img)
         return img
