@@ -122,19 +122,16 @@ class RightLoss(nn.Module):
         B, abC, H, W = prediction.size()
         target = target.view(B, H * W * self.num_anchors, -1)
 
-        # [B, num_anchor * C, H, W] -> [B, H, W, num_anchor * C] -> [B, H*W, num_anchor*C]
-        prediction = prediction.permute(0, 2, 3, 1).contiguous().view(B, H * W, abC)
+        res_dict = YOLOV2Tools.split_output(
+            prediction,
+            self.num_anchors,
+            is_target=False
+        )
 
-        # 从pred中分离出objectness预测、类别class预测、bbox的txtytwth预测
-        # [B, H*W*num_anchor, 1]
-        conf_pred = prediction[:, :, :1 * self.num_anchors].contiguous().view(B, H * W * self.num_anchors, 1)
-        # [B, H*W, num_anchor, num_cls]
-        cls_pred = prediction[:, :, 1 * self.num_anchors: (1 + self.num_classes) * self.num_anchors].contiguous().view(
-            B, H * W * self.num_anchors, self.num_classes)
-        # [B, H*W, num_anchor, 4]
-        txtytwth_pred = prediction[:, :, (1 + self.num_classes) * self.num_anchors:].contiguous()
+        txtytwth_pred = res_dict.get('position')[0]
+        conf_pred = res_dict.get('conf')
+        cls_pred = res_dict.get('cls_prob')
 
-        txtytwth_pred = txtytwth_pred.view(B, H * W, self.num_anchors, 4)
         # decode bbox
         x1y1x2y2_pred = (self.decode_boxes(txtytwth_pred) / self.input_size).view(-1, 4)
         x1y1x2y2_gt = target[:, :, 7:].contiguous().view(-1, 4)
