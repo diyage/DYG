@@ -128,9 +128,9 @@ class RightLoss(nn.Module):
             is_target=False
         )
 
-        txtytwth_pred = res_dict.get('position')[0]
-        conf_pred = res_dict.get('conf')
-        cls_pred = res_dict.get('cls_prob')
+        txtytwth_pred = res_dict.get('position')[0].view(B, H * W, self.num_anchors, 4)
+        conf_pred = res_dict.get('conf').view(B, H * W * self.num_anchors, 1)
+        cls_pred = res_dict.get('cls_prob').view(B, H * W * self.num_anchors, self.num_classes)
 
         # decode bbox
         x1y1x2y2_pred = (self.decode_boxes(txtytwth_pred) / self.input_size).view(-1, 4)
