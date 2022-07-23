@@ -107,19 +107,37 @@ class VOCDataSet(Dataset):
 
     def __get_image_and_xml_file_abs_path(self) -> list:
         res = []
-        for year in self.years:
-            root_path = os.path.join(
-                self.root,
-                year,
-                self.data_type,
-            )
-            anno_path = os.path.join(
-                root_path,
-                'Annotations'
-            )
-            xml_file_names = os.listdir(anno_path)
-            res += [(root_path, xml_file_name) for xml_file_name in xml_file_names]
+        if self.train:
+            for year in self.years:
+                root_path = os.path.join(
+                    self.root,
+                    year,
+                    self.data_type,
+                )
+                txt_file_name = os.path.join(
+                    root_path,
+                    'ImageSets',
+                    'Main',
+                    '{}.txt'.format(self.data_type)
+                )
+                with open(txt_file_name, 'r') as f:
+                    temp = f.readlines()
+                    xml_file_names = [val[:-1] + '.xml' for val in temp]
 
+                res += [(root_path, xml_file_name) for xml_file_name in xml_file_names]
+        else:
+            for year in self.years:
+                root_path = os.path.join(
+                    self.root,
+                    year,
+                    self.data_type,
+                )
+                anno_path = os.path.join(
+                    root_path,
+                    'Annotations'
+                )
+                xml_file_names = os.listdir(anno_path)
+                res += [(root_path, xml_file_name) for xml_file_name in xml_file_names]
         return res
 
     def __len__(self):
