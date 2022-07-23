@@ -87,60 +87,55 @@ class VOCDataSet(Dataset):
     def __init__(
             self,
             root: str,
-            year: str,
+            years: list,
             train: bool = True,
             image_size: tuple = (448, 448),
-            transform: torchvision.transforms.Compose = None
+            transform: torchvision.transforms.Compose = None,
     ):
+        # .../VOC/year/trainval(or test)/ ----
         super().__init__()
-        assert year in ['2012', '2007']
+        self.root = root
+        self.years = years
         self.train = train
         if self.train:
             self.data_type = 'trainval'
-
         else:
             self.data_type = 'test'
-
-        self.data_path = os.path.join(root, year, self.data_type)
         self.image_size = image_size
         self.transform = transform
-        self.xml_file_names = self.__get_image_xml_file_names()
+        self.image_and_xml_path_info = self.__get_image_and_xml_file_abs_path()
 
-    def __get_image_xml_file_names(self) -> list:
-        if self.train:
-            txt_file_name = os.path.join(
-                self.data_path,
-                'ImageSets',
-                'Main',
-                '{}.txt'.format(self.data_type)
+    def __get_image_and_xml_file_abs_path(self) -> list:
+        res = []
+        for year in self.years:
+            root_path = os.path.join(
+                self.root,
+                year,
+                self.data_type,
             )
-
-            with open(txt_file_name, 'r') as f:
-                temp = f.readlines()
-                xml_file_names = [val[:-1] + '.xml' for val in temp]
-        else:
-            # test.txt is not strict response to Annotations
             anno_path = os.path.join(
-                self.data_path,
-                'Annotations',
+                root_path,
+                'Annotations'
             )
             xml_file_names = os.listdir(anno_path)
+            res += [(root_path, xml_file_name) for xml_file_name in xml_file_names]
 
-        return xml_file_names
+        return res
 
     def __len__(self):
-        return len(self.xml_file_names)
+        return len(self.image_and_xml_path_info)
 
     def __get_image_label(
             self,
-            xml_file_name: str,
+            index,
     ) -> tuple:
-        xml_trans = XMLTranslate(root_path=self.data_path, file_name=xml_file_name)
+        root_path, xml_file_name = self.image_and_xml_path_info[index]
+        xml_trans = XMLTranslate(root_path=root_path, file_name=xml_file_name)
         xml_trans.resize(new_size=self.image_size)
         return xml_trans.img, xml_trans.objects
 
     def __getitem__(self, index):
-        img, label = self.__get_image_label(self.xml_file_names[index])
+        img, label = self.__get_image_label(index)
 
         img = CV2.cvtColorToRGB(img)
         if self.transform is not None:
@@ -324,7 +319,7 @@ def get_voc_trainval_data_loader(
 
 def get_voc_data_loader(
         root_path: str,
-        year: str,
+        years: list,
         image_size: tuple,
         batch_size: int,
         train: bool = True,
@@ -341,7 +336,7 @@ def get_voc_data_loader(
 
         train_d = VOCDataSet(
             root=root_path,
-            year=year,
+            years=years,
             train=True,
             image_size=image_size,
             transform=transform_train
@@ -360,7 +355,7 @@ def get_voc_data_loader(
 
         test_d = VOCDataSet(
             root=root_path,
-            year=year,
+            years=years,
             train=False,
             image_size=image_size,
             transform=transform_test
