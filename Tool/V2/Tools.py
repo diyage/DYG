@@ -497,7 +497,7 @@ class YOLOV2Tools(BaseTools):
                 **kwargs
             )
         else:
-            YOLOV2Tools.split_output_0(
+            return YOLOV2Tools.split_output_0(
                 x,
                 anchor_number,
                 is_target,

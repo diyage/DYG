@@ -5,6 +5,8 @@ import torch.nn.functional as F
 
 
 class YOLOV2Predictor(BasePredictor):
+    TYPE = 1
+
     def __init__(
             self,
             iou_th: float,
@@ -46,10 +48,6 @@ class YOLOV2Predictor(BasePredictor):
              ]
 
         '''
-        if out_is_target:
-            assert len(out_put.shape) == 4
-        else:
-            assert len(out_put.shape) == 3
 
         out_put = out_put.unsqueeze(dim=0)
         a_n = len(self.pre_anchor_w_h)
@@ -72,11 +70,16 @@ class YOLOV2Predictor(BasePredictor):
             ).clamp_(0, self.image_size[0]-1)
             # scaled on image
         else:
-            conf = res_dict.get('conf')
-            cls_prob = F.one_hot(res_dict.get('cls_ind').long(), len(self.kinds_name))
+            if YOLOV2Predictor.TYPE == 1:
+                conf = res_dict.get('conf')
+                cls_prob = F.one_hot(res_dict.get('cls_ind').long(), len(self.kinds_name))
 
-            position_abs = res_dict.get('position')[1] * self.image_size[0]
-            # scaled on image
+                position_abs = res_dict.get('position')[1] * self.image_size[0]
+                # scaled on image
+            else:
+                conf = (res_dict.get('conf') > 0).float()
+                cls_prob = res_dict.get('cls_prob')
+                position_abs = res_dict.get('position')[1]  # not scaled
 
         position_abs_ = position_abs.contiguous().view(-1, 4)
         conf_ = conf.contiguous().view(-1, )  # type: torch.Tensor

@@ -124,10 +124,6 @@ class BasePredictor:
         ]
 
         '''
-        if out_is_target:
-            assert len(out_put.shape) == 5
-        else:
-            assert len(out_put.shape) == 4
         res = []
         for i in range(out_put.shape[0]):
             pre_ = self.decode_out_one_image(
