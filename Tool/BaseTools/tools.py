@@ -86,7 +86,7 @@ class BaseTools:
         area_i = torch.prod(br - tl, dim=-1) * en  # * ((tl < br).all())
 
         area_union = area_a + area_b - area_i
-        iou = area_i / (area_union + 1e-8)
+        iou = area_i / area_union
 
         return iou
 
