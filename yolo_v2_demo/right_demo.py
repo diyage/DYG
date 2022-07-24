@@ -16,6 +16,7 @@ import tools
 
 from utils.augmentations import SSDAugmentation
 from utils.vocapi_evaluator import VOCAPIEvaluator
+from Tool.BaseTools import WarmUpOptimizer
 
 
 def parse_args():
@@ -60,47 +61,6 @@ def parse_args():
                         help='Gamma update for SGD')
 
     return parser.parse_args()
-
-
-class WarmUpOptimizer:
-    def __init__(
-            self,
-            paras,
-            base_lr: float = 1e-3,
-            warm_up_epoch: int = 1,
-    ):
-        self.optimizer = torch.optim.SGD(
-            paras,
-            base_lr,
-            momentum=0.9,
-            weight_decay=5e-4
-        )
-        self.warm_up_epoch = warm_up_epoch
-        self.base_lr = base_lr
-        self.tmp_lr = base_lr
-
-    def set_lr(self, lr):
-        for param_group in self.optimizer.param_groups:
-            param_group['lr'] = lr
-
-    def warm(self,
-             max_epoch_size,
-             now_epoch_ind,
-             now_batch_ind
-             ):
-        if now_epoch_ind < self.warm_up_epoch:
-            self.tmp_lr = self.base_lr * pow((now_batch_ind + now_epoch_ind * max_epoch_size) * 1. / (self.warm_up_epoch * max_epoch_size), 4)
-            self.set_lr(self.tmp_lr)
-
-        elif now_epoch_ind == self.warm_up_epoch and now_batch_ind == 0:
-            self.tmp_lr = self.base_lr
-            self.set_lr(self.tmp_lr)
-
-    def zero_grad(self):
-        self.optimizer.zero_grad()
-
-    def step(self):
-        self.optimizer.step()
 
 
 def train():
@@ -196,13 +156,13 @@ def train():
     # # 构建训练优化器
     # base_lr = args.lr
     # tmp_lr = base_lr
-    # optimizer = optim.SGD(model.parameters(),
-    #                       lr=args.lr,
-    #                       momentum=args.momentum,
-    #                       weight_decay=args.weight_decay
-    #                       )
+    optimizer = optim.SGD(model.parameters(),
+                          lr=args.lr,
+                          momentum=args.momentum,
+                          weight_decay=args.weight_decay
+                          )
     optimizer = WarmUpOptimizer(
-        model.parameters(),
+        optimizer,
         1e-3,
         warm_up_epoch=1,
     )
@@ -220,7 +180,7 @@ def train():
         #     set_lr(optimizer, tmp_lr)
 
         for iter_i, (images, targets) in enumerate(dataloader):
-            optimizer.warm(epoch_size, epoch, iter_i)
+            optimizer.warm(epoch, iter_i, epoch_size)
             # 使用warm-up策略来调整早期的学习率
             # if not args.no_warm_up:
             #     if epoch < args.wp_epoch:

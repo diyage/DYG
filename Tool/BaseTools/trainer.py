@@ -2,6 +2,45 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from typing import Union
+
+
+class WarmUpOptimizer:
+    def __init__(
+            self,
+            optimizer: torch.optim.Optimizer,
+            base_lr: float = 1e-3,
+            warm_up_epoch: int = 1,
+    ):
+        self.optimizer = optimizer
+        self.set_lr(base_lr)
+
+        self.warm_up_epoch = warm_up_epoch
+        self.base_lr = base_lr
+        self.tmp_lr = base_lr
+
+    def set_lr(self, lr):
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+
+    def warm(self,
+             now_epoch_ind,
+             now_batch_ind,
+             max_batch_ind
+             ):
+        if now_epoch_ind < self.warm_up_epoch:
+            self.tmp_lr = self.base_lr * pow((now_batch_ind + now_epoch_ind * max_batch_ind) * 1. / (self.warm_up_epoch * max_batch_ind), 4)
+            self.set_lr(self.tmp_lr)
+
+        elif now_epoch_ind == self.warm_up_epoch and now_batch_ind == 0:
+            self.tmp_lr = self.base_lr
+            self.set_lr(self.tmp_lr)
+
+    def zero_grad(self):
+        self.optimizer.zero_grad()
+
+    def step(self):
+        self.optimizer.step()
 
 
 class BaseTrainer:
@@ -32,13 +71,22 @@ class BaseTrainer:
             self,
             data_loader_train: DataLoader,
             yolo_loss_func: nn.Module,
-            optimizer: torch.optim.Optimizer,
+            optimizer: Union[torch.optim.Optimizer, WarmUpOptimizer],
+            now_epoch: int,
             desc: str = '',
     ):
         loss_dict_vec = {}
+        max_batch_ind = len(data_loader_train)
+
         for batch_id, (images, labels) in enumerate(tqdm(data_loader_train,
                                                          desc=desc,
                                                          position=0)):
+            optimizer.warm(
+                now_epoch,
+                batch_id,
+                max_batch_ind
+            )
+
             self.detector.train()
             images = images.to(self.device)
             targets = self.make_targets(labels).to(self.device)

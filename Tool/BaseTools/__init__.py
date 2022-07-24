@@ -4,6 +4,6 @@ from .evaluator import BaseEvaluator
 from .position import Position
 from .predictor import BasePredictor
 from .tools import BaseTools
-from .trainer import BaseTrainer
+from .trainer import BaseTrainer, WarmUpOptimizer
 from .visualizer import BaseVisualizer
 

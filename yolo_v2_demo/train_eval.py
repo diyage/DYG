@@ -4,52 +4,11 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 from Tool.V2 import *
-from Tool.BaseTools import get_voc_data_loader
+from Tool.BaseTools import get_voc_data_loader, WarmUpOptimizer
 from yolo_v2_demo.utils.get_pretrained_darknet_19 import get_pretained_dark_net_19
 from yolo_v2_demo.utils.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-
-class WarmUpOptimizer:
-    def __init__(
-            self,
-            paras,
-            base_lr: float = 1e-3,
-            warm_up_epoch: int = 1,
-    ):
-        self.optimizer = torch.optim.SGD(
-            paras,
-            base_lr,
-            momentum=0.9,
-            weight_decay=5e-4
-        )
-        self.warm_up_epoch = warm_up_epoch
-        self.base_lr = base_lr
-        self.tmp_lr = base_lr
-
-    def set_lr(self, lr):
-        for param_group in self.optimizer.param_groups:
-            param_group['lr'] = lr
-
-    def warm(self,
-             now_epoch_ind,
-             max_epoch_size,
-             now_batch_ind
-             ):
-        if now_epoch_ind < self.warm_up_epoch:
-            tmp_lr = self.base_lr * pow((now_batch_ind + now_epoch_ind * max_epoch_size) * 1. / (self.warm_up_epoch * max_epoch_size), 4)
-            self.set_lr(tmp_lr)
-
-        elif now_epoch_ind == self.warm_up_epoch and now_batch_ind == 0:
-            tmp_lr = self.base_lr
-            self.set_lr(tmp_lr)
-
-    def zero_grad(self):
-        self.optimizer.zero_grad()
-
-    def step(self):
-        self.optimizer.step()
 
 
 class Helper:
@@ -122,11 +81,16 @@ class Helper:
         #     self.detector.parameters(),
         #     lr=self.opt_trainer.lr
         # )
-        optimizer = torch.optim.SGD(
+        sgd_optimizer = torch.optim.SGD(
             self.detector.parameters(),
             lr=self.opt_trainer.lr,
             momentum=0.9,
             weight_decay=5e-4
+        )
+        warm_optimizer = WarmUpOptimizer(
+            sgd_optimizer,
+            base_lr=self.opt_trainer.lr,
+            warm_up_epoch=1
         )
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
@@ -136,11 +100,15 @@ class Helper:
             loss_dict = self.trainer.train_detector_one_epoch(
                 data_loader_train,
                 loss_func,
-                optimizer,
+                warm_optimizer,
+                now_epoch=epoch,
                 desc='train for detector epoch --> {}'.format(epoch)
             )
 
-            print_info = '\n\n epoch: {}, loss info-->\n'.format(epoch)
+            print_info = '\n\n epoch: {} [lr:{:.6f}] , loss info-->\n'.format(
+                epoch,
+                warm_optimizer.tmp_lr
+            )
             for key, val in loss_dict.items():
                 print_info += '{:^30}:{:^15.6f}.\n'.format(key, val)
             tqdm.write(print_info)
@@ -176,7 +144,7 @@ if __name__ == '__main__':
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
-    trainer_opt.lr = 1e-4
+    trainer_opt.lr = 1e-3
     # dark_net_19 = get_pretained_dark_net_19(
     #     '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
     # )
