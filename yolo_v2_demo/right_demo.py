@@ -404,7 +404,9 @@ if __name__ == '__main__':
         transform=BaseTransform(416),
         labelmap=data_opt.kinds_name
     )
-
+    # net.eval()
+    # net.trainable = False
+    # right_evaluator.evaluate(net)
     for epoch in range(200):
 
         net.train()
