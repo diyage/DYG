@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from data import VOCDetection
+from .data import VOCDetection
 import sys
 import os
 import time
@@ -65,7 +65,7 @@ class VOCAPIEvaluator():
             x = Variable(im.unsqueeze(0)).to(self.device)
             t0 = time.time()
             # forward
-            bboxes, scores, cls_inds = net(x)
+            bboxes, scores, cls_inds, out = net(x)
             detect_time = time.time() - t0
             scale = np.array([[w, h, w, h]])
             bboxes *= scale
