@@ -393,20 +393,17 @@ if __name__ == '__main__':
         weight_decay=5e-4
     )
 
-    my_predictor = YOLOV2Predictor(
-        trainer_opt.iou_th,
-        trainer_opt.prob_th,
-        trainer_opt.conf_th,
-        trainer_opt.score_th,
-        data_opt.pre_anchor_w_h,
-        data_opt.kinds_name,
-        data_opt.image_size,
-        data_opt.grid_number
+    from yolo_v2_demo.utils.vocapi_evaluator import VOCAPIEvaluator
+    from yolo_v2_demo.utils.data import BaseTransform
+
+    right_evaluator = VOCAPIEvaluator(
+        data_opt.root_path,
+        416,
+        trainer_opt.device,
+        transform=BaseTransform(416),
+        labelmap=data_opt.kinds_name
     )
-    my_evaluator = MyEvaluator(
-        net,
-        my_predictor
-    )
+
     for epoch in range(200):
 
         net.train()
@@ -433,7 +430,7 @@ if __name__ == '__main__':
 
         net.eval()
         net.trainable = False
-        my_evaluator.eval_detector_mAP(voc_test_loader)
+        right_evaluator.evaluate(net)
 
 
 
