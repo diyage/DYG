@@ -279,7 +279,83 @@ class YOLOV2Loss(nn.Module):
             out: torch.Tensor,
             gt: torch.Tensor
     ):
+        N = out.shape[0]
+        # split output
+        pre_res_dict = YOLOV2Tools.split_output(
+            out,
+            self.anchor_number,
+            is_target=False
+        )
+        pre_txtytwth = pre_res_dict.get('position')[0]  # (N, H, W, a_n, 4)
+        pre_xyxy = self.txtytwth_xyxy(pre_txtytwth)  # scaled on image
+
+        pre_conf = torch.sigmoid(pre_res_dict.get('conf'))  # (N, H, W, a_n)
+        pre_cls_prob = torch.softmax(pre_res_dict.get('cls_prob'), dim=-1)  # (N, H, W, a_n, kinds_number)
+        pre_txty_s_twth = torch.cat(
+            (torch.sigmoid(pre_txtytwth[..., 0:2]), pre_txtytwth[..., 2:4]),
+            dim=-1
+        )
+
+        # split target
+        gt_res_dict = YOLOV2Tools.split_output(
+            gt,
+            self.anchor_number,
+            is_target=True
+        )
+        gt_xyxy = gt_res_dict.get('position')[1]  # (N, H, W, a_n, 4) scaled on image
+        gt_txty_s_twth = self.xyxy_txty_s_twth(gt_xyxy)
+        gt_conf_and_weight = gt_res_dict.get('conf')  # (N, H, W, a_n)
+        # gt_conf = (gt_conf_and_weight > 0).float()
+        gt_weight = gt_conf_and_weight
+        gt_cls_prob = gt_res_dict.get('cls_prob')
+
+        # get mask
+        positive = (gt_weight > 0).float()
+        ignore = (gt_weight == -1.0).float()
+        negative = 1.0 - positive - ignore
+
+        # compute loss
+        # position loss
+        temp = self.mse(pre_txty_s_twth, gt_txty_s_twth).sum(dim=-1)
+        position_loss = torch.sum(
+            temp * positive * gt_weight
+        ) / N
+
+        # conf loss
+        # compute iou
+        iou = YOLOV2Tools.compute_iou(pre_xyxy, gt_xyxy)
+        iou = iou.detach()  # (N, H, W, a_n) and no grad!
+
+        # has obj/positive loss
+        temp = self.mse(pre_conf, iou)
+        has_obj_loss = torch.sum(
+            temp * positive
+        ) / N
+
+        # no obj/negative loss
+        temp = self.mse(pre_conf, torch.zeros_like(pre_conf).to(pre_conf.device))
+        no_obj_loss = torch.sum(
+            temp * negative
+        ) / N
+
+        # cls prob loss
+        temp = self.mse(pre_cls_prob, gt_cls_prob).sum(dim=-1)
+        cls_prob_loss = torch.sum(
+            temp * positive
+        ) / N
+
+        # total loss
+        total_loss = self.weight_position * position_loss + \
+            self.weight_conf_has_obj * has_obj_loss + \
+            self.weight_conf_no_obj * no_obj_loss + \
+            self.weight_cls_prob * cls_prob_loss
+
         loss_dict = {
+            'total_loss': total_loss,
+            'position_loss': position_loss,
+            'has_obj_loss': has_obj_loss,
+            'no_obj_loss': no_obj_loss,
+            'cls_prob_loss': cls_prob_loss
         }
         return loss_dict
 

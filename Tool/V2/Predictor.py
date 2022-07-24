@@ -74,12 +74,12 @@ class YOLOV2Predictor(BasePredictor):
                 conf = res_dict.get('conf')
                 cls_prob = F.one_hot(res_dict.get('cls_ind').long(), len(self.kinds_name))
 
-                position_abs = res_dict.get('position')[1] * self.image_size[0]
-                # scaled on image
+                position_abs = res_dict.get('position')[1]  # scaled in [0, 1]
+                position_abs = position_abs * self.image_size[0]  # scaled on image
             else:
                 conf = (res_dict.get('conf') > 0).float()
                 cls_prob = res_dict.get('cls_prob')
-                position_abs = res_dict.get('position')[1]  # not scaled
+                position_abs = res_dict.get('position')[1]  # scaled on image
 
         position_abs_ = position_abs.contiguous().view(-1, 4)
         conf_ = conf.contiguous().view(-1, )  # type: torch.Tensor

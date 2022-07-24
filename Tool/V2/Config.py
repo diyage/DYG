@@ -37,6 +37,10 @@ class YOLOV2DataSetConfig:
         (10.32, 10.65)
     )
 
+    mean = [0.406, 0.456, 0.485]
+
+    std = [0.225, 0.224, 0.229]
+
 
 class YOLOV2TrainerConfig:
     max_epoch_on_image_net_224 = 160
@@ -45,7 +49,7 @@ class YOLOV2TrainerConfig:
 
     device: str = 'cuda:0'
     batch_size = 32
-    lr: float = 1e-4
+    lr: float = 1e-3
     conf_th: float = 0.0
     prob_th: float = 0.0
     score_th: float = 0.1

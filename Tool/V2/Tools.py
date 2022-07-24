@@ -385,7 +385,10 @@ class YOLOV2Tools(BaseTools):
                 if best_index == -1:
                     continue
 
-                grid_size = (image_wh[0] // grid_number[0], image_wh[1] // grid_number[1])
+                grid_size = (
+                    image_wh[0] // grid_number[0],
+                    image_wh[1] // grid_number[1]
+                )
 
                 grid_index = (
                     int((abs_pos[0] + abs_pos[2]) * 0.5 // grid_size[0]),  # w -- on x-axis
@@ -398,7 +401,7 @@ class YOLOV2Tools(BaseTools):
                     # conf / weight --->
                     # -1, ignore
                     # 0, negative
-                    # [1, 2], positive
+                    # >0 [1, 2], positive
                     if weight_index == best_index:
                         targets[batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(
                             pos)
@@ -568,9 +571,9 @@ class YOLOV2Tools(BaseTools):
         x = x.view(N, anchor_number, K, H, W)
         x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
         if is_target:
-            position = [None, x[..., 0:4]]  # N * H * W * a_n * 4
+            position = [None, x[..., 0:4]]
         else:
-            position = [x[..., 0:4], None]  # N * H * W * a_n * 4
+            position = [x[..., 0:4], None]
         conf = x[..., 4]  # N * H * W * a_n
         cls_prob = x[..., 5:]  # N * H * W * a_n * ...
 
