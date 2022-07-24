@@ -18,6 +18,7 @@ from utils.augmentations import SSDAugmentation
 from utils.vocapi_evaluator import VOCAPIEvaluator
 from Tool.BaseTools import WarmUpOptimizer
 from Tool.BaseTools import BaseEvaluator
+from Tool.V2 import YOLOV2Tools
 import torch
 import torch.nn as nn
 
@@ -36,10 +37,9 @@ class MyEvaluator(BaseEvaluator):
 
     def eval_detector_mAP(
             self,
-            anchor_size,
             data_loader_test,
             kinds_name: list,
-            desc: str = 'eval detector mAP',
+            iou_th: float,
 
     ):
 
@@ -86,49 +86,39 @@ class MyEvaluator(BaseEvaluator):
                 pre_decode.append(pre_kps_s)
                 ##################################################
 
-        # # compute mAP
-        # record = {
-        #     key: [[], [], 0] for key in self.kinds_name
-        #     # kind_name: [tp_list, score_list, gt_num]
-        # }
-        # for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
-        #                                                  desc=desc,
-        #                                                  position=0)):
-        #     self.detector.eval()
-        #     images = images.to(self.device)
+        # compute mAP
+        assert len(pre_decode) == len(gt_decode)
+        record = {
+            key: [[], [], 0] for key in kinds_name
+            # kind_name: [tp_list, score_list, gt_num]
+        }
+
+        for image_index in range(len(gt_decode)):
+
+            res = YOLOV2Tools.get_pre_kind_name_tp_score_and_gt_num(
+                pre_decode[image_index],
+                gt_decode[image_index],
+                kinds_name=kinds_name,
+                iou_th=iou_th,
+            )
+
+            for pre_kind_name, is_tp, pre_score in res[0]:
+                record[pre_kind_name][0].append(is_tp)  # tp list
+                record[pre_kind_name][1].append(pre_score)  # score list
+
+            for kind_name, gt_num in res[1].items():
+                record[kind_name][2] += gt_num
+
         #
-        #     targets = self.make_targets(labels).to(self.device)
-        #     output = self.detector(images)
-        #
-        #     gt_decode = self.predictor.decode(targets, out_is_target=True)
-        #     pre_decode = self.predictor.decode(output, out_is_target=False)
-        #
-        #     for image_index in range(images.shape[0]):
-        #
-        #         res = YOLOV2Tools.get_pre_kind_name_tp_score_and_gt_num(
-        #             pre_decode[image_index],
-        #             gt_decode[image_index],
-        #             kinds_name=self.kinds_name,
-        #             iou_th=self.iou_th
-        #         )
-        #
-        #         for pre_kind_name, is_tp, pre_score in res[0]:
-        #             record[pre_kind_name][0].append(is_tp)  # tp list
-        #             record[pre_kind_name][1].append(pre_score)  # score list
-        #
-        #         for kind_name, gt_num in res[1].items():
-        #             record[kind_name][2] += gt_num
-        #
-        # # end for dataloader
-        # ap_vec = []
-        # for kind_name in self.kinds_name:
-        #     tp_list, score_list, gt_num = record[kind_name]
-        #     recall, precision = YOLOV2Tools.calculate_pr(gt_num, tp_list, score_list)
-        #     kind_name_ap = YOLOV2Tools.voc_ap(recall, precision)
-        #     ap_vec.append(kind_name_ap)
-        #
-        # mAP = np.mean(ap_vec)
-        # print('\nmAP:{:.2%}'.format(mAP))
+        ap_vec = []
+        for kind_name in kinds_name:
+            tp_list, score_list, gt_num = record[kind_name]
+            recall, precision = YOLOV2Tools.calculate_pr(gt_num, tp_list, score_list)
+            kind_name_ap = YOLOV2Tools.voc_ap(recall, precision)
+            ap_vec.append(kind_name_ap)
+
+        mAP = np.mean(ap_vec)
+        print('\nmAP:{:.2%}'.format(mAP))
 
 
 def parse_args():
@@ -376,9 +366,9 @@ def train():
                 collate_fn=detection_collate
             )
             my_evaluator.eval_detector_mAP(
-                anchor_size,
                 dl,
                 kinds_name=VOC_CLASSES,
+                iou_th=0.6,
             )
 
             # convert to training mode.
