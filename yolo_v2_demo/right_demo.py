@@ -84,17 +84,17 @@ class WarmUpOptimizer:
             param_group['lr'] = lr
 
     def warm(self,
-             now_epoch_ind,
              max_epoch_size,
+             now_epoch_ind,
              now_batch_ind
              ):
         if now_epoch_ind < self.warm_up_epoch:
-            tmp_lr = self.base_lr * pow((now_batch_ind + now_epoch_ind * max_epoch_size) * 1. / (self.warm_up_epoch * max_epoch_size), 4)
-            self.set_lr(tmp_lr)
+            self.tmp_lr = self.base_lr * pow((now_batch_ind + now_epoch_ind * max_epoch_size) * 1. / (self.warm_up_epoch * max_epoch_size), 4)
+            self.set_lr(self.tmp_lr)
 
         elif now_epoch_ind == self.warm_up_epoch and now_batch_ind == 0:
-            tmp_lr = self.base_lr
-            self.set_lr(tmp_lr)
+            self.tmp_lr = self.base_lr
+            self.set_lr(self.tmp_lr)
 
     def zero_grad(self):
         self.optimizer.zero_grad()
@@ -220,7 +220,7 @@ def train():
         #     set_lr(optimizer, tmp_lr)
 
         for iter_i, (images, targets) in enumerate(dataloader):
-            optimizer.warm(epoch, epoch_size, iter_i)
+            optimizer.warm(epoch_size, epoch, iter_i)
             # 使用warm-up策略来调整早期的学习率
             # if not args.no_warm_up:
             #     if epoch < args.wp_epoch:
