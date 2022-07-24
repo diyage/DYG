@@ -220,6 +220,7 @@ def train():
         #     set_lr(optimizer, tmp_lr)
 
         for iter_i, (images, targets) in enumerate(dataloader):
+            optimizer.warm(epoch, epoch_size, iter_i)
             # 使用warm-up策略来调整早期的学习率
             # if not args.no_warm_up:
             #     if epoch < args.wp_epoch:
@@ -271,7 +272,7 @@ def train():
                 t1 = time.time()
                 print('[Epoch %d/%d][Iter %d/%d][lr %.6f]'
                       '[Loss: obj %.2f || cls %.2f || bbox %.2f || iou %.2f || total %.2f || size %d || time: %.2f]'
-                      % (epoch + 1, max_epoch, iter_i, epoch_size, tmp_lr,
+                      % (epoch + 1, max_epoch, iter_i, epoch_size, optimizer.tmp_lr,
                          conf_loss.item(),
                          cls_loss.item(),
                          bbox_loss.item(),
