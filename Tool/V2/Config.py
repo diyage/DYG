@@ -17,9 +17,13 @@ class YOLOV2DataSetConfig:
     # data set root dir
     image_size: tuple = (416, 416)
     grid_number: tuple = (13, 13)
-    kinds_name: list = ['horse', 'person', 'bottle', 'dog', 'tvmonitor', 'car', 'aeroplane',
-                        'bicycle', 'boat', 'chair', 'diningtable',
-                        'pottedplant', 'train', 'cat', 'sofa', 'bird', 'sheep', 'motorbike', 'bus', 'cow']
+    kinds_name: list = [
+        'aeroplane', 'bicycle', 'bird', 'boat',
+        'bottle', 'bus', 'car', 'cat', 'chair',
+        'cow', 'diningtable', 'dog', 'horse',
+        'motorbike', 'person', 'pottedplant',
+        'sheep', 'sofa', 'train', 'tvmonitor'
+    ]
 
     class_colors: list = [
         (np.random.randint(255), np.random.randint(255), np.random.randint(255)) for _ in range(len(kinds_name))

@@ -65,7 +65,7 @@ class VOCAPIEvaluator():
             x = Variable(im.unsqueeze(0)).to(self.device)
             t0 = time.time()
             # forward
-            bboxes, scores, cls_inds, out = net(x)
+            bboxes, scores, cls_inds = net(x)
             detect_time = time.time() - t0
             scale = np.array([[w, h, w, h]])
             bboxes *= scale
