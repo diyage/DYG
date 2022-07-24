@@ -60,7 +60,7 @@ class MyEvaluator(BaseEvaluator):
                     bbox = gt_label[:-1]
                     score = 1.0
                     kps = [
-                        kinds_name.index(cls_ind),
+                        kinds_name[cls_ind],
                         (bbox[0] * 416, bbox[1] * 416, bbox[2] * 416, bbox[3] * 416,),
                         score
                     ]
@@ -71,14 +71,14 @@ class MyEvaluator(BaseEvaluator):
 
                 ##################################################
                 pre_kps_s = []
-                bboxes, scores, cls_inds = self.detector(images[image_index])
+                bboxes, scores, cls_inds = self.detector(images[image_index].unsqueeze(0))
                 for i in range(len(cls_inds)):
                     cls_ind = cls_inds[i]
                     bbox = bboxes[i]
                     score = scores[i]
 
                     kps = [
-                        kinds_name.index(cls_ind),
+                        kinds_name[cls_ind],
                         (bbox[0]*416, bbox[1]*416, bbox[2]*416, bbox[3]*416,),
                         score
                     ]
@@ -365,8 +365,8 @@ def train():
             model.set_grid(val_size)
             model.eval()
 
-            # evaluate
-            evaluator.evaluate(model)
+            # # evaluate
+            # evaluator.evaluate(model)
 
             from torch.utils.data import DataLoader
             dl = DataLoader(
