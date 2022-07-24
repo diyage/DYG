@@ -152,9 +152,9 @@ def train():
         print('keep training model: %s' % (args.resume))
         model.load_state_dict(torch.load(args.resume, map_location=device))
 
-    # 构建训练优化器
-    base_lr = args.lr
-    tmp_lr = base_lr
+    # # 构建训练优化器
+    # base_lr = args.lr
+    # tmp_lr = base_lr
     optimizer = optim.SGD(model.parameters(),
                           lr=args.lr,
                           momentum=args.momentum,
@@ -168,21 +168,21 @@ def train():
     t0 = time.time()
     for epoch in range(args.start_epoch, max_epoch):
 
-        # 使用阶梯学习率衰减策略
-        if epoch in cfg['lr_epoch']:
-            tmp_lr = tmp_lr * 0.1
-            set_lr(optimizer, tmp_lr)
+        # # 使用阶梯学习率衰减策略
+        # if epoch in cfg['lr_epoch']:
+        #     tmp_lr = tmp_lr * 0.1
+        #     set_lr(optimizer, tmp_lr)
 
         for iter_i, (images, targets) in enumerate(dataloader):
             # 使用warm-up策略来调整早期的学习率
-            if not args.no_warm_up:
-                if epoch < args.wp_epoch:
-                    tmp_lr = base_lr * pow((iter_i + epoch * epoch_size) * 1. / (args.wp_epoch * epoch_size), 4)
-                    set_lr(optimizer, tmp_lr)
-
-                elif epoch == args.wp_epoch and iter_i == 0:
-                    tmp_lr = base_lr
-                    set_lr(optimizer, tmp_lr)
+            # if not args.no_warm_up:
+            #     if epoch < args.wp_epoch:
+            #         tmp_lr = base_lr * pow((iter_i + epoch * epoch_size) * 1. / (args.wp_epoch * epoch_size), 4)
+            #         set_lr(optimizer, tmp_lr)
+            #
+            #     elif epoch == args.wp_epoch and iter_i == 0:
+            #         tmp_lr = base_lr
+            #         set_lr(optimizer, tmp_lr)
 
             # 多尺度训练
             if iter_i % 10 == 0 and iter_i > 0 and args.multi_scale:
@@ -258,9 +258,9 @@ def train():
                        )
 
 
-def set_lr(optimizer, lr):
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+# def set_lr(optimizer, lr):
+#     for param_group in optimizer.param_groups:
+#         param_group['lr'] = lr
 
 
 if __name__ == '__main__':
