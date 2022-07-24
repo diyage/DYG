@@ -75,3 +75,8 @@ class CV2:
     def line(img, pt1, pt2, color, thickness):
         cv2.line(img, pt1, pt2, color, thickness)
 
+    @staticmethod
+    def flip(image, code: int) -> np.ndarray:
+        assert code in [-1, 0, 1]
+        return cv2.flip(image, code)
+

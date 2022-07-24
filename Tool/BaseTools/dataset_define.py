@@ -2,6 +2,7 @@ import os.path
 
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import Compose
+from Tool.BaseTools.dataaugmentation import *
 import torch
 import torch.nn as nn
 import xml.etree.ElementTree as ET
@@ -11,7 +12,7 @@ import torchvision.transforms.transforms as transforms
 import numpy as np
 from .cv2_ import CV2
 from PIL import Image
-from typing import List
+from typing import List, Union
 
 
 class XMLTranslate:
@@ -91,7 +92,7 @@ class VOCDataSet(Dataset):
             years: list,
             train: bool = True,
             image_size: tuple = (448, 448),
-            transform: torchvision.transforms.Compose = None,
+            transform: Union[torchvision.transforms.Compose, MyCompose] = None,
     ):
         # .../VOC/year/trainval(or test)/ ----
         super().__init__()
@@ -103,7 +104,16 @@ class VOCDataSet(Dataset):
         else:
             self.data_type = 'test'
         self.image_size = image_size
-        self.transform = transform
+
+        if transform is None:
+            self.transform = MyCompose([
+                MyRandomFlip(),
+                MyRandomNoise(),
+                MyToTensor(),
+            ])
+        else:
+            self.transform = transform
+
         self.image_and_xml_path_info = self.__get_image_and_xml_file_abs_path()
 
     def __get_image_and_xml_file_abs_path(self) -> list:
@@ -154,15 +164,16 @@ class VOCDataSet(Dataset):
         return xml_trans.img, xml_trans.objects
 
     def __getitem__(self, index):
-        img, label = self.__get_image_label(index)
-
-        img = CV2.cvtColorToRGB(img)
-        if self.transform is not None:
+        if isinstance(self.transform, MyCompose):
+            img, label = self.__get_image_label(index)
+            img, label = self.transform(img, label)
+            return img, label
+        else:
+            img, label = self.__get_image_label(index)
+            img = CV2.cvtColorToRGB(img)
             img = Image.fromarray(img)
             img = self.transform(img)
-        else:
-            img = img / 255.0
-        return img, label
+            return img, label
 
     @staticmethod
     def collate_fn(batch):
@@ -345,14 +356,12 @@ def get_voc_data_loader(
         mean: List[float] = [0.5, 0.5, 0.5],
         std: List[float] = [0.5, 0.5, 0.5],
 ):
-    normalize = transforms.Normalize(
-            mean=mean,
-            std=std,
-        )
+
     if train:
-        transform_train = transforms.Compose([
-            transforms.ToTensor(),
-            normalize
+        transform_train = MyCompose([
+            MyRandomFlip(),
+            MyRandomNoise(),
+            MyToTensor(mean, std),
         ])
 
         train_d = VOCDataSet(
@@ -370,8 +379,7 @@ def get_voc_data_loader(
         return train_l
     else:
         transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            normalize
+            MyToTensor(mean, std),
         ])
 
         test_d = VOCDataSet(
