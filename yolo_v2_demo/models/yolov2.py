@@ -455,7 +455,7 @@ class YOLOv2(nn.Module):
         self.input_size = input_size
         self.num_classes = num_classes
         self.trainable = trainable
-        self.conf_thresh = 0.1
+        self.conf_thresh = conf_thresh
         self.nms_thresh = nms_thresh
         self.anchor_size = torch.tensor(anchor_size)
         self.num_anchors = len(anchor_size)

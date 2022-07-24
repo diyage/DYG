@@ -18,9 +18,10 @@ from utils.augmentations import SSDAugmentation
 from utils.vocapi_evaluator import VOCAPIEvaluator
 from Tool.BaseTools import WarmUpOptimizer
 from Tool.BaseTools import BaseEvaluator
-from Tool.V2 import YOLOV2Tools
+from Tool.V2 import YOLOV2Tools, YOLOV2DataSetConfig, YOLOV2TrainerConfig
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 
 class MyEvaluator(BaseEvaluator):
@@ -206,6 +207,12 @@ def train():
                                     transform=BaseTransform(val_size),
                                     labelmap=VOC_CLASSES
                                     )
+        dl = DataLoader(
+            evaluator.dataset,
+            batch_size=32,
+            shuffle=False,
+            collate_fn=detection_collate
+        )
     else:
         print('unknow dataset !! Only support voc and coco !!')
         exit(0)
@@ -229,7 +236,11 @@ def train():
         from models.yolov2 import YOLOv2
         anchor_size = ANCHOR_SIZE if args.dataset == 'voc' else ANCHOR_SIZE_COCO
 
-        yolo_net = YOLOv2(device, input_size=train_size, num_classes=num_classes, trainable=True,
+        yolo_net = YOLOv2(device,
+                          input_size=train_size,
+                          num_classes=num_classes,
+                          trainable=True,
+                          conf_thresh=YOLOV2TrainerConfig.score_th,
                           anchor_size=anchor_size)
         print('Let us train yolov2 on the %s dataset ......' % (args.dataset))
 
@@ -272,6 +283,7 @@ def train():
         model,
         VOC_CLASSES
     )
+
     max_epoch = cfg['max_epoch']  # 最大训练轮次
     epoch_size = len(dataset) // args.batch_size  # 每一训练轮次的迭代次数
     print(epoch_size)
@@ -355,20 +367,13 @@ def train():
             model.set_grid(val_size)
             model.eval()
 
-            # # evaluate
-            # evaluator.evaluate(model)
+            # evaluate
+            evaluator.evaluate(model)
 
-            from torch.utils.data import DataLoader
-            dl = DataLoader(
-                evaluator.dataset,
-                batch_size=32,
-                shuffle=False,
-                collate_fn=detection_collate
-            )
             my_evaluator.eval_detector_mAP(
                 dl,
                 kinds_name=VOC_CLASSES,
-                iou_th=0.6,
+                iou_th=YOLOV2TrainerConfig.iou_th,
             )
 
             # convert to training mode.
