@@ -284,7 +284,8 @@ def train():
     )
     max_epoch = cfg['max_epoch']  # 最大训练轮次
     epoch_size = len(dataset) // args.batch_size  # 每一训练轮次的迭代次数
-
+    print(epoch_size)
+    print(len(dataloader))
     # 开始训练
     t0 = time.time()
     for epoch in range(args.start_epoch, max_epoch):
@@ -371,7 +372,8 @@ def train():
             dl = DataLoader(
                 evaluator.dataset,
                 batch_size=32,
-                shuffle=False
+                shuffle=False,
+                collate_fn=detection_collate
             )
             my_evaluator.eval_detector_mAP(
                 anchor_size,
