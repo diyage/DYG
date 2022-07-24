@@ -378,7 +378,7 @@ def get_voc_data_loader(
                              shuffle=True)
         return train_l
     else:
-        transform_test = transforms.Compose([
+        transform_test = MyCompose([
             MyToTensor(mean, std),
         ])
 
