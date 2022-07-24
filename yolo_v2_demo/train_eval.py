@@ -11,6 +11,47 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
+class WarmUpOptimizer:
+    def __init__(
+            self,
+            paras,
+            base_lr: float = 1e-3,
+            warm_up_epoch: int = 1,
+    ):
+        self.optimizer = torch.optim.SGD(
+            paras,
+            base_lr,
+            momentum=0.9,
+            weight_decay=5e-4
+        )
+        self.warm_up_epoch = warm_up_epoch
+        self.base_lr = base_lr
+        self.tmp_lr = base_lr
+
+    def set_lr(self, lr):
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+
+    def warm(self,
+             now_epoch_ind,
+             max_epoch_size,
+             now_batch_ind
+             ):
+        if now_epoch_ind < self.warm_up_epoch:
+            tmp_lr = self.base_lr * pow((now_batch_ind + now_epoch_ind * max_epoch_size) * 1. / (self.warm_up_epoch * max_epoch_size), 4)
+            self.set_lr(tmp_lr)
+
+        elif now_epoch_ind == self.warm_up_epoch and now_batch_ind == 0:
+            tmp_lr = self.base_lr
+            self.set_lr(tmp_lr)
+
+    def zero_grad(self):
+        self.optimizer.zero_grad()
+
+    def step(self):
+        self.optimizer.step()
+
+
 class Helper:
     def __init__(
             self,
