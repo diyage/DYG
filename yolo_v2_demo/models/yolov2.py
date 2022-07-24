@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..utils.modules import Conv, reorg_layer
-from ..utils.backbone import *
+from yolo_v2_demo.utils.modules import Conv, reorg_layer
+from yolo_v2_demo.utils.backbone import *
 import numpy as np
 import yolo_v2_demo.tools as tools
 
