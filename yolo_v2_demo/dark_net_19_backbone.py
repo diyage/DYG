@@ -97,6 +97,9 @@ class Helper:
                           desc='training detector',
                           position=0):
 
+            if epoch % 50 == 0 and epoch != 0:
+                warm_optimizer.set_lr(warm_optimizer.tmp_lr * 0.1)
+
             loss_dict = self.trainer.train_detector_one_epoch(
                 data_loader_train,
                 loss_func,
@@ -105,7 +108,7 @@ class Helper:
                 desc='train for detector epoch --> {}'.format(epoch)
             )
 
-            print_info = '\n\n epoch: {} [lr:{:.6f}] , loss info-->\n'.format(
+            print_info = '\n\nepoch: {} [ now lr:{:.6f} ] , loss info-->\n'.format(
                 epoch,
                 warm_optimizer.tmp_lr
             )

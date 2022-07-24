@@ -20,6 +20,7 @@ class WarmUpOptimizer:
         self.tmp_lr = base_lr
 
     def set_lr(self, lr):
+        self.tmp_lr = lr
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = lr
 
