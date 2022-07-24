@@ -17,6 +17,118 @@ import tools
 from utils.augmentations import SSDAugmentation
 from utils.vocapi_evaluator import VOCAPIEvaluator
 from Tool.BaseTools import WarmUpOptimizer
+from Tool.BaseTools import BaseEvaluator
+import torch
+import torch.nn as nn
+
+
+class MyEvaluator(BaseEvaluator):
+    def __init__(
+            self,
+            model,
+            kinds_name: list
+    ):
+        super().__init__()
+        self.detector = model  # type: nn.Module
+        self.backbone = model.backbone  # type: nn.Module
+        self.device = next(model.parameters()).device
+        self.kinds_name = kinds_name
+
+    def eval_detector_mAP(
+            self,
+            anchor_size,
+            data_loader_test,
+            kinds_name: list,
+            desc: str = 'eval detector mAP',
+
+    ):
+
+        pre_decode = []
+        gt_decode = []
+        for iter_i, (images, targets) in enumerate(data_loader_test):
+
+            targets = [label.tolist() for label in targets]
+
+            images = images.to(self.device)
+
+            for image_index in range(images.shape[0]):
+                ##################################################
+                gt_kps_s = []
+                for gt_label in targets[image_index]:
+                    # get a bbox coords
+                    cls_ind = int(gt_label[-1])
+                    bbox = gt_label[:-1]
+                    score = 1.0
+                    kps = [
+                        kinds_name.index(cls_ind),
+                        (bbox[0] * 416, bbox[1] * 416, bbox[2] * 416, bbox[3] * 416,),
+                        score
+                    ]
+                    gt_kps_s.append(kps)
+
+                gt_decode.append(gt_kps_s)
+                ##################################################
+
+                ##################################################
+                pre_kps_s = []
+                bboxes, scores, cls_inds = self.detector(images[image_index])
+                for i in range(len(cls_inds)):
+                    cls_ind = cls_inds[i]
+                    bbox = bboxes[i]
+                    score = scores[i]
+
+                    kps = [
+                        kinds_name.index(cls_ind),
+                        (bbox[0]*416, bbox[1]*416, bbox[2]*416, bbox[3]*416,),
+                        score
+                    ]
+                    pre_kps_s.append(kps)
+                pre_decode.append(pre_kps_s)
+                ##################################################
+
+        # # compute mAP
+        # record = {
+        #     key: [[], [], 0] for key in self.kinds_name
+        #     # kind_name: [tp_list, score_list, gt_num]
+        # }
+        # for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
+        #                                                  desc=desc,
+        #                                                  position=0)):
+        #     self.detector.eval()
+        #     images = images.to(self.device)
+        #
+        #     targets = self.make_targets(labels).to(self.device)
+        #     output = self.detector(images)
+        #
+        #     gt_decode = self.predictor.decode(targets, out_is_target=True)
+        #     pre_decode = self.predictor.decode(output, out_is_target=False)
+        #
+        #     for image_index in range(images.shape[0]):
+        #
+        #         res = YOLOV2Tools.get_pre_kind_name_tp_score_and_gt_num(
+        #             pre_decode[image_index],
+        #             gt_decode[image_index],
+        #             kinds_name=self.kinds_name,
+        #             iou_th=self.iou_th
+        #         )
+        #
+        #         for pre_kind_name, is_tp, pre_score in res[0]:
+        #             record[pre_kind_name][0].append(is_tp)  # tp list
+        #             record[pre_kind_name][1].append(pre_score)  # score list
+        #
+        #         for kind_name, gt_num in res[1].items():
+        #             record[kind_name][2] += gt_num
+        #
+        # # end for dataloader
+        # ap_vec = []
+        # for kind_name in self.kinds_name:
+        #     tp_list, score_list, gt_num = record[kind_name]
+        #     recall, precision = YOLOV2Tools.calculate_pr(gt_num, tp_list, score_list)
+        #     kind_name_ap = YOLOV2Tools.voc_ap(recall, precision)
+        #     ap_vec.append(kind_name_ap)
+        #
+        # mAP = np.mean(ap_vec)
+        # print('\nmAP:{:.2%}'.format(mAP))
 
 
 def parse_args():
@@ -166,7 +278,10 @@ def train():
         1e-3,
         warm_up_epoch=1,
     )
-
+    my_evaluator = MyEvaluator(
+        model,
+        VOC_CLASSES
+    )
     max_epoch = cfg['max_epoch']  # 最大训练轮次
     epoch_size = len(dataset) // args.batch_size  # 每一训练轮次的迭代次数
 
@@ -251,6 +366,18 @@ def train():
 
             # evaluate
             evaluator.evaluate(model)
+
+            from torch.utils.data import DataLoader
+            dl = DataLoader(
+                evaluator.dataset,
+                batch_size=32,
+                shuffle=False
+            )
+            my_evaluator.eval_detector_mAP(
+                anchor_size,
+                dl,
+                kinds_name=VOC_CLASSES,
+            )
 
             # convert to training mode.
             model.trainable = True
