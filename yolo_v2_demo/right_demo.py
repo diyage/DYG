@@ -261,93 +261,8 @@ class YOLOv2(nn.Module):
                 return bboxes, scores, cls_inds, out
 
 
-class MyEvaluator(YOLOV2Evaluator):
-    def __init__(
-            self,
-            model: YOLOv2,
-            predictor: YOLOV2Predictor
-    ):
-        super().__init__(
-            model,
-            predictor
-        )
-        self.detector = model  # type: nn.Module
-        self.backbone = model.backbone  # type: nn.Module
-        self.device = next(model.parameters()).device
-
-        # be careful, darknet19 is not the detector
-        self.predictor = predictor
-        self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
-        self.image_size = self.predictor.image_size
-        self.grid_number = self.predictor.grid_number
-        self.kinds_name = self.predictor.kinds_name
-        self.iou_th = self.predictor.iou_th
-
-    def eval_detector_mAP(
-            self,
-            data_loader_test,
-            desc: str = 'eval detector mAP',
-    ):
-        # compute mAP
-        record = {
-            key: [[], [], 0] for key in self.kinds_name
-            # kind_name: [tp_list, score_list, gt_num]
-        }
-        for batch_id, (images, labels) in enumerate(tqdm(data_loader_test)):
-            self.detector.eval()
-            self.detector.trainable = False
-
-            images = images.to(self.device)
-            targets = self.make_targets(labels).to(self.device)
-
-            output_vec = []
-
-            for image_index in range(images.shape[0]):
-                bboxes, scores, cls_inds, output = self.detector(
-                    images[image_index].unsqueeze(dim=0),
-                    targets[image_index].unsqueeze(dim=0)
-                )
-                output_vec.append(output)
-
-            output = torch.cat(output_vec, dim=0).to(images.device)
-
-            gt_decode = self.predictor.decode(targets, out_is_target=True)
-            pre_decode = self.predictor.decode(output, out_is_target=False)
-
-            for image_index in range(images.shape[0]):
-
-                res = YOLOV2Tools.get_pre_kind_name_tp_score_and_gt_num(
-                    pre_decode[image_index],
-                    gt_decode[image_index],
-                    kinds_name=self.kinds_name,
-                    iou_th=self.iou_th
-                )
-
-                for pre_kind_name, is_tp, pre_score in res[0]:
-                    record[pre_kind_name][0].append(is_tp)  # tp list
-                    record[pre_kind_name][1].append(pre_score)  # score list
-
-                for kind_name, gt_num in res[1].items():
-                    record[kind_name][2] += gt_num
-
-        # end for dataloader
-        ap_vec = []
-        for kind_name in self.kinds_name:
-            tp_list, score_list, gt_num = record[kind_name]
-            recall, precision = YOLOV2Tools.calculate_pr(gt_num, tp_list, score_list)
-            kind_name_ap = YOLOV2Tools.voc_ap(recall, precision)
-            ap_vec.append(kind_name_ap)
-
-        mAP = np.mean(ap_vec)
-        print('\nmAP:{:.2%}'.format(mAP))
-
-
 if __name__ == '__main__':
     GPU_ID = 1
-    LOSS_TYPE = 1
-    YOLOV2Predictor.TYPE = LOSS_TYPE
-    YOLOV2Tools.TYPE = LOSS_TYPE
-    fast_load = False
 
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
@@ -358,45 +273,49 @@ if __name__ == '__main__':
     net = YOLOv2(
         device=trainer_opt.device,
         input_size=416,
-        trainable=False,
+        trainable=True,
         anchor_size=YOLOV2DataSetConfig.pre_anchor_w_h,
         conf_thresh=YOLOV2TrainerConfig.score_th,
         nms_thresh=YOLOV2TrainerConfig.iou_th
-    )
-    net.to(trainer_opt.device)
+    ).to(trainer_opt.device)
 
-    mean = [0.406, 0.456, 0.485]
-    std = [0.225, 0.224, 0.229]
-
-    voc_train_loader = get_voc_data_loader(
-        data_opt.root_path,
-        ['2012'],
-        data_opt.image_size,
-        trainer_opt.batch_size,
-        train=True,
-        mean=mean,
-        std=std
-    )
-
-    voc_test_loader = get_voc_data_loader(
-        data_opt.root_path,
-        ['2012'],
-        data_opt.image_size,
-        trainer_opt.batch_size,
-        train=False,
-        mean=mean,
-        std=std
-    )
-    optimizer = torch.optim.SGD(
-        net.parameters(),
-        lr=1e-4,
-        momentum=0.9,
-        weight_decay=5e-4
-    )
-
+    # mean = [0.406, 0.456, 0.485]
+    # std = [0.225, 0.224, 0.229]
+    #
+    # voc_train_loader = get_voc_data_loader(
+    #     data_opt.root_path,
+    #     ['2012'],
+    #     data_opt.image_size,
+    #     trainer_opt.batch_size,
+    #     train=True,
+    #     mean=mean,
+    #     std=std
+    # )
+    #
+    # voc_test_loader = get_voc_data_loader(
+    #     data_opt.root_path,
+    #     ['2012'],
+    #     data_opt.image_size,
+    #     trainer_opt.batch_size,
+    #     train=False,
+    #     mean=mean,
+    #     std=std
+    # )
+    from yolo_v2_demo.utils.data import VOCDetection, BaseTransform, detection_collate
+    from yolo_v2_demo.utils.augmentations import SSDAugmentation
     from yolo_v2_demo.utils.vocapi_evaluator import VOCAPIEvaluator
     from yolo_v2_demo.utils.data import BaseTransform
 
+    ds = VOCDetection(
+        root=data_opt.root_path,
+        transform=SSDAugmentation(416)
+    )
+    dl = torch.utils.data.DataLoader(
+                    ds,
+                    batch_size=32,
+                    shuffle=True,
+                    collate_fn=detection_collate,
+    )
     right_evaluator = VOCAPIEvaluator(
         data_opt.root_path,
         416,
@@ -404,35 +323,46 @@ if __name__ == '__main__':
         transform=BaseTransform(416),
         labelmap=data_opt.kinds_name
     )
+
+    optimizer = torch.optim.SGD(
+        net.parameters(),
+        lr=trainer_opt.lr,
+        momentum=0.9,
+        weight_decay=5e-4
+    )
+
     # net.eval()
     # net.trainable = False
     # right_evaluator.evaluate(net)
     for epoch in range(200):
 
-        net.train()
         net.trainable = True
-        for batch_id, (images, labels) in enumerate(voc_train_loader):
-            targets = YOLOV2Tools.make_targets(
-                labels,
-                data_opt.pre_anchor_w_h,
-                data_opt.image_size,
-                data_opt.grid_number,
-                data_opt.kinds_name,
-                trainer_opt.iou_th,
-            )
+        net.set_grid(416)
+        net.train()
+        for iter_i, (images, targets) in enumerate(dl):
+            # 制作训练标签
+            targets = [label.tolist() for label in targets]
+            targets = tools.gt_creator(input_size=416,
+                                       stride=net.stride,
+                                       label_lists=targets,
+                                       anchor_size=net.anchor_size
+                                       )
+            # to device
             images = images.to(trainer_opt.device)
-            targets = targets.to(trainer_opt.device)
+            targets = torch.tensor(targets).float().to(trainer_opt.device)
+
             loss_dict, out = net(images, targets)
             loss = loss_dict.get('total_loss')  # type: torch.Tensor
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             print(
-                '{}'.format(epoch).center(5, ' ') + '{}'.format(batch_id).center(5, ' ') + 'loss:{:.5}'.format(loss.item()).center(10, ' ')
+                '{}'.format(epoch).center(5, ' ') + '{}'.format(iter_i).center(5, ' ') + 'loss:{:.5}'.format(loss.item()).center(10, ' ')
             )
 
-        net.eval()
         net.trainable = False
+        net.set_grid(416)
+        net.eval()
         right_evaluator.evaluate(net)
 
 
