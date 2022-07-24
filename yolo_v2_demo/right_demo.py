@@ -28,7 +28,7 @@ def parse_args():
                         help='use multi-scale trick')
     parser.add_argument('--batch_size', default=32, type=int,
                         help='Batch size for training')
-    parser.add_argument('--lr', default=1e-3, type=float,
+    parser.add_argument('--lr', default=1e-4, type=float,
                         help='initial learning rate')
     parser.add_argument('-cos', '--cos', action='store_true', default=False,
                         help='use cos lr')
@@ -152,9 +152,9 @@ def train():
         print('keep training model: %s' % (args.resume))
         model.load_state_dict(torch.load(args.resume, map_location=device))
 
-    # # 构建训练优化器
-    # base_lr = args.lr
-    # tmp_lr = base_lr
+    # 构建训练优化器
+    base_lr = args.lr
+    tmp_lr = base_lr
     optimizer = optim.SGD(model.parameters(),
                           lr=args.lr,
                           momentum=args.momentum,
