@@ -418,24 +418,18 @@ class YOLOV2Tools(BaseTools):
             kinds_name: list,
             iou_th: float = 0.6,
     ) -> torch.Tensor:
-        if YOLOV2Tools.TYPE == 0:
-            return YOLOV2Tools.make_targets_0(
-                labels,
-                anchor_pre_wh,
-                image_wh,
-                grid_number,
-                kinds_name,
-                iou_th
-            )
-        else:
-            return YOLOV2Tools.make_targets_1(
-                labels,
-                anchor_pre_wh,
-                image_wh,
-                grid_number,
-                kinds_name,
-                iou_th
-            )
+        func_vec = [
+            YOLOV2Tools.make_targets_0,
+            YOLOV2Tools.make_targets_1,
+        ]
+        return func_vec[YOLOV2Tools.TYPE](
+            labels,
+            anchor_pre_wh,
+            image_wh,
+            grid_number,
+            kinds_name,
+            iou_th
+        )
 
     @staticmethod
     def compute_anchor_response_result(
@@ -482,6 +476,149 @@ class YOLOV2Tools(BaseTools):
                     weight_vec[iou_index] = 0.0  # negative anchor
 
         return best_index, weight_vec
+
+    @staticmethod
+    def split_target_0(
+            x: torch.Tensor,
+            anchor_number,
+            *args,
+            **kwargs
+    ):
+        N, C, H, W = x.shape
+        K = C // anchor_number  # K = (x, y, w, h, conf, kinds0, kinds1, ...)
+        # C = anchor_number * K
+        x = x.view(N, anchor_number, K, H, W)
+        x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
+
+        position = [None, x[..., 0:4]]
+
+        conf = x[..., 4]  # N * H * W * a_n
+        cls_prob = x[..., 5:]  # N * H * W * a_n * ...
+
+        res = {
+            'position': position,  # first txty_(s)_twth, second xyxy(not scaled)
+            'conf': conf,
+            'cls_prob': cls_prob
+        }
+        return res
+
+    @staticmethod
+    def split_target_1(
+            x: torch.Tensor,
+            anchor_number,
+            *args,
+            **kwargs
+    ):
+        N, H, W, a_n, _ = x.shape
+        conf = x[..., 0]
+        cls_ind = x[..., 1]
+        position = [x[..., 2:6], x[..., 7:]]
+        # first position is txty_s_twth
+        # second position is xyxy(scaled in (0, 1))
+        weight = x[..., 6]
+        res = {
+            'position': position,
+            'conf': conf,
+            'cls_ind': cls_ind,
+            'weight': weight
+        }
+        return res
+
+    @staticmethod
+    def split_target(
+            x: torch.Tensor,
+            anchor_number,
+            *args,
+            **kwargs
+    ) -> dict:
+        func_vec = [
+            YOLOV2Tools.split_target_0,
+            YOLOV2Tools.split_target_1,
+        ]
+        return func_vec[YOLOV2Tools.TYPE](
+            x,
+            anchor_number,
+            *args,
+            **kwargs
+        )
+
+    @staticmethod
+    def split_model_out_0(
+            x: torch.Tensor,
+            anchor_number,
+            *args,
+            **kwargs
+    ):
+        N, C, H, W = x.shape
+        K = C // anchor_number  # K = (x, y, w, h, conf, kinds0, kinds1, ...)
+        # C = anchor_number * K
+        x = x.view(N, anchor_number, K, H, W)
+        x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
+
+        position = [x[..., 0:4], None]
+
+        conf = x[..., 4]  # N * H * W * a_n
+        cls_prob = x[..., 5:]  # N * H * W * a_n * ...
+
+        res = {
+            'position': position,  # first txty_(s)_twth, second xyxy(not scaled)
+            'conf': conf,
+            'cls_prob': cls_prob
+        }
+        return res
+
+    @staticmethod
+    def split_model_out_1(
+            x: torch.Tensor,
+            anchor_number,
+            *args,
+            **kwargs
+    ):
+        if 'kinds_number' in kwargs.keys():
+            kinds_number = kwargs['kinds_number']
+        else:
+            kinds_number = 20
+
+        # [B, num_anchor * C, H, W] -> [B, H, W, num_anchor * C] -> [B, H*W, num_anchor*C]
+        B, abC, H, W = x.shape
+        prediction = x.permute(0, 2, 3, 1).contiguous().view(B, H * W, abC)
+
+        # 从pred中分离出objectness预测、类别class预测、bbox的txtytwth预测
+        # [B, H*W*num_anchor, 1]
+        conf_pred = prediction[:, :, :1 * anchor_number].contiguous().view(B, H, W, anchor_number)
+        # [B, H*W, num_anchor, num_cls]
+        cls_pred = prediction[:, :,
+                   1 * anchor_number: (1 + kinds_number) * anchor_number].contiguous().view(
+            B, H, W, anchor_number, kinds_number)
+        # [B, H*W, num_anchor, 4]
+        txtytwth_pred = prediction[:, :, (1 + kinds_number) * anchor_number:].contiguous().view(
+            B, H, W, anchor_number, 4
+        )
+
+        res = {
+            'position': [txtytwth_pred, None],
+            'conf': conf_pred,
+            'cls_prob': cls_pred
+        }
+        return res
+
+    @staticmethod
+    def split_model_out(
+            x: torch.Tensor,
+            anchor_number,
+            *args,
+            **kwargs
+    ) -> dict:
+        func_vec = [
+            YOLOV2Tools.split_model_out_0,
+            YOLOV2Tools.split_model_out_1,
+        ]
+        return func_vec[YOLOV2Tools.TYPE](
+            x,
+            anchor_number,
+            *args,
+            **kwargs
+        )
 
     @staticmethod
     def split_output(

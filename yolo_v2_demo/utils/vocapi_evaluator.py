@@ -310,7 +310,8 @@ class VOCAPIEvaluator():
                     jmax = np.argmax(overlaps)
 
                 if ovmax > ovthresh:
-                    if not R['difficult'][jmax]:
+                    # if not R['difficult'][jmax]:
+                    if True:
                         if not R['det'][jmax]:
                             tp[d] = 1.
                             R['det'][jmax] = 1

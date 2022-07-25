@@ -136,7 +136,6 @@ class Helper:
 if __name__ == '__main__':
     GPU_ID = 1
     LOSS_TYPE = 1
-    YOLOV2Predictor.TYPE = LOSS_TYPE
     YOLOV2Tools.TYPE = LOSS_TYPE
 
     trainer_opt = YOLOV2TrainerConfig()

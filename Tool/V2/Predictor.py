@@ -5,7 +5,6 @@ import torch.nn.functional as F
 
 
 class YOLOV2Predictor(BasePredictor):
-    TYPE = 1
 
     def __init__(
             self,
@@ -52,13 +51,11 @@ class YOLOV2Predictor(BasePredictor):
         out_put = out_put.unsqueeze(dim=0)
         a_n = len(self.pre_anchor_w_h)
 
-        res_dict = YOLOV2Tools.split_output(
-            out_put,
-            a_n,
-            is_target=out_is_target
-        )
-
         if not out_is_target:
+            res_dict = YOLOV2Tools.split_model_out(
+                out_put,
+                a_n
+            )
             conf = torch.sigmoid(res_dict.get('conf'))
             cls_prob = torch.softmax(res_dict.get('cls_prob'), dim=-1)
             position = res_dict.get('position')[0]
@@ -70,7 +67,12 @@ class YOLOV2Predictor(BasePredictor):
             ).clamp_(0, self.image_size[0]-1)
             # scaled on image
         else:
-            if YOLOV2Predictor.TYPE == 1:
+            res_dict = YOLOV2Tools.split_target(
+                out_put,
+                a_n
+            )
+
+            if YOLOV2Tools.TYPE == 1:
                 conf = res_dict.get('conf')
                 cls_prob = F.one_hot(res_dict.get('cls_ind').long(), len(self.kinds_name))
 

@@ -122,10 +122,9 @@ class RightLoss(nn.Module):
         B, abC, H, W = prediction.size()
         target = target.view(B, H * W * self.num_anchors, -1)
 
-        res_dict = YOLOV2Tools.split_output(
+        res_dict = YOLOV2Tools.split_model_out(
             prediction,
             self.num_anchors,
-            is_target=False
         )
 
         txtytwth_pred = res_dict.get('position')[0].view(B, H * W, self.num_anchors, 4)
@@ -228,17 +227,6 @@ class YOLOV2Loss(nn.Module):
         self.iteration = 0
         self.loss_type = loss_type
 
-    def split(
-            self,
-            x: torch.Tensor,
-            is_target: bool = False,
-    ):
-        return YOLOV2Tools.split_output(
-            x,
-            self.anchor_number,
-            is_target=is_target
-        )
-
     def txtytwth_xyxy(
             self,
             txtytwth: torch.Tensor,
@@ -281,10 +269,9 @@ class YOLOV2Loss(nn.Module):
     ):
         N = out.shape[0]
         # split output
-        pre_res_dict = YOLOV2Tools.split_output(
+        pre_res_dict = YOLOV2Tools.split_model_out(
             out,
             self.anchor_number,
-            is_target=False
         )
         pre_txtytwth = pre_res_dict.get('position')[0]  # (N, H, W, a_n, 4)
         pre_xyxy = self.txtytwth_xyxy(pre_txtytwth)  # scaled on image
@@ -297,10 +284,9 @@ class YOLOV2Loss(nn.Module):
         )
 
         # split target
-        gt_res_dict = YOLOV2Tools.split_output(
+        gt_res_dict = YOLOV2Tools.split_target(
             gt,
             self.anchor_number,
-            is_target=True
         )
         gt_xyxy = gt_res_dict.get('position')[1]  # (N, H, W, a_n, 4) scaled on image
         gt_txty_s_twth = self.xyxy_txty_s_twth(gt_xyxy)
