@@ -50,7 +50,22 @@ class CV2:
                 color: tuple = (0, 0, 0),
                 thickness: int = 1,
                 line_type=cv2.LINE_AA,
+                back_ground_color=None
                 ):  # real signature unknown; restored from __doc__
+
+        if back_ground_color is not None:
+            wh, baseline = cv2.getTextSize(text, font_face, font_scale, thickness)
+            w, h = wh[0], wh[1]
+            top_left = (org[0], org[1] - h - baseline + 2)
+            bottom_right = (org[0] + w, org[1]+baseline)
+
+            CV2.rectangle(
+                img,
+                top_left,
+                bottom_right,
+                color=back_ground_color,
+                thickness=-1
+            )
         cv2.putText(img,
                     text,
                     org,

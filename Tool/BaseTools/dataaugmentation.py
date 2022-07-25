@@ -195,7 +195,6 @@ class MyCompose:
 
 if __name__ == '__main__':
     img = CV2.imread(r'D:\Software\PyCharm\files\YOLO\2008_000200.jpg')
-    print(img[..., 0:1].shape)
     l = [('dog', 20, 25, 120, 260)]
 
     R = MyCompose([
@@ -205,12 +204,34 @@ if __name__ == '__main__':
         MyRandomZeroOneChannel(),
         # MyToTensor()
     ])
-
     new_img, new_l = R(img, l)
+
+    back_ground_color = (20, 100, 240)
+    CV2.rectangle(img, l[0][1:3], l[0][3:5], color=back_ground_color, thickness=1)
+    scale = 0.5
+    CV2.putText(img,
+                '{}:{:.2%}'.format(l[0][0], 1.0),
+                org=(int(l[0][1]), int(l[0][2] - 5)),
+                font_scale=scale,
+                color=tuple([255 - val for val in back_ground_color]),
+                back_ground_color=back_ground_color
+                )
+
     CV2.imshow('origin', img)
     CV2.waitKey(0)
 
+    CV2.rectangle(new_img, new_l[0][1:3], new_l[0][3:5], color=back_ground_color, thickness=1)
+    scale = 0.5
+    CV2.putText(new_img,
+                '{}:{:.2%}'.format(new_l[0][0], 1.0),
+                org=(int(new_l[0][1]), int(new_l[0][2] - 5)),
+                font_scale=scale,
+                color=tuple([255 - val for val in back_ground_color]),
+                back_ground_color=back_ground_color
+                )
     CV2.imshow('new', new_img)
     CV2.waitKey(0)
+
+
 
 

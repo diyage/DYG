@@ -393,17 +393,19 @@ class BaseTools:
                           color=color,
                           thickness=2)
 
-            CV2.rectangle(img,
-                          start_point=(int(abs_double_pos[0]), int(abs_double_pos[1] - 20)),
-                          end_point=(int(abs_double_pos[2]), int(abs_double_pos[1])),
-                          color=color,
-                          thickness=-1)
+            # CV2.rectangle(img,
+            #               start_point=(int(abs_double_pos[0]), int(abs_double_pos[1] - 20)),
+            #               end_point=(int(abs_double_pos[2]), int(abs_double_pos[1])),
+            #               color=color,
+            #               thickness=-1)
 
             scale = 0.5
             CV2.putText(img,
                         '{}:{:.2%}'.format(predict_kind_name, prob_score),
                         org=(int(abs_double_pos[0]), int(abs_double_pos[1] - 5)),
-                        font_scale=scale
+                        font_scale=scale,
+                        color=tuple([255 - val for val in color]),
+                        back_ground_color=color
                         )
 
         CV2.imwrite(saved_path, img)
