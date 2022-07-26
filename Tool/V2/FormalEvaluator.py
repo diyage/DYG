@@ -61,7 +61,8 @@ class FormalEvaluator:
         # dataset
         self.dataset = VOCDetection(root=data_root,
                                     image_sets=[('2007', set_type)],
-                                    transform=transform
+                                    transform=transform,
+                                    kinds_name=labelmap
                                     )
 
     def evaluate(self, net):
@@ -93,7 +94,7 @@ class FormalEvaluator:
                 scores.append(kps[2])
                 cls_inds.append(self.labelmap.index(kps[0]))
 
-            bboxes = np.array(bboxes)
+            bboxes = np.array(bboxes)/self.img_size
             scores = np.array(scores)
             cls_inds = np.array(cls_inds)
 
