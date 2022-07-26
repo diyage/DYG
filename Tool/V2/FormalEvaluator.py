@@ -109,8 +109,8 @@ class FormalEvaluator:
 
             detect_time = time.time() - t0
             scale = np.array([[w, h, w, h]])
-            bboxes *= scale
-
+            if len(bboxes) != 0:
+                bboxes *= scale
             for j in range(len(self.labelmap)):
                 inds = np.where(cls_inds == j)[0]
                 if len(inds) == 0:
