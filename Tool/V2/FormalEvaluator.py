@@ -37,49 +37,31 @@ class BaseTransform:
 
 
 class FormalEvaluator:
-    def __init__(
-            self,
-            predictor: YOLOV2Predictor,
-            data_root: str,
-            img_size: int,
-            device: str,
-            transform,
-            labelmap: list,
-            display=False,
-            use_07: bool = True
-    ):
+    def __init__(self,
+                 predictor: YOLOV2Predictor,
+                 data_root, img_size, device, transform, labelmap, set_type='test', year='2007', display=False):
         self.predictor = predictor
         self.data_root = data_root
         self.img_size = img_size
         self.device = device
         self.transform = transform
         self.labelmap = labelmap
-        self.set_type = 'test'
-
-        if use_07:
-            self.year = '2007'
-        else:
-            self.year = '2012'
-
+        self.set_type = set_type
+        self.year = year
         self.display = display
-        self.use_07 = use_07
+        self.use_07 = True
         # path
 
-        self.devkit_path = os.path.join(data_root, self.year, self.set_type)
+        self.devkit_path = os.path.join(data_root, year, set_type)
         self.annopath = os.path.join(self.devkit_path, 'Annotations', '%s.xml')
         self.imgpath = os.path.join(self.devkit_path, 'JPEGImages', '%s.jpg')
-        self.imgsetpath = os.path.join(self.devkit_path,
-                                       'ImageSets',
-                                       'Main',
-                                       self.set_type + '.txt')
+        self.imgsetpath = os.path.join(self.devkit_path, 'ImageSets', 'Main', set_type + '.txt')
         self.output_dir = self.get_output_dir('voc_eval/', self.set_type)
 
         # dataset
         self.dataset = VOCDetection(root=data_root,
-                                    image_sets=[(self.year, self.set_type)],
-                                    transform=transform,
-                                    use_07=use_07,
-                                    kinds_name=labelmap
+                                    image_sets=[('2007', set_type)],
+                                    transform=transform
                                     )
 
     def evaluate(self, net):
@@ -149,19 +131,18 @@ class FormalEvaluator:
         for obj in tree.findall('object'):
             obj_struct = {}
             obj_struct['name'] = obj.find('name').text
+            obj_struct['pose'] = obj.find('pose').text
+            obj_struct['truncated'] = int(obj.find('truncated').text)
+            obj_struct['difficult'] = int(obj.find('difficult').text)
             bbox = obj.find('bndbox')
             obj_struct['bbox'] = [int(bbox.find('xmin').text),
-                                  int(bbox.find('ymin').text),
-                                  int(bbox.find('xmax').text),
-                                  int(bbox.find('ymax').text)]
-            if self.use_07:
-                obj_struct['pose'] = obj.find('pose').text
-                obj_struct['truncated'] = int(obj.find('truncated').text)
-                obj_struct['difficult'] = int(obj.find('difficult').text)
-
+                                int(bbox.find('ymin').text),
+                                int(bbox.find('xmax').text),
+                                int(bbox.find('ymax').text)]
             objects.append(obj_struct)
 
         return objects
+
 
     def get_output_dir(self, name, phase):
         """Return the directory where experimental artifacts are placed.
@@ -174,6 +155,7 @@ class FormalEvaluator:
             os.makedirs(filedir)
         return filedir
 
+
     def get_voc_results_file_template(self, cls):
         # VOCdevkit/VOC2007/results/det_test_aeroplane.txt
         filename = 'det_' + self.set_type + '_%s.txt' % (cls)
@@ -182,6 +164,7 @@ class FormalEvaluator:
             os.makedirs(filedir)
         path = os.path.join(filedir, filename)
         return path
+
 
     def write_voc_results_file(self, all_boxes):
         for cls_ind, cls in enumerate(self.labelmap):
@@ -197,8 +180,9 @@ class FormalEvaluator:
                     for k in range(dets.shape[0]):
                         f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
                                 format(index[1], dets[k, -1],
-                                       dets[k, 0] + 1, dets[k, 1] + 1,
-                                       dets[k, 2] + 1, dets[k, 3] + 1))
+                                    dets[k, 0] + 1, dets[k, 1] + 1,
+                                    dets[k, 2] + 1, dets[k, 3] + 1))
+
 
     def do_python_eval(self, use_07=True):
         cachedir = os.path.join(self.devkit_path, 'annotations_cache')
@@ -215,7 +199,7 @@ class FormalEvaluator:
                                           cachedir=cachedir,
                                           ovthresh=0.5,
                                           use_07_metric=use_07_metric
-                                          )
+                                        )
             aps += [ap]
             print('AP for {} = {:.4f}'.format(cls, ap))
             with open(os.path.join(self.output_dir, cls + '_pr.pkl'), 'wb') as f:
@@ -237,6 +221,7 @@ class FormalEvaluator:
         else:
             self.map = np.mean(aps)
             print('Mean AP = {:.4f}'.format(np.mean(aps)))
+
 
     def voc_ap(self, rec, prec, use_07_metric=True):
         """ ap = voc_ap(rec, prec, [use_07_metric])
@@ -271,6 +256,7 @@ class FormalEvaluator:
             ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
         return ap
 
+
     def voc_eval(self, detpath, classname, cachedir, ovthresh=0.5, use_07_metric=True):
         if not os.path.isdir(cachedir):
             os.mkdir(cachedir)
@@ -286,7 +272,7 @@ class FormalEvaluator:
                 recs[imagename] = self.parse_rec(self.annopath % (imagename))
                 if i % 100 == 0 and self.display:
                     print('Reading annotation for {:d}/{:d}'.format(
-                        i + 1, len(imagenames)))
+                    i + 1, len(imagenames)))
             # save
             if self.display:
                 print('Saving cached annotations to {:s}'.format(cachefile))
@@ -303,15 +289,12 @@ class FormalEvaluator:
         for imagename in imagenames:
             R = [obj for obj in recs[imagename] if obj['name'] == classname]
             bbox = np.array([x['bbox'] for x in R])
-            if self.use_07:
-                difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
-            else:
-                difficult = np.array([0 for _ in R]).astype(np.bool)
+            difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
             det = [False] * len(R)
             npos = npos + sum(~difficult)
             class_recs[imagename] = {'bbox': bbox,
-                                     'difficult': difficult,
-                                     'det': det}
+                                    'difficult': difficult,
+                                    'det': det}
 
         # read dets
         detfile = detpath.format(classname)
@@ -350,14 +333,15 @@ class FormalEvaluator:
                     ih = np.maximum(iymax - iymin, 0.)
                     inters = iw * ih
                     uni = ((bb[2] - bb[0]) * (bb[3] - bb[1]) +
-                           (BBGT[:, 2] - BBGT[:, 0]) *
-                           (BBGT[:, 3] - BBGT[:, 1]) - inters)
+                        (BBGT[:, 2] - BBGT[:, 0]) *
+                        (BBGT[:, 3] - BBGT[:, 1]) - inters)
                     overlaps = inters / uni
                     ovmax = np.max(overlaps)
                     jmax = np.argmax(overlaps)
 
                 if ovmax > ovthresh:
                     if not R['difficult'][jmax]:
+                    # if True:
                         if not R['det'][jmax]:
                             tp[d] = 1.
                             R['det'][jmax] = 1
@@ -381,9 +365,10 @@ class FormalEvaluator:
 
         return rec, prec, ap
 
+
     def evaluate_detections(self, box_list):
         self.write_voc_results_file(box_list)
-        self.do_python_eval(use_07=self.use_07)
+        self.do_python_eval(self.use_07)
 
 
 ###############################################################
@@ -409,7 +394,6 @@ class VOCAnnotationTransform(object):
         self.use_07 = use_07
         self.class_to_ind = class_to_ind or dict(
             zip(kinds_name, range(len(kinds_name))))
-        self.keep_difficult = False
 
     def __call__(self, target, width, height):
         """
@@ -421,12 +405,6 @@ class VOCAnnotationTransform(object):
         """
         res = []
         for obj in target.iter('object'):
-            if self.use_07:
-                difficult = int(obj.find('difficult').text) == 1
-            else:
-                difficult = 0
-            if not self.keep_difficult and difficult:
-                continue
             name = obj.find('name').text.lower().strip()
             bbox = obj.find('bndbox')
 
