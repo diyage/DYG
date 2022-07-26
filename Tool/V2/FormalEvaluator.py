@@ -1,10 +1,7 @@
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
+from torch.utils.data import Dataset
 import numpy as np
 from .Predictor import YOLOV2Predictor
-from .Tools import YOLOV2Tools
 from torch.autograd import Variable
 import time
 import pickle
@@ -37,30 +34,42 @@ class BaseTransform:
 
 
 class FormalEvaluator:
-    def __init__(self,
-                 predictor: YOLOV2Predictor,
-                 data_root, img_size, device, transform, labelmap, set_type='test', year='2007', display=False):
+    def __init__(
+            self,
+            predictor: YOLOV2Predictor,
+            data_root,
+            img_size,
+            device,
+            transform,
+            labelmap,
+            display=False,
+            use_07: bool = True
+    ):
         self.predictor = predictor
         self.data_root = data_root
         self.img_size = img_size
         self.device = device
         self.transform = transform
         self.labelmap = labelmap
-        self.set_type = set_type
-        self.year = year
+        self.set_type = 'test'
+        if use_07:
+            self.year = '2007'
+        else:
+            self.year = '2012'
+
         self.display = display
-        self.use_07 = True
+        self.use_07 = use_07
         # path
 
-        self.devkit_path = os.path.join(data_root, year, set_type)
+        self.devkit_path = os.path.join(data_root, self.year, self.set_type)
         self.annopath = os.path.join(self.devkit_path, 'Annotations', '%s.xml')
         self.imgpath = os.path.join(self.devkit_path, 'JPEGImages', '%s.jpg')
-        self.imgsetpath = os.path.join(self.devkit_path, 'ImageSets', 'Main', set_type + '.txt')
+        self.imgsetpath = os.path.join(self.devkit_path, 'ImageSets', 'Main', self.set_type + '.txt')
         self.output_dir = self.get_output_dir('voc_eval/', self.set_type)
 
         # dataset
         self.dataset = VOCDetection(root=data_root,
-                                    image_sets=[('2007', set_type)],
+                                    image_sets=[(self.year, self.set_type)],
                                     transform=transform,
                                     kinds_name=labelmap
                                     )
@@ -131,10 +140,13 @@ class FormalEvaluator:
         objects = []
         for obj in tree.findall('object'):
             obj_struct = {}
+
+            if self.use_07:
+                obj_struct['pose'] = obj.find('pose').text
+                obj_struct['truncated'] = int(obj.find('truncated').text)
+                obj_struct['difficult'] = int(obj.find('difficult').text)
+
             obj_struct['name'] = obj.find('name').text
-            obj_struct['pose'] = obj.find('pose').text
-            obj_struct['truncated'] = int(obj.find('truncated').text)
-            obj_struct['difficult'] = int(obj.find('difficult').text)
             bbox = obj.find('bndbox')
             obj_struct['bbox'] = [int(bbox.find('xmin').text),
                                 int(bbox.find('ymin').text),
@@ -143,7 +155,6 @@ class FormalEvaluator:
             objects.append(obj_struct)
 
         return objects
-
 
     def get_output_dir(self, name, phase):
         """Return the directory where experimental artifacts are placed.
@@ -155,7 +166,6 @@ class FormalEvaluator:
         if not os.path.exists(filedir):
             os.makedirs(filedir)
         return filedir
-
 
     def get_voc_results_file_template(self, cls):
         # VOCdevkit/VOC2007/results/det_test_aeroplane.txt
@@ -183,7 +193,6 @@ class FormalEvaluator:
                                 format(index[1], dets[k, -1],
                                     dets[k, 0] + 1, dets[k, 1] + 1,
                                     dets[k, 2] + 1, dets[k, 3] + 1))
-
 
     def do_python_eval(self, use_07=True):
         cachedir = os.path.join(self.devkit_path, 'annotations_cache')
@@ -223,7 +232,6 @@ class FormalEvaluator:
             self.map = np.mean(aps)
             print('Mean AP = {:.4f}'.format(np.mean(aps)))
 
-
     def voc_ap(self, rec, prec, use_07_metric=True):
         """ ap = voc_ap(rec, prec, [use_07_metric])
         Compute VOC AP given precision and recall.
@@ -257,7 +265,6 @@ class FormalEvaluator:
             ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
         return ap
 
-
     def voc_eval(self, detpath, classname, cachedir, ovthresh=0.5, use_07_metric=True):
         if not os.path.isdir(cachedir):
             os.mkdir(cachedir)
@@ -290,7 +297,10 @@ class FormalEvaluator:
         for imagename in imagenames:
             R = [obj for obj in recs[imagename] if obj['name'] == classname]
             bbox = np.array([x['bbox'] for x in R])
-            difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+            if self.use_07:
+                difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+            else:
+                difficult = np.array([0 for _ in R]).astype(np.bool)
             det = [False] * len(R)
             npos = npos + sum(~difficult)
             class_recs[imagename] = {'bbox': bbox,
@@ -366,7 +376,6 @@ class FormalEvaluator:
 
         return rec, prec, ap
 
-
     def evaluate_detections(self, box_list):
         self.write_voc_results_file(box_list)
         self.do_python_eval(self.use_07)
@@ -390,11 +399,13 @@ class VOCAnnotationTransform(object):
     def __init__(self,
                  kinds_name: list = None,
                  class_to_ind=None,
-                 use_07: bool = True
+                 use_07: bool = True,
+                 keep_difficult: bool = False
                  ):
         self.use_07 = use_07
         self.class_to_ind = class_to_ind or dict(
             zip(kinds_name, range(len(kinds_name))))
+        self.keep_difficult = keep_difficult
 
     def __call__(self, target, width, height):
         """
@@ -406,6 +417,15 @@ class VOCAnnotationTransform(object):
         """
         res = []
         for obj in target.iter('object'):
+
+            if self.use_07:
+                difficult = int(obj.find('difficult').text) == 1
+            else:
+                difficult = 0
+
+            if not self.keep_difficult and difficult:
+                continue
+
             name = obj.find('name').text.lower().strip()
             bbox = obj.find('bndbox')
 
@@ -452,11 +472,12 @@ class VOCDetection(Dataset):
         self.root = root
         self.image_set = image_sets
         self.transform = transform
+
         self.target_transform = VOCAnnotationTransform(
             kinds_name=kinds_name,
             use_07=use_07
-
         )
+
         self.name = dataset_name
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
         self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
@@ -471,10 +492,8 @@ class VOCDetection(Dataset):
 
         return im, gt
 
-
     def __len__(self):
         return len(self.ids)
-
 
     def pull_item(self, index):
         img_id = self.ids[index]
@@ -497,7 +516,6 @@ class VOCDetection(Dataset):
         return torch.from_numpy(img).permute(2, 0, 1), target, height, width
         # return torch.from_numpy(img), target, height, width
 
-
     def pull_image(self, index):
         '''Returns the original image object at index in PIL form
 
@@ -511,7 +529,6 @@ class VOCDetection(Dataset):
         '''
         img_id = self.ids[index]
         return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR), img_id
-
 
     def pull_anno(self, index):
         '''Returns the original annotation of image at index
@@ -529,26 +546,3 @@ class VOCDetection(Dataset):
         anno = ET.parse(self._annopath % img_id).getroot()
         gt = self.target_transform(anno, 1, 1)
         return img_id[1], gt
-
-
-if __name__ == '__main__':
-    predictor = YOLOV2Predictor(
-        iou_th=0.5,
-        prob_th=0.0,
-        conf_th=0.0,
-        score_th=0.001,
-        pre_anchor_w_h=None,
-        kinds_name=None,
-        image_size=(416, 416),
-        grid_number=None,
-    )
-    evaluator = FormalEvaluator(
-        predictor,
-        data_root='',
-        img_size=416,
-        device='cuda:0',
-        transform=BaseTransform(416),
-        labelmap=[],
-        use_07=True
-    )
-    evaluator.evaluate()
