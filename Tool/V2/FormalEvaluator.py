@@ -1,50 +1,85 @@
-"""Adapted from:
-    @longcw faster_rcnn_pytorch: https://github.com/longcw/faster_rcnn_pytorch
-    @rbgirshick py-faster-rcnn https://github.com/rbgirshick/py-faster-rcnn
-    Licensed under The MIT License [see LICENSE for details]
-"""
-
 import torch
 import torch.nn as nn
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
-from .data import VOCDetection
-import sys
-import os
-import time
+from torch.utils.data import DataLoader, Dataset
+from tqdm import tqdm
 import numpy as np
+from .Predictor import YOLOV2Predictor
+from .Tools import YOLOV2Tools
+from torch.autograd import Variable
+import time
 import pickle
-
+import os
+import os.path as osp
+import cv2
+import sys
 if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
 else:
     import xml.etree.ElementTree as ET
 
 
-class VOCAPIEvaluator():
-    """ VOC AP Evaluation class """
-    def __init__(self, data_root, img_size, device, transform, labelmap, set_type='test', year='2007', display=False):
+def base_transform(image, size, mean, std):
+    x = cv2.resize(image, (size, size)).astype(np.float32)
+    x /= 255.
+    x -= mean
+    x /= std
+    return x
+
+
+class BaseTransform:
+    def __init__(self, size=416, mean=(0.406, 0.456, 0.485), std=(0.225, 0.224, 0.229)):
+        self.size = size
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
+
+    def __call__(self, image, boxes=None, labels=None):
+        return base_transform(image, self.size, self.mean, self.std), boxes, labels
+
+
+class FormalEvaluator:
+    def __init__(
+            self,
+            predictor: YOLOV2Predictor,
+            data_root: str,
+            img_size: int,
+            device: str,
+            transform,
+            labelmap: list,
+            display=False,
+            use_07: bool = True
+    ):
+        self.predictor = predictor
         self.data_root = data_root
         self.img_size = img_size
         self.device = device
         self.transform = transform
         self.labelmap = labelmap
-        self.set_type = set_type
-        self.year = year
-        self.display = display
+        self.set_type = 'test'
 
+        if use_07:
+            self.year = '2007'
+        else:
+            self.year = '2012'
+
+        self.display = display
+        self.use_07 = use_07
         # path
 
-        self.devkit_path = os.path.join(data_root, year, set_type)
+        self.devkit_path = os.path.join(data_root, self.year, self.set_type)
         self.annopath = os.path.join(self.devkit_path, 'Annotations', '%s.xml')
-        self.imgpath = os.path.join(self.devkit_path,  'JPEGImages', '%s.jpg')
-        self.imgsetpath = os.path.join(self.devkit_path, 'ImageSets', 'Main', set_type+'.txt')
+        self.imgpath = os.path.join(self.devkit_path, 'JPEGImages', '%s.jpg')
+        self.imgsetpath = os.path.join(self.devkit_path,
+                                       'ImageSets',
+                                       'Main',
+                                       self.set_type + '.txt')
         self.output_dir = self.get_output_dir('voc_eval/', self.set_type)
 
         # dataset
         self.dataset = VOCDetection(root=data_root,
-                                    image_sets=[('2007', set_type)],
-                                    transform=transform
+                                    image_sets=[(self.year, self.set_type)],
+                                    transform=transform,
+                                    use_07=use_07,
+                                    kinds_name=labelmap
                                     )
 
     def evaluate(self, net):
@@ -54,7 +89,7 @@ class VOCAPIEvaluator():
         #    all_boxes[cls][image] = N x 5 array of detections in
         #    (x1, y1, x2, y2, score)
         self.all_boxes = [[[] for _ in range(num_images)]
-                        for _ in range(len(self.labelmap))]
+                          for _ in range(len(self.labelmap))]
 
         # timers
         det_file = os.path.join(self.output_dir, 'detections.pkl')
@@ -65,7 +100,21 @@ class VOCAPIEvaluator():
             x = Variable(im.unsqueeze(0)).to(self.device)
             t0 = time.time()
             # forward
-            bboxes, scores, cls_inds = net(x)
+            # bboxes, scores, cls_inds = net(x)
+            bboxes = []
+            scores = []
+            cls_inds = []
+            out = net(x)
+            kps_vec = self.predictor.decode_one_model_out(out[0])
+            for kps in kps_vec:
+                bboxes.append(kps[1])
+                scores.append(kps[2])
+                cls_inds.append(self.labelmap.index(kps[0]))
+
+            bboxes = np.array(bboxes)
+            scores = np.array(scores)
+            cls_inds = np.array(cls_inds)
+
             detect_time = time.time() - t0
             scale = np.array([[w, h, w, h]])
             bboxes *= scale
@@ -79,7 +128,7 @@ class VOCAPIEvaluator():
                 c_scores = scores[inds]
                 c_dets = np.hstack((c_bboxes,
                                     c_scores[:, np.newaxis])).astype(np.float32,
-                                                                    copy=False)
+                                                                     copy=False)
                 self.all_boxes[j][i] = c_dets
 
             if i % 500 == 0:
@@ -92,7 +141,6 @@ class VOCAPIEvaluator():
         self.evaluate_detections(self.all_boxes)
 
         print('Mean AP: ', self.map)
-  
 
     def parse_rec(self, filename):
         """ Parse a PASCAL VOC xml file """
@@ -101,18 +149,19 @@ class VOCAPIEvaluator():
         for obj in tree.findall('object'):
             obj_struct = {}
             obj_struct['name'] = obj.find('name').text
-            obj_struct['pose'] = obj.find('pose').text
-            obj_struct['truncated'] = int(obj.find('truncated').text)
-            obj_struct['difficult'] = int(obj.find('difficult').text)
             bbox = obj.find('bndbox')
             obj_struct['bbox'] = [int(bbox.find('xmin').text),
-                                int(bbox.find('ymin').text),
-                                int(bbox.find('xmax').text),
-                                int(bbox.find('ymax').text)]
+                                  int(bbox.find('ymin').text),
+                                  int(bbox.find('xmax').text),
+                                  int(bbox.find('ymax').text)]
+            if self.use_07:
+                obj_struct['pose'] = obj.find('pose').text
+                obj_struct['truncated'] = int(obj.find('truncated').text)
+                obj_struct['difficult'] = int(obj.find('difficult').text)
+
             objects.append(obj_struct)
 
         return objects
-
 
     def get_output_dir(self, name, phase):
         """Return the directory where experimental artifacts are placed.
@@ -125,7 +174,6 @@ class VOCAPIEvaluator():
             os.makedirs(filedir)
         return filedir
 
-
     def get_voc_results_file_template(self, cls):
         # VOCdevkit/VOC2007/results/det_test_aeroplane.txt
         filename = 'det_' + self.set_type + '_%s.txt' % (cls)
@@ -134,7 +182,6 @@ class VOCAPIEvaluator():
             os.makedirs(filedir)
         path = os.path.join(filedir, filename)
         return path
-
 
     def write_voc_results_file(self, all_boxes):
         for cls_ind, cls in enumerate(self.labelmap):
@@ -150,9 +197,8 @@ class VOCAPIEvaluator():
                     for k in range(dets.shape[0]):
                         f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
                                 format(index[1], dets[k, -1],
-                                    dets[k, 0] + 1, dets[k, 1] + 1,
-                                    dets[k, 2] + 1, dets[k, 3] + 1))
-
+                                       dets[k, 0] + 1, dets[k, 1] + 1,
+                                       dets[k, 2] + 1, dets[k, 3] + 1))
 
     def do_python_eval(self, use_07=True):
         cachedir = os.path.join(self.devkit_path, 'annotations_cache')
@@ -164,12 +210,12 @@ class VOCAPIEvaluator():
             os.mkdir(self.output_dir)
         for i, cls in enumerate(self.labelmap):
             filename = self.get_voc_results_file_template(cls)
-            rec, prec, ap = self.voc_eval(detpath=filename, 
-                                          classname=cls, 
-                                          cachedir=cachedir, 
-                                          ovthresh=0.5, 
+            rec, prec, ap = self.voc_eval(detpath=filename,
+                                          classname=cls,
+                                          cachedir=cachedir,
+                                          ovthresh=0.5,
                                           use_07_metric=use_07_metric
-                                        )
+                                          )
             aps += [ap]
             print('AP for {} = {:.4f}'.format(cls, ap))
             with open(os.path.join(self.output_dir, cls + '_pr.pkl'), 'wb') as f:
@@ -191,7 +237,6 @@ class VOCAPIEvaluator():
         else:
             self.map = np.mean(aps)
             print('Mean AP = {:.4f}'.format(np.mean(aps)))
-
 
     def voc_ap(self, rec, prec, use_07_metric=True):
         """ ap = voc_ap(rec, prec, [use_07_metric])
@@ -226,7 +271,6 @@ class VOCAPIEvaluator():
             ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
         return ap
 
-
     def voc_eval(self, detpath, classname, cachedir, ovthresh=0.5, use_07_metric=True):
         if not os.path.isdir(cachedir):
             os.mkdir(cachedir)
@@ -242,7 +286,7 @@ class VOCAPIEvaluator():
                 recs[imagename] = self.parse_rec(self.annopath % (imagename))
                 if i % 100 == 0 and self.display:
                     print('Reading annotation for {:d}/{:d}'.format(
-                    i + 1, len(imagenames)))
+                        i + 1, len(imagenames)))
             # save
             if self.display:
                 print('Saving cached annotations to {:s}'.format(cachefile))
@@ -259,12 +303,15 @@ class VOCAPIEvaluator():
         for imagename in imagenames:
             R = [obj for obj in recs[imagename] if obj['name'] == classname]
             bbox = np.array([x['bbox'] for x in R])
-            difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+            if self.use_07:
+                difficult = np.array([x['difficult'] for x in R]).astype(np.bool)
+            else:
+                difficult = np.array([0 for _ in R]).astype(np.bool)
             det = [False] * len(R)
             npos = npos + sum(~difficult)
             class_recs[imagename] = {'bbox': bbox,
-                                    'difficult': difficult,
-                                    'det': det}
+                                     'difficult': difficult,
+                                     'det': det}
 
         # read dets
         detfile = detpath.format(classname)
@@ -303,15 +350,14 @@ class VOCAPIEvaluator():
                     ih = np.maximum(iymax - iymin, 0.)
                     inters = iw * ih
                     uni = ((bb[2] - bb[0]) * (bb[3] - bb[1]) +
-                        (BBGT[:, 2] - BBGT[:, 0]) *
-                        (BBGT[:, 3] - BBGT[:, 1]) - inters)
+                           (BBGT[:, 2] - BBGT[:, 0]) *
+                           (BBGT[:, 3] - BBGT[:, 1]) - inters)
                     overlaps = inters / uni
                     ovmax = np.max(overlaps)
                     jmax = np.argmax(overlaps)
 
                 if ovmax > ovthresh:
                     if not R['difficult'][jmax]:
-                    # if True:
                         if not R['det'][jmax]:
                             tp[d] = 1.
                             R['det'][jmax] = 1
@@ -335,11 +381,195 @@ class VOCAPIEvaluator():
 
         return rec, prec, ap
 
-
     def evaluate_detections(self, box_list):
         self.write_voc_results_file(box_list)
-        self.do_python_eval()
+        self.do_python_eval(use_07=self.use_07)
+
+
+###############################################################
+
+class VOCAnnotationTransform(object):
+    """Transforms a VOC annotation into a Tensor of bbox coords and label index
+    Initilized with a dictionary lookup of classnames to indexes
+
+    Arguments:
+        class_to_ind (dict, optional): dictionary lookup of classnames -> indexes
+            (default: alphabetic indexing of VOC's 20 classes)
+        keep_difficult (bool, optional): keep difficult instances or not
+            (default: False)
+        height (int): height
+        width (int): width
+    """
+
+    def __init__(self,
+                 kinds_name: list = None,
+                 class_to_ind=None,
+                 use_07: bool = True
+                 ):
+        self.use_07 = use_07
+        self.class_to_ind = class_to_ind or dict(
+            zip(kinds_name, range(len(kinds_name))))
+        self.keep_difficult = False
+
+    def __call__(self, target, width, height):
+        """
+        Arguments:
+            target (annotation) : the target annotation to be made usable
+                will be an ET.Element
+        Returns:
+            a list containing lists of bounding boxes  [bbox coords, class name]
+        """
+        res = []
+        for obj in target.iter('object'):
+            if self.use_07:
+                difficult = int(obj.find('difficult').text) == 1
+            else:
+                difficult = 0
+            if not self.keep_difficult and difficult:
+                continue
+            name = obj.find('name').text.lower().strip()
+            bbox = obj.find('bndbox')
+
+            pts = ['xmin', 'ymin', 'xmax', 'ymax']
+            bndbox = []
+            for i, pt in enumerate(pts):
+                cur_pt = int(bbox.find(pt).text) - 1
+                # scale height or width
+                cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
+                bndbox.append(cur_pt)
+            label_idx = self.class_to_ind[name]
+            bndbox.append(label_idx)
+            res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
+            # img_id = target.find('filename').text[:-4]
+
+        return res  # [[xmin, ymin, xmax, ymax, label_ind], ... ]
+
+
+class VOCDetection(Dataset):
+    """VOC Detection Dataset Object
+
+    input is image, target is annotation
+
+    Arguments:
+        root (string): filepath to VOCdevkit folder.
+        image_set (string): imageset to use (eg. 'train', 'val', 'test')
+        transform (callable, optional): transformation to perform on the
+            input image
+        target_transform (callable, optional): transformation to perform on the
+            target `annotation`
+            (eg: take in caption string, return tensor of word indices)
+        dataset_name (string, optional): which dataset to load
+            (default: 'VOC2007')
+    """
+
+    def __init__(self,
+                 root,
+                 image_sets=[('2007', 'trainval'), ('2012', 'trainval')],
+                 transform=None,
+                 dataset_name='VOC0712',
+                 use_07: bool = True,
+                 kinds_name: list = None,
+                 ):
+        self.root = root
+        self.image_set = image_sets
+        self.transform = transform
+        self.target_transform = VOCAnnotationTransform(
+            kinds_name=kinds_name,
+            use_07=use_07
+
+        )
+        self.name = dataset_name
+        self._annopath = osp.join('%s', 'Annotations', '%s.xml')
+        self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
+        self.ids = list()
+        for (year, name) in image_sets:
+            rootpath = osp.join(self.root, year, name)
+            for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+                self.ids.append((rootpath, line.strip()))
+
+    def __getitem__(self, index):
+        im, gt, h, w = self.pull_item(index)
+
+        return im, gt
+
+
+    def __len__(self):
+        return len(self.ids)
+
+
+    def pull_item(self, index):
+        img_id = self.ids[index]
+
+        target = ET.parse(self._annopath % img_id).getroot()
+        img = cv2.imread(self._imgpath % img_id)
+        height, width, channels = img.shape
+
+        if self.target_transform is not None:
+            target = self.target_transform(target, width, height)
+
+        if self.transform is not None:
+
+            target = np.array(target)
+            img, boxes, labels = self.transform(img, target[:, :4], target[:, 4])
+            # to rgb
+            img = img[:, :, (2, 1, 0)]
+            # img = img.transpose(2, 0, 1)
+            target = np.hstack((boxes, np.expand_dims(labels, axis=1)))
+        return torch.from_numpy(img).permute(2, 0, 1), target, height, width
+        # return torch.from_numpy(img), target, height, width
+
+
+    def pull_image(self, index):
+        '''Returns the original image object at index in PIL form
+
+        Note: not using self.__getitem__(), as any transformations passed in
+        could mess up this functionality.
+
+        Argument:
+            index (int): index of img to show
+        Return:
+            PIL img
+        '''
+        img_id = self.ids[index]
+        return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR), img_id
+
+
+    def pull_anno(self, index):
+        '''Returns the original annotation of image at index
+
+        Note: not using self.__getitem__(), as any transformations passed in
+        could mess up this functionality.
+
+        Argument:
+            index (int): index of img to get annotation of
+        Return:
+            list:  [img_id, [(label, bbox coords),...]]
+                eg: ('001718', [('dog', (96, 13, 438, 332))])
+        '''
+        img_id = self.ids[index]
+        anno = ET.parse(self._annopath % img_id).getroot()
+        gt = self.target_transform(anno, 1, 1)
+        return img_id[1], gt
 
 
 if __name__ == '__main__':
-    pass
+    predictor = YOLOV2Predictor(
+        iou_th=0.5,
+        prob_th=0.0,
+        conf_th=0.0,
+        score_th=0.001,
+        pre_anchor_w_h=None,
+        kinds_name=None,
+        image_size=(416, 416),
+        grid_number=None,
+    )
+    evaluator = FormalEvaluator(
+        predictor,
+        data_root='',
+        img_size=416,
+        device='cuda:0',
+        transform=BaseTransform(416),
+        labelmap=[],
+        use_07=True
+    )
+    evaluator.evaluate()
