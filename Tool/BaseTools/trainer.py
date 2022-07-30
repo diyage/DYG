@@ -48,9 +48,9 @@ class BaseTrainer:
     def __init__(
             self,
             model: nn.Module,
-            pre_anchor_w_h: tuple,
+            pre_anchor_w_h: Union[tuple, dict],
             image_size: tuple,
-            grid_number: tuple,
+            grid_number: Union[tuple, dict],
             kinds_name: list,
             iou_th: float = 0.6
     ):
@@ -90,7 +90,7 @@ class BaseTrainer:
 
             self.detector.train()
             images = images.to(self.device)
-            targets = self.make_targets(labels).to(self.device)
+            targets = self.make_targets(labels)
             output = self.detector(images)
             loss_res = yolo_loss_func(output, targets)
             if not isinstance(loss_res, dict):
