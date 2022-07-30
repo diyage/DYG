@@ -14,7 +14,6 @@ class YOLOV3Loss(nn.Module):
             weight_conf_no_obj: float = 1.0,
             weight_cls_prob: float = 1.0,
             image_size: tuple = (416, 416),
-            iou_th: float = 0.6,
     ):
         super().__init__()
         self.anchor_pre_wh_dict = anchor_pre_wh_dict
@@ -25,7 +24,6 @@ class YOLOV3Loss(nn.Module):
         self.weight_conf_no_obj = weight_conf_no_obj
         self.weight_cls_prob = weight_cls_prob
         self.image_size = image_size
-        self.iou_th = iou_th
 
         self.anchor_keys = list(anchor_pre_wh_dict.keys())
         self.mse = nn.MSELoss(reduction='none')

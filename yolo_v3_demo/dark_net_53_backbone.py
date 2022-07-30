@@ -29,11 +29,11 @@ class Helper:
             self.opt_data_set.image_size,
             self.opt_data_set.grid_number,
             self.opt_data_set.kinds_name,
-            self.opt_trainer.iou_th,
+            self.opt_trainer.iou_for_make_target,
         )
 
         self.predictor = YOLOV3Predictor(
-            self.opt_trainer.iou_th,
+            self.opt_trainer.iou_for_nms,
             self.opt_trainer.prob_th,
             self.opt_trainer.conf_th,
             self.opt_trainer.score_th,
@@ -73,7 +73,6 @@ class Helper:
             self.opt_trainer.weight_conf_no_obj,
             self.opt_trainer.weight_cls_prob,
             image_size=self.opt_data_set.image_size,
-            iou_th=self.opt_trainer.iou_th,
         )
         # already trained dark_net 53
         # so just train detector

@@ -39,8 +39,6 @@ class YOLOV3DataSetConfig:
         (np.random.randint(255), np.random.randint(255), np.random.randint(255)) for _ in range(len(kinds_name))
     ]
 
-
-
     mean = [0.406, 0.456, 0.485]
 
     std = [0.225, 0.224, 0.229]
@@ -57,7 +55,8 @@ class YOLOV3TrainerConfig:
     conf_th: float = 0.0
     prob_th: float = 0.0
     score_th: float = 0.1
-    iou_th: float = 0.6
+    iou_for_nms: float = 0.6
+    iou_for_make_target: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
     weight_position: float = 1.0
     weight_conf_has_obj: float = 5.0
