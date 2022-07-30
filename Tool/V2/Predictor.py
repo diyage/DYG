@@ -219,3 +219,133 @@ class YOLOV2Predictor(BasePredictor):
             scores_max_value[mask],
             scores_max_index[mask]
         )
+
+    def decode_one_model_out(
+            self,
+            x: torch.Tensor,
+            *args,
+            **kwargs
+    ) -> list:
+        '''
+
+        Args:
+            x:
+            *args:
+            **kwargs:
+
+        Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
+            [
+            (kind_name, (x, y, x, y), score),
+            (kind_name, (x, y, x, y), score)
+             ...
+             ]
+
+        '''
+        pass
+
+    def decode_one_target(
+            self,
+            x: torch.Tensor,
+            *args,
+            **kwargs
+    ) -> list:
+        '''
+
+        Args:
+            x:
+            *args:
+            **kwargs:
+
+        Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
+            [
+            (kind_name, (x, y, x, y), score),
+            (kind_name, (x, y, x, y), score)
+             ...
+             ]
+
+        '''
+        pass
+
+    def decode_model_out(
+            self,
+            x: torch.Tensor,
+            *args,
+            **kwargs
+    ) -> list:
+        res = []
+        for i in range(x.shape[0]):
+            pre_ = self.decode_one_model_out(
+                x[i],
+                *args,
+                **kwargs,
+            )
+            res.append(pre_)
+
+        return res
+
+    def decode_target(
+            self,
+            x: torch.Tensor,
+            *args,
+            **kwargs
+    ) -> list:
+        res = []
+        for i in range(x.shape[0]):
+            pre_ = self.decode_one_target(
+                x[i],
+                *args,
+                **kwargs,
+            )
+            res.append(pre_)
+
+        return res
+
+    # def decode_out_one_image(
+    #         self,
+    #         out_put: torch.Tensor,
+    #         out_is_target: bool = False,
+    # ) -> list:
+    #     '''
+    #     please overwrite this method!!!
+    #     Args:
+    #         out_put: (_, H, W)
+    #         out_is_target: bool
+    #
+    #     Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
+    #         [
+    #         (kind_name, (x, y, x, y), score),
+    #         (kind_name, (x, y, x, y), score)
+    #          ...
+    #          ]
+    #
+    #     '''
+    #     pass
+
+    # def decode(
+    #         self,
+    #         out_put: torch.Tensor,
+    #         out_is_target: bool = False,
+    # ):
+    #     '''
+    #
+    #     Args:
+    #         out_put: (N, _, H, W)/(N,H,W,a_n,11)
+    #         out_is_target: bool
+    #
+    #     Returns: [kps_s, kps_s, ...]
+    #         [
+    #            [(kind_name, (x, y, x, y), score), ... ],    --> image one
+    #           [ ... ],           --> image two
+    #         ...
+    #     ]
+    #
+    #     '''
+    #     res = []
+    #     for i in range(out_put.shape[0]):
+    #         pre_ = self.decode_out_one_image(
+    #             out_put[i],
+    #             out_is_target
+    #         )
+    #         res.append(pre_)
+    #
+    #     return res
