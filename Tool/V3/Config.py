@@ -47,7 +47,7 @@ class YOLOV3DataSetConfig:
 class YOLOV3TrainerConfig:
     max_epoch_on_image_net_224 = 160
     max_epoch_on_image_net_448 = 10
-    max_epoch_on_detector = 1000
+    max_epoch_on_detector = 200
 
     device: str = 'cuda:0'
     batch_size = 32
