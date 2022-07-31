@@ -53,7 +53,7 @@ class Helper:
         self.evaluator = FormalEvaluator(
             self.predictor,
             self.opt_data_set.root_path,
-            self.opt_data_set.image_size,
+            self.opt_data_set.image_size[0],
             self.opt_trainer.device,
             transform=BaseTransform(self.opt_data_set.image_size[0]),
             labelmap=self.opt_data_set.kinds_name,

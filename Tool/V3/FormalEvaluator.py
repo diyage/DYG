@@ -37,11 +37,11 @@ class FormalEvaluator:
     def __init__(
             self,
             predictor: YOLOV3Predictor,
-            data_root,
-            img_size,
-            device,
+            data_root: str,
+            img_size: int,
+            device: str,
             transform,
-            labelmap,
+            labelmap: list,
             display=False,
             use_07: bool = True
     ):
