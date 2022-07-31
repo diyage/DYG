@@ -89,7 +89,7 @@ class Helper:
         warm_optimizer = WarmUpOptimizer(
             sgd_optimizer,
             base_lr=self.opt_trainer.lr,
-            warm_up_epoch=1
+            warm_up_epoch=self.opt_trainer.warm_up_end_epoch
         )
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
@@ -140,6 +140,9 @@ if __name__ == '__main__':
     trainer_opt = YOLOV3TrainerConfig()
     data_opt = YOLOV3DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
+    trainer_opt.lr = 1e-4
+    trainer_opt.batch_size = 8
+    trainer_opt.warm_up_end_epoch = 2
 
     net = YOLOV3Net(
         '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth',

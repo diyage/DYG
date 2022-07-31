@@ -52,6 +52,7 @@ class YOLOV3TrainerConfig:
     device: str = 'cuda:0'
     batch_size = 32
     lr: float = 1e-3
+    warm_up_end_epoch: int = 1
     conf_th: float = 0.0
     prob_th: float = 0.0
     score_th: float = 0.1
