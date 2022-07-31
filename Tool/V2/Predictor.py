@@ -220,52 +220,6 @@ class YOLOV2Predictor(BasePredictor):
             scores_max_index[mask]
         )
 
-    def decode_one_model_out(
-            self,
-            x: torch.Tensor,
-            *args,
-            **kwargs
-    ) -> list:
-        '''
-
-        Args:
-            x:
-            *args:
-            **kwargs:
-
-        Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
-            [
-            (kind_name, (x, y, x, y), score),
-            (kind_name, (x, y, x, y), score)
-             ...
-             ]
-
-        '''
-        pass
-
-    def decode_one_target(
-            self,
-            x: torch.Tensor,
-            *args,
-            **kwargs
-    ) -> list:
-        '''
-
-        Args:
-            x:
-            *args:
-            **kwargs:
-
-        Returns: kps_s  ---> kps = (kind_name, (x, y, x, y), score)
-            [
-            (kind_name, (x, y, x, y), score),
-            (kind_name, (x, y, x, y), score)
-             ...
-             ]
-
-        '''
-        pass
-
     def decode_model_out(
             self,
             x: torch.Tensor,
