@@ -97,7 +97,8 @@ class FormalEvaluator:
             scores = []
             cls_inds = []
             out_dict = net(x)
-            kps_vec = self.predictor.decode_predict(out_dict, batch_size=1)
+            kps_vec = self.predictor.decode_one_predict(out_dict)
+            # kps_vec = self.predictor.decode_predict(out_dict, batch_size=1)
 
             for kps in kps_vec:
                 bboxes.append(kps[1])
