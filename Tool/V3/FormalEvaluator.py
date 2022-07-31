@@ -104,8 +104,10 @@ class FormalEvaluator:
                 bboxes.append(kps[1])
                 scores.append(kps[2])
                 cls_inds.append(self.labelmap.index(kps[0]))
-
-            bboxes = np.array(bboxes)/self.img_size
+            if len(bboxes) != 0:
+                bboxes = np.array(bboxes)/self.img_size
+            else:
+                bboxes = np.array(bboxes)
             scores = np.array(scores)
             cls_inds = np.array(cls_inds)
 
