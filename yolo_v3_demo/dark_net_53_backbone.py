@@ -142,7 +142,7 @@ if __name__ == '__main__':
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
 
     net = YOLOV3Net(
-        None,
+        '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth',
         data_opt.single_an,
         num_classes=len(data_opt.kinds_name)
     )
