@@ -105,7 +105,7 @@ class YOLOV3Predictor(BasePredictor):
             for anchor_key in self.anchor_keys:
                 tmp[anchor_key] = target[anchor_key][i].unsqueeze(0)
             pre_ = self.decode_one_target(tmp)
-            res[i].append(pre_)
+            res[i] += pre_
 
         return res
 
@@ -192,5 +192,5 @@ class YOLOV3Predictor(BasePredictor):
             for anchor_key in self.anchor_keys:
                 tmp[anchor_key] = predict[anchor_key][i].unsqueeze(0)
             pre_ = self.decode_one_predict(tmp)
-            res[i].append(pre_)
+            res[i] += pre_
         return res
