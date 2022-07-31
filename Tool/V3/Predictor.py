@@ -99,7 +99,7 @@ class YOLOV3Predictor(BasePredictor):
             batch_size: int,
     ) -> list:
 
-        res = [[]*batch_size]
+        res = [[] for _ in range(batch_size)]
         for i in range(batch_size):
             tmp = {}
             for anchor_key in self.anchor_keys:
@@ -186,7 +186,7 @@ class YOLOV3Predictor(BasePredictor):
             batch_size: int,
     ):
 
-        res = [[] * batch_size]
+        res = [[] for _ in range(batch_size)]
         for i in range(batch_size):
             tmp = {}
             for anchor_key in self.anchor_keys:
