@@ -194,7 +194,7 @@ class YOLOV3Tools(BaseTools):
 
         for anchor_key, val in grid_number.items():
             H, W = val[1], val[0]
-            res[anchor_key] = torch.zeros(size=(N, -1, H, W))
+            res[anchor_key] = res[anchor_key].view(N, -1, H, W)
         return res
 
     @staticmethod
