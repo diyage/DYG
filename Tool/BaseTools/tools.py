@@ -384,6 +384,8 @@ class BaseTools:
             img = BaseTools.image_tensor_to_np(img)
 
         for box in predict_name_pos_score:
+            if len(box) != 3:
+                continue
             predict_kind_name, abs_double_pos, prob_score = box
             color = class_colors[kinds_name.index(predict_kind_name)]
 
