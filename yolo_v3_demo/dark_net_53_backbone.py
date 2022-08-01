@@ -115,7 +115,7 @@ class Helper:
                 print_info += '{:^30}:{:^15.6f}.\n'.format(key, val)
             tqdm.write(print_info)
 
-            if True:
+            if epoch % self.opt_trainer.eval_frequency == 0:
                 # save model
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
@@ -143,6 +143,7 @@ if __name__ == '__main__':
     trainer_opt.lr = 1e-3
     trainer_opt.batch_size = 8
     trainer_opt.warm_up_end_epoch = 2
+    trainer_opt.eval_frequency = 1
 
     net = YOLOV3Net(
         '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth',
