@@ -135,12 +135,12 @@ class Helper:
 
 
 if __name__ == '__main__':
-    GPU_ID = 0
+    GPU_ID = 1
 
     trainer_opt = YOLOV3TrainerConfig()
     data_opt = YOLOV3DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
-    trainer_opt.lr = 1e-4
+    trainer_opt.lr = 1e-3
     trainer_opt.batch_size = 8
     trainer_opt.warm_up_end_epoch = 2
 

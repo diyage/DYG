@@ -361,8 +361,8 @@ def get_voc_data_loader(
         transform_train = MyCompose([
             MyRandomFlip(),
             MyRandomNoise(0.1),
-            MyRandomWeightedChannel(0.5, 1.5),
-            MyRandomZeroOneChannel(),
+            # MyRandomWeightedChannel(0.5, 1.5),
+            # MyRandomZeroOneChannel(),
             MyToTensor(mean, std),
         ])
 

@@ -8,7 +8,8 @@ class MyRandomFlip:
         pass
 
     def __call__(self, image: np.ndarray, labels: list):
-        code = np.random.randint(-1, 5)
+        # code = np.random.randint(-1, 5)
+        code = np.random.randint(1, 5)
         H, W, C = image.shape
         if code >= 2:
             return image, labels
@@ -200,8 +201,8 @@ if __name__ == '__main__':
     R = MyCompose([
         MyRandomFlip(),
         MyRandomNoise(0.1),
-        MyRandomWeightedChannel(0.5, 1.5),
-        MyRandomZeroOneChannel(),
+        # MyRandomWeightedChannel(0.5, 1.5),
+        # MyRandomZeroOneChannel(),
         # MyToTensor()
     ])
     new_img, new_l = R(img, l)
