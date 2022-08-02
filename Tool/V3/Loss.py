@@ -140,7 +140,7 @@ class YOLOV3Loss(nn.Module):
             )
             # temp = self.mse(pre_cls_prob, gt_cls_prob).sum(dim=-1)
             loss_dict['cls_prob_loss'] += torch.sum(
-                temp * positive
+                temp * positive.contiguous().view(-1,)
             ) / N
 
         loss_dict['total_loss'] = self.weight_position * loss_dict['position_loss'] + \
