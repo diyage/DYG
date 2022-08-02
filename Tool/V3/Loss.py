@@ -135,8 +135,8 @@ class YOLOV3Loss(nn.Module):
 
             # cls prob loss
             temp = self.ce(
-                pre_cls_prob.view(-1, pre_cls_prob.shape[-1]),
-                gt_cls_prob.view(-1,)
+                pre_cls_prob.contiguous().view(-1, pre_cls_prob.shape[-1]),
+                gt_cls_prob.contiguous().view(-1,)
             )
             # temp = self.mse(pre_cls_prob, gt_cls_prob).sum(dim=-1)
             loss_dict['cls_prob_loss'] += torch.sum(
