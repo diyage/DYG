@@ -69,6 +69,7 @@ class YOLOV3Tools(BaseTools):
     @staticmethod
     def compute_anchor_response_result(
             anchor_pre_wh: dict,
+            grid_number_dict: dict,
             abs_gt_pos: Union[tuple, list],
             image_wh: Union[tuple, list],
             iou_th: float = 0.6,
@@ -76,6 +77,9 @@ class YOLOV3Tools(BaseTools):
         keys = list(anchor_pre_wh.keys())
         values = np.array(list(anchor_pre_wh.values()))
         anchor_pre_wh = values.reshape(-1, 2).tolist()
+
+        grid_number_ = np.array(list(grid_number_dict.values())).repeat(3, axis=1)
+        grid_number_ = grid_number_.reshape(-1, 2).tolist()
         # ----------------------------------------------------------------------
         best_index = 0
         best_iou = 0
@@ -90,8 +94,11 @@ class YOLOV3Tools(BaseTools):
 
         s1 = gt_w * gt_h
         for index, val in enumerate(anchor_pre_wh):
-            anchor_w = val[0]   # is already scaled on image
-            anchor_h = val[1]  # is already scaled on image
+
+            grid_number = grid_number_[index]
+
+            anchor_w = val[0] / grid_number[0] * image_wh[0]   # scaled on image
+            anchor_h = val[1] / grid_number[1] * image_wh[1]   # scaled on image
 
             s0 = anchor_w * anchor_h
             inter = min(anchor_w, gt_w) * min(anchor_h, gt_h)
@@ -163,6 +170,7 @@ class YOLOV3Tools(BaseTools):
 
                 weight_dict = YOLOV3Tools.compute_anchor_response_result(
                     anchor_pre_wh,
+                    grid_number,
                     abs_pos,
                     image_wh,
                     iou_th

@@ -27,6 +27,8 @@ class YOLOV3Loss(nn.Module):
 
         self.anchor_keys = list(anchor_pre_wh_dict.keys())
         self.mse = nn.MSELoss(reduction='none')
+        self.ce = nn.CrossEntropyLoss(reduction='none')
+        self.bce_l = nn.BCEWithLogitsLoss(reduction='none')
 
     def forward(
             self,
@@ -57,6 +59,11 @@ class YOLOV3Loss(nn.Module):
             # -------------------------------------------------------------------
             # split output
             pre_txtytwth = pre_res_dict.get('position')[0]  # (N, H, W, a_n, 4)
+
+            pre_txty = pre_txtytwth[..., 0:2]  # (N, H, W, a_n, 2)
+            # be careful, not use sigmoid on pre_txty
+            pre_twth = pre_txtytwth[..., 2:4]  # (N, H, W, a_n, 2)
+
             pre_xyxy = YOLOV3Tools.xywh_to_xyxy(
                 pre_txtytwth,
                 self.anchor_pre_wh_dict[anchor_key],
@@ -65,11 +72,12 @@ class YOLOV3Loss(nn.Module):
             # scaled in [0, 1]
 
             pre_conf = torch.sigmoid(pre_res_dict.get('conf'))  # (N, H, W, a_n)
-            pre_cls_prob = torch.softmax(pre_res_dict.get('cls_prob'), dim=-1)  # (N, H, W, a_n, kinds_number)
-            pre_txty_s_twth = torch.cat(
-                (torch.sigmoid(pre_txtytwth[..., 0:2]), pre_txtytwth[..., 2:4]),
-                dim=-1
-            )
+
+            pre_cls_prob = pre_res_dict.get('cls_prob')  # (N, H, W, a_n, kinds_num)
+            # be careful, if you use mse --> please softmax(pre_cls_prob)
+            # otherwise not (softmax already used in CrossEntropy of PyTorch)
+            # pre_cls_prob = torch.softmax(pre_res_dict.get('cls_prob'), dim=-1)  # (N, H, W, a_n, kinds_number)
+
             # -------------------------------------------------------------------
             # split target
 
@@ -81,11 +89,17 @@ class YOLOV3Loss(nn.Module):
                 self.anchor_pre_wh_dict[anchor_key],
                 self.grid_number_dict[anchor_key]
             )
+            gt_txty_s = gt_txty_s_twth[..., 0:2]  # (N, H, W, a_n, 2)
+            gt_twth = gt_txty_s_twth[..., 2:4]  # (N, H, W, a_n, 2)
 
             gt_conf_and_weight = gt_res_dict.get('conf')  # (N, H, W, a_n)
             # gt_conf = (gt_conf_and_weight > 0).float()
             gt_weight = gt_conf_and_weight
-            gt_cls_prob = gt_res_dict.get('cls_prob')
+
+            gt_cls_prob = gt_res_dict.get('cls_prob').argmax(dim=-1)  # (N, H, W, a_n)
+            # be careful, if you use CrossEntropy of PyTorch, please argmax gt_res_dict.get('cls_prob')
+            # because gt_res_dict.get('cls_prob') is one-hot code
+            # gt_cls_prob = gt_res_dict.get('cls_prob')
 
             # -------------------------------------------------------------------
             # compute mask
@@ -97,7 +111,7 @@ class YOLOV3Loss(nn.Module):
             # compute loss
 
             # position loss
-            temp = self.mse(pre_txty_s_twth, gt_txty_s_twth).sum(dim=-1)
+            temp = (self.bce_l(pre_txty, gt_txty_s) + self.mse(pre_twth, gt_twth)).sum(dim=-1)
             loss_dict['position_loss'] += torch.sum(
                 temp * positive * gt_weight
             ) / N
@@ -120,7 +134,11 @@ class YOLOV3Loss(nn.Module):
             ) / N
 
             # cls prob loss
-            temp = self.mse(pre_cls_prob, gt_cls_prob).sum(dim=-1)
+            temp = self.ce(
+                pre_cls_prob.view(-1, pre_cls_prob.shape[-1]),
+                gt_cls_prob.view(-1,)
+            )
+            # temp = self.mse(pre_cls_prob, gt_cls_prob).sum(dim=-1)
             loss_dict['cls_prob_loss'] += torch.sum(
                 temp * positive
             ) / N
