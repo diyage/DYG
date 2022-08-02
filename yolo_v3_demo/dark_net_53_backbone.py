@@ -33,7 +33,7 @@ class Helper:
         )
 
         self.predictor = YOLOV3Predictor(
-            self.opt_trainer.iou_for_nms,
+            self.opt_trainer.iou_for_predict,
             self.opt_trainer.prob_th,
             self.opt_trainer.conf_th,
             self.opt_trainer.score_th,
@@ -57,6 +57,11 @@ class Helper:
             self.opt_trainer.device,
             transform=BaseTransform(self.opt_data_set.image_size[0]),
             labelmap=self.opt_data_set.kinds_name,
+        )
+        self.my_evaluator = YOLOV3Evaluator(
+            model,
+            self.predictor,
+            self.opt_trainer.iou_for_make_target
         )
 
     def go(
@@ -141,9 +146,9 @@ if __name__ == '__main__':
     data_opt = YOLOV3DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
     trainer_opt.lr = 1e-3
-    trainer_opt.batch_size = 8
-    trainer_opt.warm_up_end_epoch = 2
-    trainer_opt.eval_frequency = 1
+    trainer_opt.batch_size = 16
+    trainer_opt.warm_up_end_epoch = 5
+    trainer_opt.eval_frequency = 10
 
     net = YOLOV3Net(
         '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth',
@@ -176,4 +181,8 @@ if __name__ == '__main__':
         mean=data_opt.mean,
         std=data_opt.std
     )
-    helper.go(voc_train_loader, voc_test_loader)
+    helper.detector.load_state_dict(
+        torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/yolo_v3_demo/model_pth_detector/50.pth')
+    )
+    helper.my_evaluator.eval_detector_mAP(voc_test_loader)
+    # helper.go(voc_train_loader, voc_test_loader)

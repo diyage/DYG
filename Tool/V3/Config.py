@@ -57,7 +57,7 @@ class YOLOV3TrainerConfig:
     conf_th: float = 0.0
     prob_th: float = 0.0
     score_th: float = 0.1
-    iou_for_nms: float = 0.6
+    iou_for_predict: float = 0.6
     iou_for_make_target: float = 0.6
     ABS_PATH: str = '/home/dell/data2/models/'
     weight_position: float = 1.0
@@ -67,3 +67,10 @@ class YOLOV3TrainerConfig:
     weight_iou_loss: float = 0.0
     # saved model or images dir(part of )
     # if you want save something to now path, please set ABS_PATH = ''
+
+
+class YOLOV3Config:
+    data_config = YOLOV3DataSetConfig()
+    train_config = YOLOV3TrainerConfig()
+
+
