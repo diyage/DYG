@@ -142,7 +142,7 @@ class YOLOV3Predictor(BasePredictor):
                 position,
                 self.pre_anchor_w_h.get(anchor_key),
                 self.grid_number.get(anchor_key),
-            ).clamp_(0, self.image_size[0] - 1)  # scaled in [0, 1]
+            ).clamp_(0, 1)  # scaled in [0, 1]
             position_abs = position_abs * self.image_size[0]  # scaled on image
 
             # -------------------------------------------------------------------
