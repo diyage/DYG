@@ -240,7 +240,7 @@ def train():
                           input_size=train_size,
                           num_classes=num_classes,
                           trainable=True,
-                          conf_thresh=YOLOV2TrainerConfig.score_th,
+                          conf_thresh=0.001,
                           anchor_size=anchor_size)
         print('Let us train yolov2 on the %s dataset ......' % (args.dataset))
 
@@ -286,8 +286,7 @@ def train():
 
     max_epoch = cfg['max_epoch']  # 最大训练轮次
     epoch_size = len(dataset) // args.batch_size  # 每一训练轮次的迭代次数
-    print(epoch_size)
-    print(len(dataloader))
+
     # 开始训练
     t0 = time.time()
     for epoch in range(args.start_epoch, max_epoch):
@@ -362,19 +361,13 @@ def train():
                 t0 = time.time()
 
         # evaluation
-        if True:
+        if epoch % 10 == 0:
             model.trainable = False
             model.set_grid(val_size)
             model.eval()
 
             # evaluate
             evaluator.evaluate(model)
-
-            my_evaluator.eval_detector_mAP(
-                dl,
-                kinds_name=VOC_CLASSES,
-                iou_th=YOLOV2TrainerConfig.iou_th,
-            )
 
             # convert to training mode.
             model.trainable = True
