@@ -388,6 +388,7 @@ class Resize(object):
 
     def __call__(self, image, boxes=None, labels=None):
         image = cv2.resize(image, (self.size, self.size))
+        boxes = np.clip(boxes, a_min=0, a_max=self.size-1)
         return image, boxes, labels
 
 
