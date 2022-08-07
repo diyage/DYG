@@ -3,6 +3,8 @@ import numpy as np
 
 
 class CV2:
+    COLOR_BGR2HSV = cv2.COLOR_BGR2HSV
+    COLOR_HSV2BGR = cv2.COLOR_HSV2BGR
     def __init__(self):
         pass
 
@@ -94,4 +96,9 @@ class CV2:
     def flip(image, code: int) -> np.ndarray:
         assert code in [-1, 0, 1]
         return cv2.flip(image, code)
+
+    @staticmethod
+    def cvtColor(image, color_type):
+        return cv2.cvtColor(image, color_type)
+
 

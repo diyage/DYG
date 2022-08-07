@@ -2,7 +2,7 @@ import os.path
 
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import Compose
-from Tool.BaseTools.dataaugmentation import *
+from Tool.BaseTools.dataaugmentation import SSDAugmentation, BaseAugmentation
 import torch
 import torch.nn as nn
 import xml.etree.ElementTree as ET
@@ -92,7 +92,7 @@ class VOCDataSet(Dataset):
             years: list,
             train: bool = True,
             image_size: tuple = (448, 448),
-            transform: Union[torchvision.transforms.Compose, MyCompose] = None,
+            transform: Union[SSDAugmentation, BaseAugmentation] = None,
     ):
         # .../VOC/year/trainval(or test)/ ----
         super().__init__()
@@ -106,11 +106,7 @@ class VOCDataSet(Dataset):
         self.image_size = image_size
 
         if transform is None:
-            self.transform = MyCompose([
-                MyRandomFlip(),
-                MyRandomNoise(),
-                MyToTensor(),
-            ])
+            self.transform = BaseAugmentation()
         else:
             self.transform = transform
 
@@ -164,16 +160,27 @@ class VOCDataSet(Dataset):
         return xml_trans.img, xml_trans.objects
 
     def __getitem__(self, index):
-        if isinstance(self.transform, MyCompose):
-            img, label = self.__get_image_label(index)
-            img, label = self.transform(img, label)
-            return img, label
-        else:
-            img, label = self.__get_image_label(index)
-            img = CV2.cvtColorToRGB(img)
-            img = Image.fromarray(img)
-            img = self.transform(img)
-            return img, label
+        img, label = self.__get_image_label(index)
+        boxes = []
+        classes = []
+
+        for val in label:
+            classes.append(val[0])
+            boxes.append(val[1: 5])
+
+        boxes = np.array(boxes, dtype=np.float32)
+        classes = np.array(classes)
+        new_img_tensor, new_boxes, new_classes = self.transform(
+            img,
+            boxes,
+            classes
+        )
+        new_label = []
+        for i in range(new_classes.shape[0]):
+            new_label.append(
+                (new_classes[i], *new_boxes[i].tolist())
+            )
+        return new_img_tensor, new_label
 
     @staticmethod
     def collate_fn(batch):
@@ -358,13 +365,10 @@ def get_voc_data_loader(
 ):
 
     if train:
-        transform_train = MyCompose([
-            MyRandomFlip(),
-            MyRandomNoise(0.1),
-            # MyRandomWeightedChannel(0.5, 1.5),
-            # MyRandomZeroOneChannel(),
-            MyToTensor(mean, std),
-        ])
+        transform_train = SSDAugmentation(
+            mean=mean,
+            std=std
+        )
 
         train_d = VOCDataSet(
             root=root_path,
@@ -380,9 +384,10 @@ def get_voc_data_loader(
                              shuffle=True)
         return train_l
     else:
-        transform_test = MyCompose([
-            MyToTensor(mean, std),
-        ])
+        transform_test = BaseAugmentation(
+            mean=mean,
+            std=std
+        )
 
         test_d = VOCDataSet(
             root=root_path,
