@@ -382,16 +382,31 @@ class PhotometricDistort(object):
         # return self.rand_light_noise(im, boxes, labels)
 
 
+class Resize(object):
+    def __init__(self, size=416):
+        self.size = size
+
+    def __call__(self, image, boxes=None, labels=None):
+        image = cv2.resize(image, (self.size, self.size))
+        return image, boxes, labels
+
+
 class SSDAugmentation(object):
-    def __init__(self, mean=(0.406, 0.456, 0.485), std=(0.225, 0.224, 0.229)):
+    def __init__(self,
+                 size: int = 416,
+                 mean=(0.406, 0.456, 0.485),
+                 std=(0.225, 0.224, 0.229)
+                 ):
         self.mean = mean
         self.std = std
+        self.size = size
         self.augment = MyCompose([
             ConvertFromInts(),
             PhotometricDistort(),
             Expand(self.mean),
             RandomSampleCrop(),
             RandomMirror(),
+            Resize(self.size),
             Normalize(self.mean, self.std)
         ])
 
@@ -400,11 +415,17 @@ class SSDAugmentation(object):
 
 
 class BaseAugmentation(object):
-    def __init__(self, mean=(0.406, 0.456, 0.485), std=(0.225, 0.224, 0.229)):
+    def __init__(self,
+                 size: int = 416,
+                 mean=(0.406, 0.456, 0.485),
+                 std=(0.225, 0.224, 0.229)
+                 ):
+        self.size = size
         self.mean = mean
         self.std = std
         self.augment = MyCompose([
             ConvertFromInts(),
+            Resize(self.size),
             Normalize(self.mean, self.std)
         ])
 

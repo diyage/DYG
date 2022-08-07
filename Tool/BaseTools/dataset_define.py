@@ -156,7 +156,7 @@ class VOCDataSet(Dataset):
     ) -> tuple:
         root_path, xml_file_name = self.image_and_xml_path_info[index]
         xml_trans = XMLTranslate(root_path=root_path, file_name=xml_file_name)
-        xml_trans.resize(new_size=self.image_size)
+        # xml_trans.resize(new_size=self.image_size)
         return xml_trans.img, xml_trans.objects
 
     def __getitem__(self, index):
@@ -366,6 +366,7 @@ def get_voc_data_loader(
 
     if train:
         transform_train = SSDAugmentation(
+            size=image_size[0],
             mean=mean,
             std=std
         )
@@ -385,6 +386,7 @@ def get_voc_data_loader(
         return train_l
     else:
         transform_test = BaseAugmentation(
+            size=image_size[0],
             mean=mean,
             std=std
         )
