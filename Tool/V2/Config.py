@@ -45,15 +45,26 @@ class YOLOV2DataSetConfig:
 class YOLOV2TrainerConfig:
     max_epoch_on_image_net_224 = 160
     max_epoch_on_image_net_448 = 10
-    max_epoch_on_detector = 1000
+    max_epoch_on_detector = 200
+    eval_frequency = 10
 
     device: str = 'cuda:0'
     batch_size = 32
     lr: float = 1e-3
-    conf_th: float = 0.0
-    prob_th: float = 0.0
-    score_th: float = 0.1
-    iou_th: float = 0.6
+    warm_up_end_epoch: int = 1
+
+    conf_th_for_show: float = 0.0
+    prob_th_for_show: float = 0.0
+    score_th_for_show: float = 0.3
+
+    conf_th_for_eval: float = 0.0
+    prob_th_for_eval: float = 0.0
+    score_th_for_eval: float = 0.001
+
+    iou_th_for_show: float = 0.5
+    iou_th_for_eval: float = 0.5
+    iou_th_for_make_target: float = 0.5
+
     ABS_PATH: str = '/home/dell/data2/models/'
     weight_position: float = 1.0
     weight_conf_has_obj: float = 5.0

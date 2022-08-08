@@ -33,14 +33,25 @@ class Helper:
             self.opt_data_set.image_size,
             self.opt_data_set.grid_number,
             self.opt_data_set.kinds_name,
-            self.opt_trainer.iou_th
+            self.opt_trainer.iou_th_for_make_target
         )
 
-        self.predictor = YOLOV2Predictor(
-            self.opt_trainer.iou_th,
-            self.opt_trainer.prob_th,
-            self.opt_trainer.conf_th,
-            self.opt_trainer.score_th,
+        self.predictor_for_show = YOLOV2Predictor(
+            self.opt_trainer.iou_th_for_show,
+            self.opt_trainer.prob_th_for_show,
+            self.opt_trainer.conf_th_for_show,
+            self.opt_trainer.score_th_for_show,
+            self.opt_data_set.pre_anchor_w_h,
+            self.opt_data_set.kinds_name,
+            self.opt_data_set.image_size,
+            self.opt_data_set.grid_number
+        )
+
+        self.predictor_for_eval = YOLOV2Predictor(
+            self.opt_trainer.iou_th_for_eval,
+            self.opt_trainer.prob_th_for_eval,
+            self.opt_trainer.conf_th_for_eval,
+            self.opt_trainer.score_th_for_eval,
             self.opt_data_set.pre_anchor_w_h,
             self.opt_data_set.kinds_name,
             self.opt_data_set.image_size,
@@ -49,13 +60,13 @@ class Helper:
 
         self.visualizer = YOLOV2Visualizer(
             model,
-            self.predictor,
+            self.predictor_for_show,
             self.opt_data_set.class_colors
         )
 
-        self.evaluator = YOLOV2Evaluator(
+        self.my_evaluator = YOLOV2Evaluator(
             model,
-            self.predictor
+            self.predictor_for_eval
         )
 
     def go(
@@ -72,7 +83,6 @@ class Helper:
             self.opt_trainer.weight_iou_loss,
             self.opt_data_set.grid_number,
             image_size=self.opt_data_set.image_size,
-            iou_th=self.opt_trainer.iou_th,
             loss_type=LOSS_TYPE
         )
         # already trained dark_net 19
@@ -90,7 +100,7 @@ class Helper:
         warm_optimizer = WarmUpOptimizer(
             sgd_optimizer,
             base_lr=self.opt_trainer.lr,
-            warm_up_epoch=1
+            warm_up_epoch=self.opt_trainer.warm_up_end_epoch
         )
 
         for epoch in tqdm(range(self.opt_trainer.max_epoch_on_detector),
@@ -116,7 +126,7 @@ class Helper:
                 print_info += '{:^30}:{:^15.6f}.\n'.format(key, val)
             tqdm.write(print_info)
 
-            if True:
+            if epoch % self.opt_trainer.eval_frequency == 0:
                 # save model
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
@@ -132,14 +142,14 @@ class Helper:
                 )
 
                 # eval mAP
-                self.evaluator.eval_detector_mAP(
+                self.my_evaluator.eval_detector_mAP(
                     data_loader_test
                 )
 
 
 if __name__ == '__main__':
-    GPU_ID = 0
-    LOSS_TYPE = 0
+    GPU_ID = 1
+    LOSS_TYPE = 1
     YOLOV2Tools.TYPE = LOSS_TYPE
 
     trainer_opt = YOLOV2TrainerConfig()

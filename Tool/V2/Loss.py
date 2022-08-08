@@ -200,7 +200,6 @@ class YOLOV2Loss(nn.Module):
                  weight_iou_loss: float = 1.0,
                  grid_number: tuple = (13, 13),
                  image_size: tuple = (416, 416),
-                 iou_th: float = 0.6,
                  loss_type: int = 1,
                  ):
         super().__init__()
@@ -215,8 +214,6 @@ class YOLOV2Loss(nn.Module):
         self.grid_number = grid_number
 
         self.image_size = image_size
-
-        self.iou_th = iou_th
 
         self.mse = nn.MSELoss(reduction='none')
         self.iou_loss_function = nn.SmoothL1Loss(reduction='none')
