@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from Tool.BaseTools import Position, BaseTools
+from Tool.BaseTools import BaseTools
 from typing import Union
 
 

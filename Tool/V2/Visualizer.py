@@ -34,7 +34,7 @@ class YOLOV2Visualizer(BaseVisualizer):
             self,
             labels,
     ):
-        return YOLOV2Tools.make_targets(
+        return YOLOV2Tools.make_target(
             labels,
             self.pre_anchor_w_h,
             self.image_size,

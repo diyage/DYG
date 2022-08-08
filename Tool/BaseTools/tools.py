@@ -2,9 +2,35 @@ import torch
 import numpy as np
 from Tool.BaseTools.cv2_ import CV2
 from typing import Union
+from abc import abstractmethod
 
 
 class BaseTools:
+
+    @staticmethod
+    @abstractmethod
+    def make_target(
+            *args,
+            **kwargs
+    ):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def split_target(
+            *args,
+            **kwargs
+    ) -> dict:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def split_predict(
+            *args,
+            **kwargs
+    ) -> dict:
+        pass
+
     @staticmethod
     def image_np_to_tensor(
             image: np.ndarray,

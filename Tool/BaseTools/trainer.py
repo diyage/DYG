@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Union
+from abc import abstractmethod
 
 
 class WarmUpOptimizer:
@@ -62,6 +63,7 @@ class BaseTrainer:
         self.pre_anchor_w_h = pre_anchor_w_h
         self.iou_th = iou_th
 
+    @abstractmethod
     def make_targets(
             self,
             labels,
