@@ -406,7 +406,8 @@ class BaseTools:
                         '{}:{:.2%}'.format(predict_kind_name, prob_score),
                         org=(int(abs_double_pos[0]), int(abs_double_pos[1] - 5)),
                         font_scale=scale,
-                        color=tuple([255 - val for val in color]),
+                        # color=tuple([255 - val for val in color]),
+                        color=(0, 0, 0),
                         back_ground_color=color
                         )
 
