@@ -7,6 +7,7 @@ from typing import Union
 from .Predictor import YOLOV2Predictor
 from .Tools import YOLOV2Tools
 from Tool.BaseTools import CV2, BaseVisualizer
+import os
 
 
 class YOLOV2Visualizer(BaseVisualizer):
@@ -72,7 +73,7 @@ class YOLOV2Visualizer(BaseVisualizer):
             saved_dir: str,
             desc: str = 'show predict result'
     ):
-
+        os.makedirs(saved_dir, exist_ok=True)
         for batch_id, (images, labels) in enumerate(tqdm(data_loader_test,
                                                          desc=desc,
                                                          position=0)):

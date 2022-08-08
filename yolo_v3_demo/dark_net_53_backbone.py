@@ -140,8 +140,6 @@ class Helper:
 
                 # show predict
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
-                os.makedirs(saved_dir, exist_ok=True)
-
                 self.visualizer.show_detect_results(
                     data_loader_test,
                     saved_dir
@@ -157,10 +155,6 @@ if __name__ == '__main__':
     trainer_opt = YOLOV3TrainerConfig()
     data_opt = YOLOV3DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
-    trainer_opt.lr = 1e-3
-    trainer_opt.batch_size = 16
-    trainer_opt.warm_up_end_epoch = 5
-    trainer_opt.eval_frequency = 10
 
     net = YOLOV3Net(
         '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth',
@@ -196,5 +190,5 @@ if __name__ == '__main__':
     helper.detector.load_state_dict(
         torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/yolo_v3_demo/model_pth_detector/50.pth')
     )
-    helper.my_evaluator.eval_detector_mAP(voc_test_loader)
-    # helper.go(voc_train_loader, voc_test_loader)
+    # helper.my_evaluator.eval_detector_mAP(voc_test_loader)
+    helper.go(voc_train_loader, voc_test_loader)

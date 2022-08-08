@@ -134,8 +134,6 @@ class Helper:
 
                 # show predict
                 saved_dir = self.opt_trainer.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
-                os.makedirs(saved_dir, exist_ok=True)
-
                 self.visualizer.show_detect_results(
                     data_loader_test,
                     saved_dir
