@@ -29,14 +29,26 @@ class Helper:
             self.opt_data_set.image_size,
             self.opt_data_set.grid_number,
             self.opt_data_set.kinds_name,
-            self.opt_trainer.iou_for_make_target,
+            self.opt_trainer.iou_th_for_make_target,
         )
 
-        self.predictor = YOLOV3Predictor(
-            self.opt_trainer.iou_for_predict,
-            self.opt_trainer.prob_th,
-            self.opt_trainer.conf_th,
-            self.opt_trainer.score_th,
+        self.predictor_for_show = YOLOV3Predictor(
+            self.opt_trainer.iou_th_for_show,
+            self.opt_trainer.prob_th_for_show,
+            self.opt_trainer.conf_th_for_show,
+            self.opt_trainer.score_th_for_show,
+            self.opt_data_set.pre_anchor_w_h,
+            self.opt_data_set.kinds_name,
+            self.opt_data_set.image_size,
+            self.opt_data_set.grid_number,
+            self.opt_data_set.single_an
+        )
+
+        self.predictor_for_eval = YOLOV3Predictor(
+            self.opt_trainer.iou_th_for_eval,
+            self.opt_trainer.prob_th_for_eval,
+            self.opt_trainer.conf_th_for_eval,
+            self.opt_trainer.score_th_for_eval,
             self.opt_data_set.pre_anchor_w_h,
             self.opt_data_set.kinds_name,
             self.opt_data_set.image_size,
@@ -46,12 +58,12 @@ class Helper:
 
         self.visualizer = YOLOV3Visualizer(
             model,
-            self.predictor,
+            self.predictor_for_show,
             self.opt_data_set.class_colors,
         )
 
         self.evaluator = FormalEvaluator(
-            self.predictor,
+            self.predictor_for_eval,
             self.opt_data_set.root_path,
             self.opt_data_set.image_size[0],
             self.opt_trainer.device,
@@ -60,8 +72,8 @@ class Helper:
         )
         self.my_evaluator = YOLOV3Evaluator(
             model,
-            self.predictor,
-            self.opt_trainer.iou_for_make_target
+            self.predictor_for_eval,
+            self.opt_trainer.iou_th_for_make_target
         )
 
     def go(
