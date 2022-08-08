@@ -41,7 +41,7 @@ class YOLOV2Visualizer(BaseVisualizer):
             self.grid_number,
             self.kinds_name,
             self.iou_th,
-            )
+            ).to(self.device)
 
     def detect_one_image(
             self,
@@ -81,7 +81,7 @@ class YOLOV2Visualizer(BaseVisualizer):
 
             self.detector.eval()
             images = images.to(self.device)
-            targets = self.make_targets(labels).to(self.device)
+            targets = self.make_targets(labels)
             output = self.detector(images)
 
             gt_decode = self.predictor.decode_target(targets)

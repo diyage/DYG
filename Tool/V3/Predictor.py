@@ -1,7 +1,6 @@
 import torch
 from .Tools import YOLOV3Tools
 from Tool.BaseTools import BasePredictor
-import torch.nn.functional as F
 
 
 class YOLOV3Predictor(BasePredictor):

@@ -64,7 +64,7 @@ class Helper:
             self.opt_data_set.class_colors
         )
 
-        self.evaluator = YOLOV2FormalEvaluator(
+        self.formal_evaluator = YOLOV2FormalEvaluator(
             model,
             self.predictor_for_eval,
             self.opt_data_set.root_path,
@@ -150,7 +150,7 @@ class Helper:
                 )
 
                 # eval mAP
-                self.evaluator.eval_detector_mAP()
+                self.formal_evaluator.eval_detector_mAP()
                 # self.my_evaluator.eval_detector_mAP(
                 #     data_loader_test
                 # )

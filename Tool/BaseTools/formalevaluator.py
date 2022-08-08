@@ -9,6 +9,7 @@ import os
 import os.path as osp
 import cv2
 import sys
+from abc import abstractmethod
 
 if sys.version_info[0] == 2:
     import xml.etree.cElementTree as ET
@@ -74,6 +75,14 @@ class BaseFormalEvaluator:
                                     transform=transform,
                                     kinds_name=labelmap
                                     )
+
+    @abstractmethod
+    def eval_detector_mAP(
+            self,
+            *args,
+            **kwargs
+    ):
+        pass
 
     def get_predict_info(
             self,

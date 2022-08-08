@@ -1,7 +1,4 @@
-import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 from .Tools import YOLOV2Tools
 from Tool.BaseTools import BaseTrainer
 

@@ -4,7 +4,7 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 from Tool.V3 import *
-from Tool.BaseTools import get_voc_data_loader, WarmUpOptimizer
+from Tool.BaseTools import get_voc_data_loader, WarmUpOptimizer, BaseTransform
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -62,7 +62,8 @@ class Helper:
             self.opt_data_set.class_colors,
         )
 
-        self.evaluator = FormalEvaluator(
+        self.formal_evaluator = YOLOV3FormalEvaluator(
+            model,
             self.predictor_for_eval,
             self.opt_data_set.root_path,
             self.opt_data_set.image_size[0],
@@ -146,7 +147,8 @@ class Helper:
                 )
 
                 # eval mAP
-                self.evaluator.evaluate(self.detector)
+                self.formal_evaluator.eval_detector_mAP()
+                # self.my_evaluator.eval_detector_mAP(data_loader_test)
 
 
 if __name__ == '__main__':

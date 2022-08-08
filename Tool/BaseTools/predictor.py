@@ -84,12 +84,10 @@ class BasePredictor:
     @abstractmethod
     def decode_one_target(
             self,
-            target
+            *args,
+            **kwargs
     ) -> list:
         '''
-
-        Args:
-            target:
 
         Returns:
             kps_vec,
@@ -100,21 +98,24 @@ class BasePredictor:
     @abstractmethod
     def decode_target(
             self,
-            target
+            *args,
+            **kwargs
     ):
         pass
 
     @abstractmethod
     def decode_one_predict(
             self,
-            predict
+            *args,
+            **kwargs
     ):
         pass
 
     @abstractmethod
     def decode_predict(
             self,
-            predict
+            *args,
+            **kwargs
     ):
         pass
 
