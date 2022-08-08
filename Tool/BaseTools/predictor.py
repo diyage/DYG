@@ -1,6 +1,7 @@
 import torch
 from Tool.BaseTools.tools import BaseTools
 from typing import Union
+from abc import abstractmethod
 
 
 class BasePredictor:
@@ -79,3 +80,41 @@ class BasePredictor:
             )
 
         return total
+
+    @abstractmethod
+    def decode_one_target(
+            self,
+            target
+    ) -> list:
+        '''
+
+        Args:
+            target:
+
+        Returns:
+            kps_vec,
+             kps --> kind_name, position, score
+        '''
+        pass
+
+    @abstractmethod
+    def decode_target(
+            self,
+            target
+    ):
+        pass
+
+    @abstractmethod
+    def decode_one_predict(
+            self,
+            predict
+    ):
+        pass
+
+    @abstractmethod
+    def decode_predict(
+            self,
+            predict
+    ):
+        pass
+

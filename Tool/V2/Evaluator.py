@@ -60,7 +60,7 @@ class YOLOV2Evaluator(BaseEvaluator):
             output = self.detector(images)
 
             gt_decode = self.predictor.decode_target(targets)
-            pre_decode = self.predictor.decode_model_out(output)
+            pre_decode = self.predictor.decode_predict(output)
 
             for image_index in range(images.shape[0]):
 

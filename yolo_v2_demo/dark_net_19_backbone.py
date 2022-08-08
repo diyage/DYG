@@ -4,7 +4,7 @@ from tqdm import tqdm
 import os
 from torch.utils.data import DataLoader
 from Tool.V2 import *
-from Tool.BaseTools import get_voc_data_loader, WarmUpOptimizer
+from Tool.BaseTools import get_voc_data_loader, WarmUpOptimizer, BaseTransform
 from yolo_v2_demo.utils.get_pretrained_darknet_19 import get_pretained_dark_net_19
 from yolo_v2_demo.utils.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
@@ -62,6 +62,16 @@ class Helper:
             model,
             self.predictor_for_show,
             self.opt_data_set.class_colors
+        )
+
+        self.evaluator = YOLOV2FormalEvaluator(
+            model,
+            self.predictor_for_eval,
+            self.opt_data_set.root_path,
+            self.opt_data_set.image_size[0],
+            self.opt_trainer.device,
+            transform=BaseTransform(self.opt_data_set.image_size[0]),
+            labelmap=self.opt_data_set.kinds_name,
         )
 
         self.my_evaluator = YOLOV2Evaluator(
@@ -140,9 +150,10 @@ class Helper:
                 )
 
                 # eval mAP
-                self.my_evaluator.eval_detector_mAP(
-                    data_loader_test
-                )
+                self.evaluator.eval_detector_mAP()
+                # self.my_evaluator.eval_detector_mAP(
+                #     data_loader_test
+                # )
 
 
 if __name__ == '__main__':
@@ -178,7 +189,7 @@ if __name__ == '__main__':
     )
     voc_test_loader = get_voc_data_loader(
         data_opt.root_path,
-        ['2012'],
+        ['2007'],
         data_opt.image_size,
         trainer_opt.batch_size,
         train=False,

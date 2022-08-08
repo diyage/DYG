@@ -54,10 +54,9 @@ class YOLOV2Visualizer(BaseVisualizer):
                   'please resize your image before using this method!')
             image = YOLOV2Tools.image_np_to_tensor(image)
 
-        out = self.detector(image.unsqueeze(0).to(self.device))[0]
-        pre_kps_s = self.predictor.decode_out_one_image(
+        out = self.detector(image.unsqueeze(0).to(self.device))  # (1, 3, H, W)
+        pre_kps_s = self.predictor.decode_one_predict(
             out,
-            out_is_target=False
         )
         YOLOV2Tools.visualize(
             image,
@@ -86,7 +85,7 @@ class YOLOV2Visualizer(BaseVisualizer):
             output = self.detector(images)
 
             gt_decode = self.predictor.decode_target(targets)
-            pre_decode = self.predictor.decode_model_out(output)
+            pre_decode = self.predictor.decode_predict(output)
 
             for image_index in range(images.shape[0]):
 

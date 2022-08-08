@@ -122,7 +122,7 @@ class RightLoss(nn.Module):
         B, abC, H, W = prediction.size()
         target = target.view(B, H * W * self.num_anchors, -1)
 
-        res_dict = YOLOV2Tools.split_model_out(
+        res_dict = YOLOV2Tools.split_predict(
             prediction,
             self.num_anchors,
         )
@@ -266,7 +266,7 @@ class YOLOV2Loss(nn.Module):
     ):
         N = out.shape[0]
         # split output
-        pre_res_dict = YOLOV2Tools.split_model_out(
+        pre_res_dict = YOLOV2Tools.split_predict(
             out,
             self.anchor_number,
         )
