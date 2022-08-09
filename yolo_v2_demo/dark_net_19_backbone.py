@@ -158,7 +158,12 @@ class Helper:
 
 if __name__ == '__main__':
     GPU_ID = 1
-    LOSS_TYPE = 1
+
+    # LOSS_TYPE = 1
+    # YOLOV2Tools.TYPE = LOSS_TYPE
+    # # mAP is about 0.73~0.74
+
+    LOSS_TYPE = 0
     YOLOV2Tools.TYPE = LOSS_TYPE
 
     trainer_opt = YOLOV2TrainerConfig()
