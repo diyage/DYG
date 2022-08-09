@@ -162,6 +162,7 @@ if __name__ == '__main__':
     dark_net_53 = get_backbone_darknet_53(
         '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth'
     )
+    # mAP is 0.77+
     net = YOLOV3Model(
         dark_net_53,
         data_opt.single_an,
