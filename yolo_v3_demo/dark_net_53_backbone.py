@@ -73,6 +73,7 @@ class Helper:
         )
         self.my_evaluator = YOLOV3Evaluator(
             model,
+            self.opt_trainer.device,
             self.predictor_for_eval,
             self.opt_trainer.iou_th_for_make_target
         )

@@ -8,12 +8,13 @@ class YOLOV3Evaluator(BaseEvaluator):
     def __init__(
             self,
             model: nn.Module,
+            device: str,
             predictor: YOLOV3Predictor,
             iou_th_for_make_target: float
     ):
         super().__init__(
             detector=model,
-            device=next(model.parameters()).device,
+            device=device,
             predictor=predictor,
             kinds_name=predictor.kinds_name,
             iou_th=predictor.iou_th

@@ -74,6 +74,7 @@ class Helper:
 
         self.my_evaluator = YOLOV2Evaluator(
             model,
+            self.opt_trainer.device,
             self.predictor_for_eval
         )
 
@@ -163,6 +164,7 @@ if __name__ == '__main__':
 
     LOSS_TYPE = 0
     YOLOV2Tools.TYPE = LOSS_TYPE
+    # mAP is about 0.73~0.74
 
     trainer_opt = YOLOV2TrainerConfig()
     data_opt = YOLOV2DataSetConfig()
