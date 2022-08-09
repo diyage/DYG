@@ -2,6 +2,7 @@ import torch
 from .Tools import YOLOV2Tools
 from Tool.BaseTools import BasePredictor
 import torch.nn.functional as F
+from typing import List
 
 
 class YOLOV2Predictor(BasePredictor):
@@ -31,7 +32,7 @@ class YOLOV2Predictor(BasePredictor):
     def decode_one_target(
             self,
             x: torch.Tensor,
-    ) -> list:
+    ) -> List:
 
         a_n = len(self.pre_anchor_w_h)
         #####################################################################
@@ -84,7 +85,7 @@ class YOLOV2Predictor(BasePredictor):
     def decode_target(
             self,
             x: torch.Tensor,
-    ) -> list:
+    ) -> List[List]:
         res = []
         for i in range(x.shape[0]):
             pre_ = self.decode_one_target(
@@ -97,7 +98,7 @@ class YOLOV2Predictor(BasePredictor):
     def decode_one_predict(
             self,
             out_put: torch.Tensor,
-    ):
+    ) -> List:
         a_n = len(self.pre_anchor_w_h)
 
         ##############################################
@@ -148,7 +149,7 @@ class YOLOV2Predictor(BasePredictor):
     def decode_predict(
             self,
             x: torch.Tensor,
-    ):
+    ) -> List[List]:
         res = []
         for i in range(x.shape[0]):
             pre_ = self.decode_one_predict(

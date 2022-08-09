@@ -1,3 +1,7 @@
+'''
+This packet could be used as same as cv2.(of course, just some basic functions, others will be writen by yourself)
+It solves -- method(s) of cv2 could not be called by dot. --
+'''
 import cv2
 import numpy as np
 
@@ -5,6 +9,7 @@ import numpy as np
 class CV2:
     COLOR_BGR2HSV = cv2.COLOR_BGR2HSV
     COLOR_HSV2BGR = cv2.COLOR_HSV2BGR
+
     def __init__(self):
         pass
 

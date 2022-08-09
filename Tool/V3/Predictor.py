@@ -1,6 +1,7 @@
 import torch
 from .Tools import YOLOV3Tools
 from Tool.BaseTools import BasePredictor
+from typing import List
 
 
 class YOLOV3Predictor(BasePredictor):
@@ -32,7 +33,7 @@ class YOLOV3Predictor(BasePredictor):
     def decode_one_target(
             self,
             x: dict,
-    ) -> list:
+    ) -> List:
         '''
 
         Args:
@@ -96,7 +97,7 @@ class YOLOV3Predictor(BasePredictor):
             self,
             target: dict,
             batch_size: int,
-    ) -> list:
+    ) -> List[List]:
 
         res = [[] for _ in range(batch_size)]
         for i in range(batch_size):
@@ -111,7 +112,7 @@ class YOLOV3Predictor(BasePredictor):
     def decode_one_predict(
             self,
             x: dict
-    ):
+    ) -> List:
         '''
 
                 Args:
@@ -183,7 +184,7 @@ class YOLOV3Predictor(BasePredictor):
             self,
             predict: dict,
             batch_size: int,
-    ):
+    ) -> List[List]:
 
         res = [[] for _ in range(batch_size)]
         for i in range(batch_size):

@@ -1,7 +1,20 @@
+'''
+This packet(predictor) is core of Object Detection.
+It will be used in inference phase for decoding ground-truth(target)/model-output(predict).
+
+You must know some special definitions in my frame:
+    kps_vec_s --> [kps_vec0, kps_vec1, ...]                         for batch images
+        kps_vec --> [kps0, kps1, kps2, ...]                         for one image
+            kps --> (predict_kind_name, abs_double_pos, score)      for one object
+                predict_kind_name --> str  (e.g. 'cat', 'dog', 'car', ...)
+                abs_double_pos --> (x, y, x, y)   scaled on image
+                score --> float   conf * cls_prob
+'''
 import torch
 from Tool.BaseTools.tools import BaseTools
 from typing import Union
 from abc import abstractmethod
+from typing import List
 
 
 class BasePredictor:
@@ -30,7 +43,7 @@ class BasePredictor:
             position_abs_: torch.Tensor,
             scores_max_value: torch.Tensor,
             scores_max_index: torch.Tensor
-    ):
+    ) -> List:
         '''
         for one image, all predicted objects( already mask some bad ones)
         it may have many kinds...
@@ -39,11 +52,7 @@ class BasePredictor:
             scores_max_value: (P, ) predicted kind_name's score
             scores_max_index: (P, ) predicted kind_name's index
 
-        Returns: kps_s
-            kps_s --> [kps0, kps1, kps2, ...]
-            kps --> (predict_kind_name, abs_double_pos, score)
-            abs_double_pos --> (x, y, x, y)
-
+        Returns: kps_vec
         '''
         def for_response(
                 now_kind_pos_abs,
@@ -62,8 +71,7 @@ class BasePredictor:
                 predict_kind_name = kind_name
 
                 res.append(
-                    (predict_kind_name, abs_double_pos, s.item())
-                    # kps
+                    (predict_kind_name, abs_double_pos, s.item())  # kps
                 )
 
             return res
@@ -86,12 +94,10 @@ class BasePredictor:
             self,
             *args,
             **kwargs
-    ) -> list:
+    ) -> List:
         '''
-
         Returns:
-            kps_vec,
-             kps --> kind_name, position, score
+            kps_vec
         '''
         pass
 
@@ -100,7 +106,12 @@ class BasePredictor:
             self,
             *args,
             **kwargs
-    ):
+    ) -> List[List]:
+        '''
+
+                Returns:
+                    kps_vec_s
+        '''
         pass
 
     @abstractmethod
@@ -108,7 +119,12 @@ class BasePredictor:
             self,
             *args,
             **kwargs
-    ):
+    ) -> List:
+        '''
+
+                        Returns:
+                            kps_vec
+                '''
         pass
 
     @abstractmethod
@@ -116,6 +132,11 @@ class BasePredictor:
             self,
             *args,
             **kwargs
-    ):
+    ) -> List[List]:
+        '''
+
+                        Returns:
+                            kps_vec_s
+                '''
         pass
 

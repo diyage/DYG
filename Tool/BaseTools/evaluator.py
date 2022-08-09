@@ -1,3 +1,6 @@
+'''
+Used for evaluating some metrics of detector.
+'''
 from abc import abstractmethod
 
 

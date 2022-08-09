@@ -1,3 +1,7 @@
+'''
+This packet is modified from --formal evaluate methods--.
+But I just recommend using default version (use_07=True, just evaluate VOC2007)
+'''
 import torch
 from torch.utils.data import Dataset
 import numpy as np
@@ -208,7 +212,6 @@ class BaseFormalEvaluator:
             os.makedirs(filedir)
         path = os.path.join(filedir, filename)
         return path
-
 
     def write_voc_results_file(self, all_boxes):
         for cls_ind, cls in enumerate(self.labelmap):

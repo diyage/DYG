@@ -1,9 +1,11 @@
+'''
+Used for data augmentation.
+SSDAugmentation --> for train
+BaseAugmentation --> for test/eval
+'''
 from Tool.BaseTools.cv2_ import CV2
 from Tool.BaseTools.tools import BaseTools
-###################################################################################
 import torch
-from torchvision import transforms
-import cv2
 import numpy as np
 import types
 from numpy import random
@@ -143,9 +145,9 @@ class ConvertColor(object):
 
     def __call__(self, image, boxes=None, labels=None):
         if self.current == 'BGR' and self.transform == 'HSV':
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            image = CV2.cvtColor(image, CV2.COLOR_BGR2HSV)
         elif self.current == 'HSV' and self.transform == 'BGR':
-            image = cv2.cvtColor(image, cv2.COLOR_HSV2BGR)
+            image = CV2.cvtColor(image, CV2.COLOR_HSV2BGR)
         else:
             raise NotImplementedError
         return image, boxes, labels
@@ -388,7 +390,7 @@ class Resize(object):
 
     def __call__(self, image, boxes=None, labels=None):
         old_h, old_w = image.shape[0], image.shape[1]
-        image = cv2.resize(image, (self.size, self.size))
+        image = CV2.resize(image, (self.size, self.size))
 
         boxes[:, [0, 2]] /= (old_w/self.size)
         boxes[:, [1, 3]] /= (old_h/self.size)

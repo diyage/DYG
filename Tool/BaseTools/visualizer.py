@@ -1,3 +1,6 @@
+'''
+This packet is used for visualization.
+'''
 from abc import abstractmethod
 
 

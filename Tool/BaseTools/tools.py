@@ -1,3 +1,8 @@
+'''
+This packet is the most-most-most core development tool.
+It will serve for all other development tools.
+You could use it to define everything !!!
+'''
 import torch
 import numpy as np
 from Tool.BaseTools.cv2_ import CV2
@@ -13,6 +18,12 @@ class BaseTools:
             *args,
             **kwargs
     ):
+        '''
+        create target used for computing loss.
+        You may have one question: where is make_predict ?
+        Method --make_predict-- is just __call__(or forward, little incorrect) of nn.Module !!!
+        So predict is just the output of model(nn.Module you define).
+        '''
         pass
 
     @staticmethod
@@ -21,6 +32,32 @@ class BaseTools:
             *args,
             **kwargs
     ) -> dict:
+        '''
+        split target(create by method make_target).
+        you will get result like this:
+            {
+                 'position': xxx,
+                 'conf': xxx,
+                 'cls_prob': xxx,
+                 ...
+            }
+        or:
+            {
+                'key_0': {
+                             'position': xxx,
+                             'conf': xxx,
+                             'cls_prob': xxx,
+                             ...
+                        },
+                'key_1': {
+                             'position': xxx,
+                             'conf': xxx,
+                             'cls_prob': xxx,
+                             ...
+                        },
+                ...
+            }
+        '''
         pass
 
     @staticmethod
@@ -29,6 +66,32 @@ class BaseTools:
             *args,
             **kwargs
     ) -> dict:
+        '''
+                split predict(create by model, i.e. model output).
+                you will get result like this:
+                    {
+                         'position': xxx,
+                         'conf': xxx,
+                         'cls_prob': xxx,
+                         ...
+                    }
+                or:
+                    {
+                        'key_0': {
+                                     'position': xxx,
+                                     'conf': xxx,
+                                     'cls_prob': xxx,
+                                     ...
+                                },
+                        'key_1': {
+                                     'position': xxx,
+                                     'conf': xxx,
+                                     'cls_prob': xxx,
+                                     ...
+                                },
+                        ...
+                    }
+                '''
         pass
 
     @staticmethod

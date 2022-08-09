@@ -1,17 +1,17 @@
+'''
+Define dataset/dataloader
+Function --get_voc_data_loader-- will be what you want!
+'''
 import os.path
-
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import Compose
 from Tool.BaseTools.dataaugmentation import SSDAugmentation, BaseAugmentation
 import torch
-import torch.nn as nn
 import xml.etree.ElementTree as ET
 from torch.utils.data import Dataset, DataLoader
-import torchvision
 import torchvision.transforms.transforms as transforms
 import numpy as np
 from .cv2_ import CV2
-from PIL import Image
 from typing import List, Union
 
 
@@ -192,91 +192,6 @@ class VOCDataSet(Dataset):
         return torch.stack(imgs), labels
 
 
-class VOCTrainValDataSet(Dataset):
-    def __init__(
-            self,
-            root: str,
-            year: str,
-            train: bool = True,
-            image_size: tuple = (448, 448),
-            transform: torchvision.transforms.Compose = None,
-            fast_load: bool = False,
-    ):
-        super().__init__()
-        assert year in ['2012', '2007']
-        self.train = train
-        self.data_type = 'trainval'
-        self.data_path = os.path.join(root, year, self.data_type)
-        self.image_size = image_size
-        self.transform = transform
-        self.xml_file_names = self.__get_image_xml_file_names()
-
-        self.fast_load = fast_load
-        self.images = []
-        self.labels = []
-        if self.fast_load:
-            for xml_name in self.xml_file_names:
-                a, b = self.__get_image_label(xml_name)
-                self.images.append(a)
-                self.labels.append(b)
-
-    def __get_image_xml_file_names(self) -> list:
-        txt_file_name = os.path.join(
-            self.data_path,
-            'ImageSets',
-            'Main',
-            '{}.txt'.format(self.data_type)
-        )
-
-        with open(txt_file_name, 'r') as f:
-            temp = f.readlines()
-            xml_file_names = [val[:-1] + '.xml' for val in temp]
-
-        n = len(xml_file_names)
-        cut = int(0.8 * n)
-        if self.train:
-            return xml_file_names[0: cut]
-        else:
-            return xml_file_names[cut:]
-
-    def __len__(self):
-        return len(self.xml_file_names)
-
-    def __get_image_label(
-            self,
-            xml_file_name: str,
-    ) -> tuple:
-        xml_trans = XMLTranslate(
-            root_path=self.data_path,
-            file_name=xml_file_name
-        )
-        xml_trans.resize(new_size=self.image_size)
-        return xml_trans.img, xml_trans.objects
-
-    def __getitem__(self, index):
-        if self.fast_load:
-            img, label = self.images[index], self.labels[index]
-        else:
-            img, label = self.__get_image_label(self.xml_file_names[index])
-
-        img = CV2.cvtColorToRGB(img)
-        if self.transform is not None:
-            img = Image.fromarray(img)
-            img = self.transform(img)
-        else:
-            img = img / 255.0
-        return img, label
-
-    @staticmethod
-    def collate_fn(batch):
-        # batch是一个列表，其中是一个一个的元组，每个元组是dataset中_getitem__的结果
-        batch = list(zip(*batch))
-        imgs = batch[0]
-        labels = batch[1]
-        del batch
-        return torch.stack(imgs), labels
-
-
 def get_imagenet_dataset(
         root: str,
         transform: Compose,
@@ -290,68 +205,6 @@ def get_imagenet_dataset(
     return ImageFolder(path, transform)
 
 #######################################################
-
-
-def get_voc_trainval_data_loader(
-        root_path: str,
-        year: str,
-        image_size: tuple,
-        batch_size: int,
-        train: bool = True,
-        num_workers: int = 0,
-        fast_load: bool = False
-):
-
-    normalize = transforms.Normalize(
-        std=[0.5, 0.5, 0.5],
-        mean=[0.5, 0.5, 0.5],
-    )
-    if train:
-        transform_train = transforms.Compose([
-            transforms.ToTensor(),
-            normalize
-        ])
-
-        train_d = VOCTrainValDataSet(
-            root=root_path,
-            year=year,
-            train=True,
-            image_size=image_size,
-            transform=transform_train,
-            fast_load=fast_load,
-        )
-
-        train_l = DataLoader(
-            train_d,
-            batch_size=batch_size,
-            collate_fn=VOCTrainValDataSet.collate_fn,
-            shuffle=True,
-            num_workers=num_workers
-                             )
-        return train_l
-    else:
-        transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            normalize
-        ])
-
-        test_d = VOCTrainValDataSet(
-            root=root_path,
-            year=year,
-            train=False,
-            image_size=image_size,
-            transform=transform_test,
-            fast_load=fast_load,
-        )
-
-        test_l = DataLoader(
-            test_d,
-            batch_size=batch_size,
-            collate_fn=VOCTrainValDataSet.collate_fn,
-            shuffle=False,
-            num_workers=num_workers
-        )
-        return test_l
 
 
 def get_voc_data_loader(
