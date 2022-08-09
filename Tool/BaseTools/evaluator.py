@@ -20,7 +20,7 @@ class BaseEvaluator:
             iou_th: float
     ):
         self.detector = detector
-        self.device = device,
+        self.device = device
         self.predictor = predictor
         self.kinds_name = kinds_name
         self.iou_th = iou_th
