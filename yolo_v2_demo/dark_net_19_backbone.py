@@ -201,4 +201,7 @@ if __name__ == '__main__':
     # helper.detector.load_state_dict(
     #     torch.load('/home/dell/data2/models/home/dell/PycharmProjects/YOLO/yolo_v2_demo/model_pth_detector/30.pth')
     # )
+
+    # helper.my_evaluator.eval_detector_mAP(voc_test_loader)
+    # helper.formal_evaluator.eval_detector_mAP()
     helper.go(voc_train_loader, voc_test_loader)
