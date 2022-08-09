@@ -88,9 +88,8 @@ class YOLOV3Visualizer(BaseVisualizer):
             targets = self.make_targets(labels)
             output = self.detector(images)
 
-            gt_decode = self.predictor.decode_target(targets, batch_size=images.shape[0])
-
-            pre_decode = self.predictor.decode_predict(output, batch_size=images.shape[0])
+            gt_decode = self.predictor.decode_target(targets)
+            pre_decode = self.predictor.decode_predict(output)
 
             for image_index in range(images.shape[0]):
 

@@ -96,9 +96,8 @@ class YOLOV3Predictor(BasePredictor):
     def decode_target(
             self,
             target: dict,
-            batch_size: int,
     ) -> List[List]:
-
+        batch_size = target[self.anchor_keys[0]].shape[0]
         res = [[] for _ in range(batch_size)]
         for i in range(batch_size):
             tmp = {}
@@ -183,9 +182,8 @@ class YOLOV3Predictor(BasePredictor):
     def decode_predict(
             self,
             predict: dict,
-            batch_size: int,
     ) -> List[List]:
-
+        batch_size = predict[self.anchor_keys[0]].shape[0]
         res = [[] for _ in range(batch_size)]
         for i in range(batch_size):
             tmp = {}
