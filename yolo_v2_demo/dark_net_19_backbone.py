@@ -5,8 +5,6 @@ import os
 from torch.utils.data import DataLoader
 from Tool.V2 import *
 from Tool.BaseTools import get_voc_data_loader, WarmUpOptimizer, BaseTransform
-from yolo_v2_demo.utils.get_pretrained_darknet_19 import get_pretained_dark_net_19
-from yolo_v2_demo.utils.model_define import YOLOV2Net, DarkNet19
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -170,11 +168,10 @@ if __name__ == '__main__':
     data_opt = YOLOV2DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
 
-    dark_net_19 = get_pretained_dark_net_19(
+    dark_net_19 = get_backbone_dark_net_19(
         '/home/dell/PycharmProjects/YOLO/pre_trained/darknet19_72.96.pth'
     )
-    # dark_net_19 = DarkNet19()
-    net = YOLOV2Net(dark_net_19)
+    net = YOLOV2Model(dark_net_19)
 
     net.to(trainer_opt.device)
     helper = Helper(

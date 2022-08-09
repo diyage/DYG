@@ -158,8 +158,11 @@ if __name__ == '__main__':
     data_opt = YOLOV3DataSetConfig()
     trainer_opt.device = 'cuda:{}'.format(GPU_ID)
 
-    net = YOLOV3Net(
-        '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth',
+    dark_net_53 = get_backbone_darknet_53(
+        '/home/dell/PycharmProjects/YOLO/pre_trained/darknet53_75.42.pth'
+    )
+    net = YOLOV3Model(
+        dark_net_53,
         data_opt.single_an,
         num_classes=len(data_opt.kinds_name)
     )
