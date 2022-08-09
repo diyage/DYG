@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+from Tool.BaseTools import BaseLoss
 from Tool.V3.Tools import YOLOV3Tools
 
 
-class YOLOV3Loss(nn.Module):
+class YOLOV3Loss(BaseLoss):
     def __init__(
             self,
             anchor_pre_wh_dict: dict,

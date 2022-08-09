@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from Tool.BaseTools import BaseLoss
 from .Tools import YOLOV2Tools
 
 
@@ -190,7 +190,7 @@ class MSEWithLogitsLoss(nn.Module):
             return loss
 
 
-class YOLOV2Loss(nn.Module):
+class YOLOV2Loss(BaseLoss):
     def __init__(self,
                  anchor_pre_wh: tuple,
                  weight_position: float = 1.0,

@@ -23,6 +23,7 @@ class BaseTools:
         You may have one question: where is make_predict ?
         Method --make_predict-- is just __call__(or forward, little incorrect) of nn.Module !!!
         So predict is just the output of model(nn.Module you define).
+        Please see model.BaseModel
         '''
         pass
 

@@ -6,4 +6,4 @@ from .Tools import YOLOV2Tools
 from .Trainer import YOLOV2Trainer
 from .Visualizer import YOLOV2Visualizer
 from .FormalEvaluator import YOLOV2FormalEvaluator
-
+from .Model import YOLOV2Model, get_backbone_dark_net_19
