@@ -34,16 +34,15 @@ class StrongerVOCDataSet(VOCDataSet):
         # xml_trans.resize(new_size=self.image_size)
 
         img, label = xml_trans.img, xml_trans.objects
+        new_label = []
         for i in range(len(label)):
             kind_index = self.kinds_name.index(label[i][0])
-            label[i][0] = kind_index
+            new_label.append(
+                (label[i][1:], kind_index)
+            )
 
         w, h = xml_trans.img_size[0], xml_trans.img_size[1]
-        targets = np.array(label)
-        targets = np.concatenate(
-            (targets[:, 1:], targets[:, :1]),
-            axis=-1
-        ).astype(np.float32)
+        targets = np.array(new_label).astype(np.float32)
         return img, targets, h, w
 
     def load_mosaic(self, index):
