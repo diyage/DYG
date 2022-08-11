@@ -38,7 +38,7 @@ class StrongerVOCDataSet(VOCDataSet):
         for i in range(len(label)):
             kind_index = self.kinds_name.index(label[i][0])
             new_label.append(
-                (label[i][1:], kind_index)
+                (*label[i][1:], kind_index)
             )
 
         w, h = xml_trans.img_size[0], xml_trans.img_size[1]
