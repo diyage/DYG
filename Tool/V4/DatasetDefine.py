@@ -1,6 +1,7 @@
 from Tool.BaseTools import VOCDataSet, SSDAugmentation, BaseAugmentation, XMLTranslate, CV2
 from typing import Union, List
 import numpy as np
+import random
 from torch.utils.data import DataLoader
 
 
@@ -9,17 +10,20 @@ class StrongerVOCDataSet(VOCDataSet):
             self,
             root: str,
             years: list,
+            kinds_name: list,
             train: bool = True,
             image_size: tuple = (448, 448),
             transform: Union[SSDAugmentation, BaseAugmentation] = None,
             use_mosaic: bool = False,
-            use_mixup: bool = False
+            use_mixup: bool = False,
+
     ):
         super().__init__(root, years, train, image_size, transform)
         self.use_mixup = use_mixup
         self.use_mosaic = use_mosaic
         self.ids = [i for i in range(len(self.image_and_xml_path_info))]
         self.img_size = self.image_size[0]
+        self.kinds_name = kinds_name
 
     def __get_one_origin(
             self,
@@ -30,10 +34,14 @@ class StrongerVOCDataSet(VOCDataSet):
         # xml_trans.resize(new_size=self.image_size)
 
         img, label = xml_trans.img, xml_trans.objects
+        for i in range(len(label)):
+            kind_index = self.kinds_name.index(label[i][0])
+            label[i][0] = kind_index
+
         w, h = xml_trans.img_size[0], xml_trans.img_size[1]
         targets = np.array(label)
         targets = np.concatenate(
-            (targets[:, 1:].astype(np.float32), targets[:, :1]),
+            (targets[:, 1:], targets[:, :1]),
             axis=-1
         )
         return img, targets, h, w
@@ -42,7 +50,7 @@ class StrongerVOCDataSet(VOCDataSet):
         ids_list_ = self.ids[:index] + self.ids[index + 1:]
         # random sample other indexs
         id1 = self.ids[index]
-        id2, id3, id4 = np.random.sample(ids_list_, 3)
+        id2, id3, id4 = random.sample(ids_list_, 3)
         ids = [id1, id2, id3, id4]
 
         img_lists = []
@@ -168,7 +176,7 @@ class StrongerVOCDataSet(VOCDataSet):
         new_label = []
         for i in range(new_classes.shape[0]):
             new_label.append(
-                (new_classes[i], *new_boxes[i].tolist())
+                (self.kinds_name[new_classes[i]], *new_boxes[i].tolist())
             )
         return new_img_tensor, new_label
 
