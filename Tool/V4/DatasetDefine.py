@@ -1,6 +1,7 @@
 from Tool.BaseTools import VOCDataSet, SSDAugmentation, BaseAugmentation, XMLTranslate, CV2
-from typing import Union
+from typing import Union, List
 import numpy as np
+from torch.utils.data import DataLoader
 
 
 class StrongerVOCDataSet(VOCDataSet):
@@ -152,3 +153,61 @@ class StrongerVOCDataSet(VOCDataSet):
             classes = target[:, 4]
 
         return img, boxes, classes
+
+
+def get_stronger_voc_data_loader(
+        root_path: str,
+        years: list,
+        image_size: tuple,
+        batch_size: int,
+        train: bool = True,
+        mean: List[float] = [0.5, 0.5, 0.5],
+        std: List[float] = [0.5, 0.5, 0.5],
+        use_mosaic: bool = True,
+        use_mixup: bool = True
+):
+
+    if train:
+        transform_train = SSDAugmentation(
+            size=image_size[0],
+            mean=mean,
+            std=std
+        )
+
+        train_d = StrongerVOCDataSet(
+            root=root_path,
+            years=years,
+            train=True,
+            image_size=image_size,
+            transform=transform_train,
+            use_mosaic=use_mosaic,
+            use_mixup=use_mixup
+        )
+
+        train_l = DataLoader(train_d,
+                             batch_size=batch_size,
+                             collate_fn=StrongerVOCDataSet.collate_fn,
+                             shuffle=True)
+        return train_l
+    else:
+        transform_test = BaseAugmentation(
+            size=image_size[0],
+            mean=mean,
+            std=std
+        )
+
+        test_d = StrongerVOCDataSet(
+            root=root_path,
+            years=years,
+            train=False,
+            image_size=image_size,
+            transform=transform_test,
+            use_mosaic=False,
+            use_mixup=False
+        )
+
+        test_l = DataLoader(test_d,
+                            batch_size=batch_size,
+                            collate_fn=StrongerVOCDataSet.collate_fn,
+                            shuffle=False)
+        return test_l
