@@ -32,7 +32,10 @@ class StrongerVOCDataSet(VOCDataSet):
         img, label = xml_trans.img, xml_trans.objects
         w, h = xml_trans.img_size[0], xml_trans.img_size[1]
         targets = np.array(label)
-        targets = np.concatenate((targets[:, 1:], targets[:, :1]), axis=-1)
+        targets = np.concatenate(
+            (targets[:, 1:].astype(np.float32), targets[:, :1]),
+            axis=-1
+        )
         return img, targets, h, w
 
     def load_mosaic(self, index):
