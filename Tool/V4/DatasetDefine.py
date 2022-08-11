@@ -154,6 +154,21 @@ class StrongerVOCDataSet(VOCDataSet):
 
         return img, boxes, classes
 
+    def __getitem__(self, index):
+        img, boxes, classes = self.__get_image_label(index)
+
+        new_img_tensor, new_boxes, new_classes = self.transform(
+            img,
+            boxes,
+            classes
+        )
+        new_label = []
+        for i in range(new_classes.shape[0]):
+            new_label.append(
+                (new_classes[i], *new_boxes[i].tolist())
+            )
+        return new_img_tensor, new_label
+
 
 def get_stronger_voc_data_loader(
         root_path: str,
