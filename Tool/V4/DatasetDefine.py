@@ -230,8 +230,8 @@ def get_stronger_voc_data_loader(
             train=False,
             image_size=image_size,
             transform=transform_test,
-            use_mosaic=False,
-            use_mixup=False
+            use_mosaic=use_mosaic,
+            use_mixup=use_mixup
         )
 
         test_l = DataLoader(test_d,
