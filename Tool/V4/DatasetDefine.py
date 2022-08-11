@@ -43,7 +43,7 @@ class StrongerVOCDataSet(VOCDataSet):
         targets = np.concatenate(
             (targets[:, 1:], targets[:, :1]),
             axis=-1
-        )
+        ).astype(np.float32)
         return img, targets, h, w
 
     def load_mosaic(self, index):
@@ -176,7 +176,7 @@ class StrongerVOCDataSet(VOCDataSet):
         new_label = []
         for i in range(new_classes.shape[0]):
             new_label.append(
-                (self.kinds_name[new_classes[i]], *new_boxes[i].tolist())
+                (new_classes[i], *new_boxes[i].tolist())
             )
         return new_img_tensor, new_label
 
@@ -184,6 +184,7 @@ class StrongerVOCDataSet(VOCDataSet):
 def get_stronger_voc_data_loader(
         root_path: str,
         years: list,
+        kinds_name: list,
         image_size: tuple,
         batch_size: int,
         train: bool = True,
@@ -203,6 +204,7 @@ def get_stronger_voc_data_loader(
         train_d = StrongerVOCDataSet(
             root=root_path,
             years=years,
+            kinds_name=kinds_name,
             train=True,
             image_size=image_size,
             transform=transform_train,
@@ -225,6 +227,7 @@ def get_stronger_voc_data_loader(
         test_d = StrongerVOCDataSet(
             root=root_path,
             years=years,
+            kinds_name=kinds_name,
             train=False,
             image_size=image_size,
             transform=transform_test,
