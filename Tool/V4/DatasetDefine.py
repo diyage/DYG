@@ -70,8 +70,8 @@ class StrongerVOCDataSet(VOCDataSet):
         back_ground_h, back_ground_w, _ = image.shape
         scaled_rate = 0.01 * np.random.randint(50, 100)
 
-        new_w = scaled_rate * back_ground_w
-        new_h = scaled_rate * back_ground_h
+        new_w = int(scaled_rate * back_ground_w)
+        new_h = int(scaled_rate * back_ground_h)
 
         image, boxes = self.__resize_image(image, boxes, (new_w, new_h))
 
