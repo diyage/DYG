@@ -502,3 +502,144 @@ class BaseTools:
                         )
 
         CV2.imwrite(saved_path, img)
+
+    @staticmethod
+    def iou(
+            box_a: torch.Tensor,
+            box_b: torch.Tensor
+    ):
+        # box_a/box_b (..., 4)
+        box_a_x0y0 = box_a[..., :2]
+        box_a_x1y1 = box_a[..., 2:]
+
+        box_b_x0y0 = box_b[..., :2]
+        box_b_x1y1 = box_b[..., 2:]
+
+        s_a = torch.prod(box_a_x1y1 - box_a_x0y0, dim=-1)
+        s_b = torch.prod(box_b_x1y1 - box_b_x0y0, dim=-1)
+
+        inter_x0y0 = torch.max(box_a_x0y0, box_b_x0y0)
+        inter_x1y1 = torch.min(box_a_x1y1, box_b_x1y1)
+
+        inter_is_box = (inter_x1y1 > inter_x0y0).type(inter_x1y1.type()).prod(dim=-1)
+        s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
+        union = s_a + s_b - s_inter
+        iou = s_inter / union
+        return torch.clamp(iou, 0, 1)
+
+    @staticmethod
+    def g_iou(
+            box_a: torch.Tensor,
+            box_b: torch.Tensor
+    ):
+        # box_a/box_b (..., 4)
+        box_a_x0y0 = box_a[..., :2]
+        box_a_x1y1 = box_a[..., 2:]
+
+        box_b_x0y0 = box_b[..., :2]
+        box_b_x1y1 = box_b[..., 2:]
+
+        s_a = torch.prod(box_a_x1y1 - box_a_x0y0, dim=-1)
+        s_b = torch.prod(box_b_x1y1 - box_b_x0y0, dim=-1)
+
+        inter_x0y0 = torch.max(box_a_x0y0, box_b_x0y0)
+        inter_x1y1 = torch.min(box_a_x1y1, box_b_x1y1)
+        inter_is_box = (inter_x1y1 > inter_x0y0).type(inter_x1y1.type()).prod(dim=-1)
+        s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
+
+        union = s_a + s_b - s_inter
+        iou = s_inter / union
+
+        outer_x0y0 = torch.min(box_a_x0y0, box_b_x0y0)
+        outer_x1y1 = torch.max(box_a_x1y1, box_b_x1y1)
+        outer_is_box = (outer_x1y1 > outer_x0y0).type(outer_x1y1.type()).prod(dim=-1)
+        s_outer = torch.prod(outer_x1y1 - outer_x0y0, dim=-1) * outer_is_box
+        s_rate = (s_outer - union) / s_outer
+
+        g_iou = iou - s_rate
+        return torch.clamp(g_iou, -1, 1)
+
+    @staticmethod
+    def d_iou(
+            box_a: torch.Tensor,
+            box_b: torch.Tensor
+    ):
+        # box_a/box_b (..., 4)
+        box_a_x0y0 = box_a[..., :2]
+        box_a_x1y1 = box_a[..., 2:]
+
+        box_b_x0y0 = box_b[..., :2]
+        box_b_x1y1 = box_b[..., 2:]
+
+        s_a = torch.prod(box_a_x1y1 - box_a_x0y0, dim=-1)
+        s_b = torch.prod(box_b_x1y1 - box_b_x0y0, dim=-1)
+
+        inter_x0y0 = torch.max(box_a_x0y0, box_b_x0y0)
+        inter_x1y1 = torch.min(box_a_x1y1, box_b_x1y1)
+        inter_is_box = (inter_x1y1 > inter_x0y0).type(inter_x1y1.type()).prod(dim=-1)
+        s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
+
+        union = s_a + s_b - s_inter
+        iou = s_inter / union
+
+        outer_x0y0 = torch.min(box_a_x0y0, box_b_x0y0)
+        outer_x1y1 = torch.max(box_a_x1y1, box_b_x1y1)
+
+        box_a_center = (box_a_x0y0 + box_a_x1y1) * 0.5
+        box_b_center = (box_b_x0y0 + box_b_x1y1) * 0.5
+        distance_center = torch.sum((box_b_center - box_a_center) ** 2, dim=-1)
+        distance_outer = torch.sum((outer_x1y1 - outer_x0y0) ** 2, dim=-1)
+        distance_rate = distance_center / distance_outer
+
+        d_iou = iou - distance_rate
+        return torch.clamp(d_iou, -1, 1)
+
+    @staticmethod
+    def c_iou(
+            box_a: torch.Tensor,
+            box_b: torch.Tensor
+    ):
+        # box_a/box_b (..., 4)
+        box_a_x0y0 = box_a[..., :2]
+        box_a_x1y1 = box_a[..., 2:]
+
+        box_b_x0y0 = box_b[..., :2]
+        box_b_x1y1 = box_b[..., 2:]
+
+        s_a = torch.prod(box_a_x1y1 - box_a_x0y0, dim=-1)
+        s_b = torch.prod(box_b_x1y1 - box_b_x0y0, dim=-1)
+
+        inter_x0y0 = torch.max(box_a_x0y0, box_b_x0y0)
+        inter_x1y1 = torch.min(box_a_x1y1, box_b_x1y1)
+        inter_is_box = (inter_x1y1 > inter_x0y0).type(inter_x1y1.type()).prod(dim=-1)
+        s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
+
+        union = s_a + s_b - s_inter
+        iou = s_inter / union
+
+        outer_x0y0 = torch.min(box_a_x0y0, box_b_x0y0)
+        outer_x1y1 = torch.max(box_a_x1y1, box_b_x1y1)
+
+        box_a_center = (box_a_x0y0 + box_a_x1y1) * 0.5
+        box_b_center = (box_b_x0y0 + box_b_x1y1) * 0.5
+        distance_center = torch.sum((box_b_center - box_a_center) ** 2, dim=-1)
+        distance_outer = torch.sum((outer_x1y1 - outer_x0y0) ** 2, dim=-1)
+        distance_rate = distance_center / distance_outer
+
+        box_a_wh = box_a_x1y1 - box_a_x0y0
+        box_b_wh = box_b_x1y1 - box_b_x0y0
+        w2 = box_b_wh[..., 0]
+        h2 = box_b_wh[..., 1]
+        w1 = box_a_wh[..., 0]
+        h1 = box_a_wh[..., 1]
+
+        with torch.no_grad():
+            arctan = torch.atan(w2 / h2) - torch.atan(w1 / h1)
+            v = (4 / (np.pi ** 2)) * torch.pow((torch.atan(w2 / h2) - torch.atan(w1 / h1)), 2)
+            S = 1 - iou
+            alpha = v / (S + v)
+            w_temp = 2 * w1
+
+        ar = (8 / (np.pi ** 2)) * arctan * ((w1 - w_temp) * h1)
+        c_iou = iou - (distance_rate + alpha * ar)
+        return torch.clamp(c_iou, -1, 1)

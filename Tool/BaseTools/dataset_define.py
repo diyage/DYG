@@ -157,10 +157,8 @@ class VOCDataSet(Dataset):
         root_path, xml_file_name = self.image_and_xml_path_info[index]
         xml_trans = XMLTranslate(root_path=root_path, file_name=xml_file_name)
         # xml_trans.resize(new_size=self.image_size)
-        return xml_trans.img, xml_trans.objects
 
-    def __getitem__(self, index):
-        img, label = self.__get_image_label(index)
+        img, label = xml_trans.img, xml_trans.objects
         boxes = []
         classes = []
 
@@ -170,6 +168,12 @@ class VOCDataSet(Dataset):
 
         boxes = np.array(boxes, dtype=np.float32)
         classes = np.array(classes)
+
+        return img, boxes, classes
+
+    def __getitem__(self, index):
+        img, boxes, classes = self.__get_image_label(index)
+
         new_img_tensor, new_boxes, new_classes = self.transform(
             img,
             boxes,
