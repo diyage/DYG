@@ -7,23 +7,28 @@ from tqdm import tqdm
 from .tools import BaseTools
 from .predictor import BasePredictor
 import numpy as np
-import torch.nn as nn
+from .model import BaseModel
 
 
 class BaseEvaluator:
     def __init__(
             self,
-            detector: nn.Module,
-            device: str,
+            model: BaseModel,
             predictor: BasePredictor,
-            kinds_name: list,
-            iou_th: float
+            iou_th_for_make_target: float
     ):
-        self.detector = detector
-        self.device = device
+        self.detector = model  # type: BaseModel
+        self.device = next(model.parameters()).device
+
         self.predictor = predictor
-        self.kinds_name = kinds_name
-        self.iou_th = iou_th
+
+        self.kinds_name = predictor.kinds_name
+        self.iou_th_for_eval = self.predictor.iou_th
+        self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
+        self.image_size = self.predictor.image_size
+        self.grid_number = self.predictor.grid_number
+
+        self.iou_th_for_make_target = iou_th_for_make_target
 
     @abstractmethod
     def make_targets(
@@ -61,7 +66,7 @@ class BaseEvaluator:
                     pre_decode[image_index],
                     gt_decode[image_index],
                     kinds_name=self.kinds_name,
-                    iou_th=self.iou_th
+                    iou_th=self.iou_th_for_eval
                 )
 
                 for pre_kind_name, is_tp, pre_score in res[0]:

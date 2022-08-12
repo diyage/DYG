@@ -6,6 +6,7 @@ import numpy as np
 from typing import Union
 from .Predictor import YOLOV2Predictor
 from .Tools import YOLOV2Tools
+from .Model import YOLOV2Model
 from Tool.BaseTools import CV2, BaseVisualizer
 import os
 
@@ -13,22 +14,17 @@ import os
 class YOLOV2Visualizer(BaseVisualizer):
     def __init__(
             self,
-            model: nn.Module,
+            model: YOLOV2Model,
             predictor: YOLOV2Predictor,
-            class_colors: list
+            class_colors: list,
+            iou_th_for_make_target: float
     ):
-        super().__init__()
-        self.detector = model  # type: nn.Module
-        self.device = next(model.parameters()).device
-        self.backbone = model.backbone  # type: nn.Module
-        # be careful, darknet19 is not the detector
-        self.predictor = predictor
-        self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
-        self.image_size = self.predictor.image_size
-        self.grid_number = self.predictor.grid_number
-        self.kinds_name = self.predictor.kinds_name
-        self.iou_th = self.predictor.iou_th
-        self.class_colors = class_colors
+        super().__init__(
+            model,
+            predictor,
+            class_colors,
+            iou_th_for_make_target
+        )
 
     def make_targets(
             self,
@@ -40,7 +36,7 @@ class YOLOV2Visualizer(BaseVisualizer):
             self.image_size,
             self.grid_number,
             self.kinds_name,
-            self.iou_th,
+            self.iou_th_for_make_target,
             ).to(self.device)
 
     def detect_one_image(

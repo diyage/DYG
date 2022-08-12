@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from typing import Union
 from abc import abstractmethod
+from .model import BaseModel
 
 
 class WarmUpOptimizer:
@@ -51,25 +52,26 @@ class WarmUpOptimizer:
 class BaseTrainer:
     def __init__(
             self,
-            model: nn.Module,
+            model: BaseModel,
             pre_anchor_w_h: Union[tuple, dict],
             image_size: tuple,
             grid_number: Union[tuple, dict],
             kinds_name: list,
-            iou_th: float = 0.6
+            iou_th_for_make_target: float
     ):
-        self.detector = model  # type: nn.Module
+        self.detector = model  # type: BaseModel
         self.device = next(model.parameters()).device
         self.image_size = image_size
         self.grid_number = grid_number
         self.kinds_name = kinds_name
         self.pre_anchor_w_h = pre_anchor_w_h
-        self.iou_th = iou_th
+        self.iou_th_for_make_target = iou_th_for_make_target
 
     @abstractmethod
     def make_targets(
             self,
-            labels,
+            *args,
+            **kwargs
     ) -> torch.Tensor:
         pass
 

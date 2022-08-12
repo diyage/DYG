@@ -1,15 +1,16 @@
-from .Predictor import YOLOV3Predictor
-from .Tools import YOLOV3Tools
-from .Model import YOLOV3Model
+from .Predictor import YOLOV4Predictor
+from .Tools import YOLOV4Tools
+from .Model import YOLOV4Model
 from Tool.BaseTools import BaseEvaluator
 
 
-class YOLOV3Evaluator(BaseEvaluator):
+class YOLOV4Evaluator(BaseEvaluator):
     def __init__(
             self,
-            model: YOLOV3Model,
-            predictor: YOLOV3Predictor,
-            iou_th_for_make_target: float
+            model: YOLOV4Model,
+            predictor: YOLOV4Predictor,
+            iou_th_for_make_target: float,
+            multi_gt: bool,
     ):
         super().__init__(
             model,
@@ -19,18 +20,20 @@ class YOLOV3Evaluator(BaseEvaluator):
 
         self.predictor = predictor
         self.anchor_keys = self.predictor.anchor_keys
+        self.multi_gt = multi_gt
 
     def make_targets(
             self,
             labels
     ):
-        targets = YOLOV3Tools.make_target(
+        targets = YOLOV4Tools.make_target(
             labels,
             self.pre_anchor_w_h,
             self.image_size,
             self.grid_number,
             self.kinds_name,
-            self.iou_th_for_make_target
+            self.iou_th_for_make_target,
+            multi_gt=self.multi_gt
         )
         for anchor_key in self.anchor_keys:
             targets[anchor_key] = targets[anchor_key].to(self.device)

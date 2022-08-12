@@ -4,7 +4,7 @@ from Tool.BaseTools import BaseLoss
 from Tool.V4.Tools import YOLOV4Tools
 
 
-class YOLOV3Loss(BaseLoss):
+class YOLOV4Loss(BaseLoss):
     def __init__(
             self,
             anchor_pre_wh_dict: dict,
@@ -120,11 +120,17 @@ class YOLOV3Loss(BaseLoss):
 
             # conf loss
             # compute iou
-            iou = YOLOV3Tools.compute_iou(pre_xyxy, gt_xyxy)
-            iou = iou.detach()  # (N, H, W, a_n) and no grad!
+            c_iou = YOLOV4Tools.c_iou(pre_xyxy, gt_xyxy)  # (-1.0, 1.0)
+
+            # iou_loss
+            temp = 1.0 - c_iou
+            loss_dict['iou_loss'] += torch.sum(
+                temp * positive
+            )/N
 
             # has obj/positive loss
-            temp = self.mse(pre_conf, iou)
+            iou_detach = 0.5 * c_iou.detach() + 0.5  # (N, H, W, a_n) and no grad! (0.0, 1.0)
+            temp = self.mse(pre_conf, iou_detach)
             loss_dict['has_obj_loss'] += torch.sum(
                 temp * positive
             ) / N

@@ -12,7 +12,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 class Helper:
     def __init__(
             self,
-            model: nn.Module,
+            model: YOLOV3Model,
             opt_data_set: YOLOV3DataSetConfig,
             opt_trainer: YOLOV3TrainerConfig,
     ):
@@ -60,6 +60,7 @@ class Helper:
             model,
             self.predictor_for_show,
             self.opt_data_set.class_colors,
+            self.opt_trainer.iou_th_for_make_target
         )
 
         self.formal_evaluator = YOLOV3FormalEvaluator(
@@ -73,7 +74,6 @@ class Helper:
         )
         self.my_evaluator = YOLOV3Evaluator(
             model,
-            self.opt_trainer.device,
             self.predictor_for_eval,
             self.opt_trainer.iou_th_for_make_target
         )

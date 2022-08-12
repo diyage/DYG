@@ -1,27 +1,22 @@
 import torch.nn as nn
 from .Predictor import YOLOV2Predictor
 from .Tools import YOLOV2Tools
+from .Model import YOLOV2Model
 from Tool.BaseTools import BaseEvaluator
 
 
 class YOLOV2Evaluator(BaseEvaluator):
     def __init__(
             self,
-            model: nn.Module,
-            device: str,
-            predictor: YOLOV2Predictor
+            model: YOLOV2Model,
+            predictor: YOLOV2Predictor,
+            iou_th_for_make_target: float
     ):
         super().__init__(
-            detector=model,
-            device=device,
-            predictor=predictor,
-            kinds_name=predictor.kinds_name,
-            iou_th=predictor.iou_th
+            model,
+            predictor,
+            iou_th_for_make_target
         )
-
-        self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
-        self.image_size = self.predictor.image_size
-        self.grid_number = self.predictor.grid_number
 
     def make_targets(
             self,
@@ -33,5 +28,5 @@ class YOLOV2Evaluator(BaseEvaluator):
             self.image_size,
             self.grid_number,
             self.kinds_name,
-            iou_th=self.iou_th,
+            iou_th=self.iou_th_for_make_target,
         ).to(self.device)

@@ -3,20 +3,21 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 from typing import Union
-from .Predictor import YOLOV3Predictor
-from .Tools import YOLOV3Tools
-from .Model import YOLOV3Model
+from .Predictor import YOLOV4Predictor
+from .Tools import YOLOV4Tools
+from .Model import YOLOV4Model
 from Tool.BaseTools import CV2, BaseVisualizer
 import os
 
 
-class YOLOV3Visualizer(BaseVisualizer):
+class YOLOV4Visualizer(BaseVisualizer):
     def __init__(
             self,
-            model: YOLOV3Model,
-            predictor: YOLOV3Predictor,
+            model: YOLOV4Model,
+            predictor: YOLOV4Predictor,
             class_colors: list,
-            iou_th_for_make_target: float
+            iou_th_for_make_target: float,
+            multi_gt: bool = True
     ):
         super().__init__(
             model,
@@ -26,19 +27,22 @@ class YOLOV3Visualizer(BaseVisualizer):
         )
 
         self.predictor = predictor
+
         self.anchor_keys = self.predictor.anchor_keys
+        self.multi_gt = multi_gt
 
     def make_targets(
             self,
             labels,
     ):
-        targets = YOLOV3Tools.make_target(
+        targets = YOLOV4Tools.make_target(
             labels,
             self.pre_anchor_w_h,
             self.image_size,
             self.grid_number,
             self.kinds_name,
             self.iou_th_for_make_target,
+            multi_gt=self.multi_gt
         )
         for anchor_key in self.anchor_keys:
             targets[anchor_key] = targets[anchor_key].to(self.device)
@@ -53,13 +57,13 @@ class YOLOV3Visualizer(BaseVisualizer):
             image = CV2.resize(image, new_size=(416, 416))
             print('We resize the image to (416, 416), that may not be what you want!' +
                   'please resize your image before using this method!')
-            image = YOLOV3Tools.image_np_to_tensor(image)
+            image = YOLOV4Tools.image_np_to_tensor(image)
 
         out_dict = self.detector(image.unsqueeze(0).to(self.device))
         pre_kps_s = self.predictor.decode_one_predict(
             out_dict
         )
-        YOLOV3Tools.visualize(
+        YOLOV4Tools.visualize(
             image,
             pre_kps_s,
             saved_path=''.format(saved_path),
@@ -90,7 +94,7 @@ class YOLOV3Visualizer(BaseVisualizer):
 
             for image_index in range(images.shape[0]):
 
-                YOLOV3Tools.visualize(
+                YOLOV4Tools.visualize(
                     images[image_index],
                     gt_decode[image_index],
                     saved_path='{}/{}_{}_gt.png'.format(saved_dir, batch_id, image_index),
@@ -98,7 +102,7 @@ class YOLOV3Visualizer(BaseVisualizer):
                     kinds_name=self.kinds_name
                 )
 
-                YOLOV3Tools.visualize(
+                YOLOV4Tools.visualize(
                     images[image_index],
                     pre_decode[image_index],
                     saved_path='{}/{}_{}_predict.png'.format(saved_dir, batch_id, image_index),
