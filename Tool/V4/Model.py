@@ -480,9 +480,9 @@ class YOLOV4Model(BaseModel):
         y19_o = self.head3(y19_a)
 
         return {
-            '76x76': y76_o,  # s=8
-            '38x38': y38_o,  # s=16
-            '19x19': y19_o,  # s=32
+            'for_s': y76_o,  # s=8
+            'for_m': y38_o,  # s=16
+            'for_l': y19_o,  # s=32
         }
 
 
