@@ -66,18 +66,28 @@ class YOLOV4Tools(BaseTools):
             )
             iou_vec.append(iou)
 
+        ignore_negative_counts = 0
+
         if multi_gt:
             # in multi_ground_truth, (at least) one(or more) anchor(s) will response
             for iou_index in range(len(iou_vec)):
                 if not response[iou_index]:
+                    ignore_negative_counts += 1
                     weight_vec[iou_index] = 0.0  # negative anchor
         else:
             for iou_index in range(len(iou_vec)):
                 if iou_index != best_index:
                     if iou_vec[iou_index] >= iou_th:
+                        ignore_negative_counts += 1
                         weight_vec[iou_index] = - 1.0  # ignore this anchor
                     else:
+                        ignore_negative_counts += 1
                         weight_vec[iou_index] = 0.0  # negative anchor
+
+        if ignore_negative_counts == len(iou_vec):
+            # there is no anchor response
+            max_iou_index = np.argmax(iou_vec)
+            weight_vec[max_iou_index] = 1.0
 
         # ----------------------------------------------------------------------
         w_v = np.array(weight_vec).reshape(values.shape[0], values.shape[1]).tolist()
@@ -170,21 +180,152 @@ class YOLOV4Tools(BaseTools):
 
     @staticmethod
     def split_target(
-            *args,
-            **kwargs
+            target: dict,
+            anchor_number_for_single_size: int,
     ) -> dict:
-        pass
+        res = {}
+        # key : 'for_s', 'for_m', 'for_l'
+        # val : dict --> {'position': xxx, 'conf': xxx, 'cls_prob': xxx}
+        for key, x in target.items():
+            N, C, H, W = x.shape
+            K = C // anchor_number_for_single_size
+            # K = (x, y, w, h, conf, kinds0, kinds1, ...)
+            # C = anchor_number * K
+            x = x.view(N, anchor_number_for_single_size, K, H, W)
+            x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
+
+            position = [None, x[..., 0:4]]  # scaled in [0, 1]
+            conf = x[..., 4]  # N * H * W * a_n
+            cls_prob = x[..., 5:]  # N * H * W * a_n * ...
+
+            now_size_res = {
+                'position': position,  # first txty_twth, second xyxy(scaled in [0, 1])
+                'conf': conf,
+                'cls_prob': cls_prob
+            }
+            res[key] = now_size_res
+
+        return res
 
     @staticmethod
     def split_predict(
-            *args,
-            **kwargs
+            out_put: dict,
+            anchor_number_for_single_size: int,
     ) -> dict:
-        pass
+        res = {}
+        # key : 'for_s', 'for_m', 'for_l'
+        # val : dict --> {'position': xxx, 'conf': xxx, 'cls_prob': xxx}
+        for key, x in out_put.items():
+            N, C, H, W = x.shape
+            K = C // anchor_number_for_single_size  # K = (x, y, w, h, conf, kinds0, kinds1, ...)
+            # C = anchor_number * K
+            x = x.view(N, anchor_number_for_single_size, K, H, W)
+            x = x.permute(0, 3, 4, 1, 2)  # N * H * W * a_n * K
+
+            position = [x[..., 0:4], None]
+            conf = x[..., 4]  # N * H * W * a_n
+            cls_prob = x[..., 5:]  # N * H * W * a_n * ...
+
+            now_size_res = {
+                'position': position,  # first txty_twth, second xyxy(scaled in [0, 1])
+                'conf': conf,
+                'cls_prob': cls_prob
+            }
+            res[key] = now_size_res
+
+        return res
 
     @staticmethod
-    def mish(
-            x: torch.Tensor
+    def txtytwth_to_xyxy(
+            position: torch.Tensor,
+            anchor_pre_wh_for_single_size: tuple,
+            grid_number: tuple,
     ) -> torch.Tensor:
-        return x*torch.tanh(x*torch.log(1+torch.exp(x)))
-    
+        # -1 * H * W * a_n * 4
+        N, _, _, a_n, _ = position.shape
+
+        grid = YOLOV4Tools.get_grid(grid_number)
+        # H * W * 2
+
+        grid = grid.unsqueeze(-2).unsqueeze(0).expand(N,
+                                                      grid_number[0],
+                                                      grid_number[1],
+                                                      a_n,
+                                                      2)
+
+        # -1 * H * W * a_n * 2
+
+        grid_index = grid.to(position.device)
+
+        pre_wh = torch.tensor(
+            anchor_pre_wh_for_single_size,
+            dtype=torch.float32
+        )
+        pre_wh = pre_wh.to(position.device)
+        # a_n * 2
+
+        a_b = position[..., 0:2]  # -1 * a_n * 2
+        m_n = position[..., 2:4]  # -1 * a_n * 2
+
+        center_x_y = (2 * torch.sigmoid(a_b) - 1 + grid_index) / grid_number[0]  # scaled in [0, 1]
+        w_h = torch.exp(m_n) * pre_wh.expand_as(m_n) / grid_number[0]  # scaled in [0, 1]
+
+        x_y_0 = center_x_y - 0.5 * w_h
+        # x_y_0[x_y_0 < 0] = 0
+        x_y_1 = center_x_y + 0.5 * w_h
+        # x_y_1[x_y_1 > grid_number] = grid_number
+        res = torch.cat((x_y_0, x_y_1), dim=-1)
+        return res  # scaled in [0, 1]
+
+    @staticmethod
+    def xyxy_to_txty_sigmoid_twth(
+            position: torch.Tensor,
+            anchor_pre_wh_for_single_size: tuple,
+            grid_number: tuple,
+    ) -> torch.Tensor:
+        '''
+
+        Args:
+            position: scaled in [0, 1]
+            anchor_pre_wh_for_single_size:
+            grid_number:
+
+        Returns:
+
+        '''
+        N, _, _, a_n, _ = position.shape
+
+        grid = YOLOV4Tools.get_grid(grid_number)
+        # H * W * 2
+
+        grid = grid.unsqueeze(-2).unsqueeze(0).expand(N,
+                                                      grid_number[0],
+                                                      grid_number[1],
+                                                      a_n,
+                                                      2)
+
+        # -1 * H * W * a_n * 2
+
+        grid_index = grid.to(position.device)
+
+        pre_wh = torch.tensor(
+            anchor_pre_wh_for_single_size,
+            dtype=torch.float32
+        )
+        pre_wh = pre_wh.to(position.device)
+
+        # a_n * 2
+
+        a_b = position[..., 0:2]  # -1 * a_n * 2
+        m_n = position[..., 2:4]  # -1 * a_n * 2
+
+        center_x_y = (a_b + m_n) * 0.5  # scaled in [0, 1]
+
+        w_h = m_n - a_b  # scaled in [0, 1]
+
+        txy_sigmoid = (center_x_y * grid_number[0] - grid_index + 1)/2
+        txy_sigmoid.clamp_(0.0, 1.0)  # be careful!!!, many center_x_y is zero !!!!
+
+        twh = torch.log(w_h * grid_number[0] / pre_wh.expand_as(w_h) + 1e-20)
+
+        return torch.cat((txy_sigmoid, twh), dim=-1)

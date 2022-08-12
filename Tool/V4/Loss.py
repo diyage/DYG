@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from Tool.BaseTools import BaseLoss
-from Tool.V3.Tools import YOLOV3Tools
+from Tool.V4.Tools import YOLOV4Tools
 
 
 class YOLOV3Loss(BaseLoss):
@@ -36,11 +36,11 @@ class YOLOV3Loss(BaseLoss):
             out_put: dict,
             target: dict,
     ):
-        res_out = YOLOV3Tools.split_predict(
+        res_out = YOLOV4Tools.split_predict(
             out_put,
             self.each_size_anchor_number
         )
-        res_target = YOLOV3Tools.split_target(
+        res_target = YOLOV4Tools.split_target(
             target,
             self.each_size_anchor_number
         )
@@ -49,7 +49,8 @@ class YOLOV3Loss(BaseLoss):
             'position_loss': 0.0,
             'has_obj_loss': 0.0,
             'no_obj_loss': 0.0,
-            'cls_prob_loss': 0.0
+            'cls_prob_loss': 0.0,
+            'iou_loss': 0.0
         }
 
         for anchor_key in self.anchor_keys:
@@ -65,7 +66,7 @@ class YOLOV3Loss(BaseLoss):
             # be careful, not use sigmoid on pre_txty
             pre_twth = pre_txtytwth[..., 2:4]  # (N, H, W, a_n, 2)
 
-            pre_xyxy = YOLOV3Tools.xywh_to_xyxy(
+            pre_xyxy = YOLOV4Tools.txtytwth_to_xyxy(
                 pre_txtytwth,
                 self.anchor_pre_wh_dict[anchor_key],
                 self.grid_number_dict[anchor_key]
@@ -85,7 +86,7 @@ class YOLOV3Loss(BaseLoss):
             gt_xyxy = gt_res_dict.get('position')[1]
             # (N, H, W, a_n, 4) scaled in [0, 1]
 
-            gt_txty_s_twth = YOLOV3Tools.xyxy_to_xy_s_wh(
+            gt_txty_s_twth = YOLOV4Tools.xyxy_to_txty_sigmoid_twth(
                 gt_xyxy,
                 self.anchor_pre_wh_dict[anchor_key],
                 self.grid_number_dict[anchor_key]
