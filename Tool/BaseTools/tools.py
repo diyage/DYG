@@ -187,7 +187,7 @@ class BaseTools:
         area_i = torch.prod(br - tl, dim=-1) * en  # * ((tl < br).all())
 
         area_union = area_a + area_b - area_i
-        iou = area_i / area_union
+        iou = area_i / (area_union + 1e-20)
 
         return iou
 
@@ -272,7 +272,7 @@ class BaseTools:
             inter = w * h
 
             # 计算交并比
-            ovr = inter / (areas[i] + areas[order[1:]] - inter)
+            ovr = inter / (areas[i] + areas[order[1:]] - inter + 1e-20)
             # 滤除超过nms阈值的检测框
             inds = np.where(ovr <= threshold)[0]
             order = order[inds + 1]
