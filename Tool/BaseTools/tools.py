@@ -524,7 +524,7 @@ class BaseTools:
         inter_is_box = (inter_x1y1 > inter_x0y0).type(inter_x1y1.type()).prod(dim=-1)
         s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
         union = s_a + s_b - s_inter
-        iou = s_inter / union
+        iou = s_inter / (union + 1e-20)
         return torch.clamp(iou, 0, 1)
 
     @staticmethod
@@ -548,13 +548,13 @@ class BaseTools:
         s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
 
         union = s_a + s_b - s_inter
-        iou = s_inter / union
+        iou = s_inter / (union + 1e-20)
 
         outer_x0y0 = torch.min(box_a_x0y0, box_b_x0y0)
         outer_x1y1 = torch.max(box_a_x1y1, box_b_x1y1)
         outer_is_box = (outer_x1y1 > outer_x0y0).type(outer_x1y1.type()).prod(dim=-1)
         s_outer = torch.prod(outer_x1y1 - outer_x0y0, dim=-1) * outer_is_box
-        s_rate = (s_outer - union) / s_outer
+        s_rate = (s_outer - union) / (s_outer + 1e-20)
 
         g_iou = iou - s_rate
         return torch.clamp(g_iou, -1, 1)
@@ -580,7 +580,7 @@ class BaseTools:
         s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
 
         union = s_a + s_b - s_inter
-        iou = s_inter / union
+        iou = s_inter / (union + 1e-20)
 
         outer_x0y0 = torch.min(box_a_x0y0, box_b_x0y0)
         outer_x1y1 = torch.max(box_a_x1y1, box_b_x1y1)
@@ -589,7 +589,7 @@ class BaseTools:
         box_b_center = (box_b_x0y0 + box_b_x1y1) * 0.5
         distance_center = torch.sum((box_b_center - box_a_center) ** 2, dim=-1)
         distance_outer = torch.sum((outer_x1y1 - outer_x0y0) ** 2, dim=-1)
-        distance_rate = distance_center / distance_outer
+        distance_rate = distance_center / (distance_outer + 1e-20)
 
         d_iou = iou - distance_rate
         return torch.clamp(d_iou, -1, 1)
@@ -615,7 +615,7 @@ class BaseTools:
         s_inter = torch.prod(inter_x1y1 - inter_x0y0, dim=-1) * inter_is_box
 
         union = s_a + s_b - s_inter
-        iou = s_inter / union
+        iou = s_inter / (union + 1e-20)
 
         outer_x0y0 = torch.min(box_a_x0y0, box_b_x0y0)
         outer_x1y1 = torch.max(box_a_x1y1, box_b_x1y1)
@@ -624,7 +624,7 @@ class BaseTools:
         box_b_center = (box_b_x0y0 + box_b_x1y1) * 0.5
         distance_center = torch.sum((box_b_center - box_a_center) ** 2, dim=-1)
         distance_outer = torch.sum((outer_x1y1 - outer_x0y0) ** 2, dim=-1)
-        distance_rate = distance_center / distance_outer
+        distance_rate = distance_center / (distance_outer + 1e-20)
 
         box_a_wh = box_a_x1y1 - box_a_x0y0
         box_b_wh = box_b_x1y1 - box_b_x0y0
@@ -634,10 +634,10 @@ class BaseTools:
         h1 = box_a_wh[..., 1]
 
         with torch.no_grad():
-            arctan = torch.atan(w2 / h2) - torch.atan(w1 / h1)
-            v = (4 / (np.pi ** 2)) * torch.pow((torch.atan(w2 / h2) - torch.atan(w1 / h1)), 2)
+            arctan = torch.atan(w2 / (h2 + 1e-20)) - torch.atan(w1 / (h1 + 1e-20))
+            v = (4 / (np.pi ** 2)) * torch.pow((torch.atan(w2 / (h2 + 1e-20)) - torch.atan(w1 / (h1 + 1e-20))), 2)
             S = 1 - iou
-            alpha = v / (S + v)
+            alpha = v / (S + v + 1e-20)
             w_temp = 2 * w1
 
         ar = (8 / (np.pi ** 2)) * arctan * ((w1 - w_temp) * h1)
