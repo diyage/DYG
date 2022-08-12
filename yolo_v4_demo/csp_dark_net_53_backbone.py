@@ -141,17 +141,17 @@ class Helper:
                 saved_dir = self.config.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.detector.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
+                with torch.no_grad():
+                    # show predict
+                    saved_dir = self.config.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
+                    self.visualizer.show_detect_results(
+                        data_loader_test,
+                        saved_dir
+                    )
 
-                # show predict
-                saved_dir = self.config.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
-                self.visualizer.show_detect_results(
-                    data_loader_test,
-                    saved_dir
-                )
-
-                # eval mAP
-                self.formal_evaluator.eval_detector_mAP()
-                # self.my_evaluator.eval_detector_mAP(data_loader_test)
+                    # eval mAP
+                    self.formal_evaluator.eval_detector_mAP()
+                    # self.my_evaluator.eval_detector_mAP(data_loader_test)
 
 
 if __name__ == '__main__':
