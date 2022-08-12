@@ -96,6 +96,7 @@ class YOLOV4Tools(BaseTools):
             grid_number: dict,
             kinds_name: list,
             iou_th: float = 0.5,
+            multi_gt: bool = False
     ):
         '''
 
@@ -108,6 +109,7 @@ class YOLOV4Tools(BaseTools):
                     grid_number: key --> "for_s", "for_m", "for_l"
                     kinds_name:
                     iou_th:
+                    multi_gt:
 
                 Returns:
                     {
@@ -134,7 +136,8 @@ class YOLOV4Tools(BaseTools):
                     grid_number,
                     abs_pos,
                     image_wh,
-                    iou_th
+                    iou_th,
+                    multi_gt
                 )
                 # weight_dict : key --> anchor_key, value --> weight of pre_anchor with gt_obj
                 # (3, 3)
