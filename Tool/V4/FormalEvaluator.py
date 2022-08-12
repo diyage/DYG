@@ -2,7 +2,7 @@ from .Predictor import YOLOV4Predictor
 from Tool.BaseTools import BaseFormalEvaluator
 
 
-class YOLOV3FormalEvaluator(BaseFormalEvaluator):
+class YOLOV4FormalEvaluator(BaseFormalEvaluator):
     def __init__(
             self,
             model,

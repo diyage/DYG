@@ -10,7 +10,6 @@ class StrongerVOCDataSet(VOCDataSet):
             self,
             root: str,
             years: list,
-            kinds_name: list,
             train: bool = True,
             image_size: tuple = (448, 448),
             transform: Union[SSDAugmentation, BaseAugmentation] = None,
@@ -22,7 +21,6 @@ class StrongerVOCDataSet(VOCDataSet):
         self.use_mixup = use_mixup
         self.use_mosaic = use_mosaic
         self.ids = [i for i in range(len(self.image_and_xml_path_info))]
-        self.kinds_name = kinds_name
 
     def __get_origin_one(
             self,
@@ -169,7 +167,6 @@ class StrongerVOCDataSet(VOCDataSet):
 def get_stronger_voc_data_loader(
         root_path: str,
         years: list,
-        kinds_name: list,
         image_size: tuple,
         batch_size: int,
         train: bool = True,
@@ -198,7 +195,6 @@ def get_stronger_voc_data_loader(
         train_d = StrongerVOCDataSet(
             root=root_path,
             years=years,
-            kinds_name=kinds_name,
             train=True,
             image_size=image_size,
             transform=transform_train,
@@ -221,7 +217,6 @@ def get_stronger_voc_data_loader(
         test_d = StrongerVOCDataSet(
             root=root_path,
             years=years,
-            kinds_name=kinds_name,
             train=False,
             image_size=image_size,
             transform=transform_test,

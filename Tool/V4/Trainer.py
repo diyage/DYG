@@ -13,7 +13,7 @@ class YOLOV4Trainer(BaseTrainer):
             grid_number: Union[tuple, dict],
             kinds_name: list,
             iou_th_for_make_target: float,
-            multi_gt: bool = True,
+            multi_gt: bool,
     ):
         super().__init__(
             model,
