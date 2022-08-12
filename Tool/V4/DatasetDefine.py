@@ -180,10 +180,19 @@ def get_stronger_voc_data_loader(
 ):
 
     if train:
+        from Tool.BaseTools.dataaugmentation import ConvertFromInts, PhotometricDistort, RandomMirror, Resize, Normalize
+
         transform_train = SSDAugmentation(
             size=image_size[0],
             mean=mean,
-            std=std
+            std=std,
+            augment=[
+                ConvertFromInts(),
+                PhotometricDistort(),
+                RandomMirror(),
+                Resize(image_size[0]),
+                Normalize(mean, std)
+            ]
         )
 
         train_d = StrongerVOCDataSet(

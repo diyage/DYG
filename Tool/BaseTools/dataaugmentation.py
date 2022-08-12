@@ -400,23 +400,28 @@ class Resize(object):
 
 
 class SSDAugmentation(object):
-    def __init__(self,
-                 size: int = 416,
-                 mean=(0.406, 0.456, 0.485),
-                 std=(0.225, 0.224, 0.229)
-                 ):
+    def __init__(
+            self,
+            size: int = 416,
+            mean=(0.406, 0.456, 0.485),
+            std=(0.225, 0.224, 0.229),
+            augment: list = None
+    ):
         self.mean = mean
         self.std = std
         self.size = size
-        self.augment = MyCompose([
-            ConvertFromInts(),
-            PhotometricDistort(),
-            Expand(self.mean),
-            RandomSampleCrop(),
-            RandomMirror(),
-            Resize(self.size),
-            Normalize(self.mean, self.std)
-        ])
+        if augment is None:
+            self.augment = MyCompose([
+                ConvertFromInts(),
+                PhotometricDistort(),
+                Expand(self.mean),
+                RandomSampleCrop(),
+                RandomMirror(),
+                Resize(self.size),
+                Normalize(self.mean, self.std)
+            ])
+        else:
+            self.augment = MyCompose(augment)
 
     def __call__(self, img, boxes, labels):
         return self.augment(img, boxes, labels)
