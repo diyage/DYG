@@ -138,18 +138,19 @@ class YOLOV4Loss(BaseLoss):
 
             # conf loss
             # compute iou
-            # c_iou = YOLOV4Tools.c_iou(pre_xyxy, gt_xyxy)  # (-1.0, 1.0)
-            iou = YOLOV4Tools.iou(pre_xyxy, gt_xyxy)  # (0.0, 1.0)
+            c_iou = YOLOV4Tools.c_iou(pre_xyxy, gt_xyxy)  # (-1.0, 1.0)
+            # iou = YOLOV4Tools.iou(pre_xyxy, gt_xyxy)  # (0.0, 1.0)
 
             # iou_loss
-            temp = 1.0 - iou
+            temp = 1.0 - c_iou
+            # temp = 1.0 - iou
             loss_dict['iou_loss'] += torch.sum(
                 temp * positive
             )/N
 
             # has obj/positive loss
-            # iou_detach = 0.5 * c_iou.detach() + 0.5  # (N, H, W, a_n) and no grad! (0.0, 1.0)
-            iou_detach = iou.detach()  # (0.0, 1.0)
+            iou_detach = 0.5 * c_iou.detach() + 0.5  # (N, H, W, a_n) and no grad! (0.0, 1.0)
+            # iou_detach = iou.detach()  # (0.0, 1.0)
             temp = self.mse(pre_conf, iou_detach)
             loss_dict['has_obj_loss'] += torch.sum(
                 temp * positive
