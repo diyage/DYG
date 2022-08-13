@@ -217,6 +217,7 @@ def get_voc_data_loader(
         image_size: tuple,
         batch_size: int,
         train: bool = True,
+        num_workers: int = 0,
         mean: List[float] = [0.5, 0.5, 0.5],
         std: List[float] = [0.5, 0.5, 0.5],
 ):
@@ -239,7 +240,8 @@ def get_voc_data_loader(
         train_l = DataLoader(train_d,
                              batch_size=batch_size,
                              collate_fn=VOCDataSet.collate_fn,
-                             shuffle=True)
+                             shuffle=True,
+                             num_workers=num_workers)
         return train_l
     else:
         transform_test = BaseAugmentation(
@@ -259,7 +261,8 @@ def get_voc_data_loader(
         test_l = DataLoader(test_d,
                             batch_size=batch_size,
                             collate_fn=VOCDataSet.collate_fn,
-                            shuffle=False)
+                            shuffle=False,
+                            num_workers=num_workers)
         return test_l
 
 

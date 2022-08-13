@@ -183,6 +183,7 @@ if __name__ == '__main__':
         data_opt.image_size,
         trainer_opt.batch_size,
         train=True,
+        num_workers=trainer_opt.num_workers,
         mean=data_opt.mean,
         std=data_opt.std
     )
@@ -192,6 +193,7 @@ if __name__ == '__main__':
         data_opt.image_size,
         trainer_opt.batch_size,
         train=False,
+        num_workers=trainer_opt.num_workers,
         mean=data_opt.mean,
         std=data_opt.std
     )
