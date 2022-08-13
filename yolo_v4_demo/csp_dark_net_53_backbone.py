@@ -141,6 +141,7 @@ class Helper:
                 saved_dir = self.config.ABS_PATH + os.getcwd() + '/model_pth_detector/'
                 os.makedirs(saved_dir, exist_ok=True)
                 torch.save(self.detector.state_dict(), '{}/{}.pth'.format(saved_dir, epoch))
+
                 with torch.no_grad():
                     # show predict
                     saved_dir = self.config.ABS_PATH + os.getcwd() + '/eval_images/{}/'.format(epoch)
