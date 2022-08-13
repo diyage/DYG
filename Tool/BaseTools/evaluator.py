@@ -8,7 +8,6 @@ from .tools import BaseTools
 from .predictor import BasePredictor
 import numpy as np
 from .model import BaseModel
-import torch
 
 
 class BaseEvaluator:
@@ -52,7 +51,7 @@ class BaseEvaluator:
     ):
         pass
 
-    def __no_grad_eval(
+    def eval_detector_mAP(
             self,
             data_loader_test: DataLoader,
             desc: str = 'eval detector mAP',
@@ -100,15 +99,4 @@ class BaseEvaluator:
 
         mAP = np.mean(ap_vec)
         print('\nmAP:{:.2%}'.format(mAP))
-
-    def eval_detector_mAP(
-            self,
-            data_loader_test: DataLoader,
-            desc: str = 'eval detector mAP',
-    ):
-        with torch.no_grad():
-            self.__no_grad_eval(
-                data_loader_test,
-                desc
-            )
 

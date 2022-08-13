@@ -121,10 +121,6 @@ class BaseFormalEvaluator:
         }
 
     def evaluate(self, net):
-        with torch.no_grad():
-            self.__no_grad_eval(net)
-
-    def __no_grad_eval(self, net):
         net.eval()
         num_images = len(self.dataset)
         # all detections are collected into:
