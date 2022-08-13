@@ -7,8 +7,8 @@ from Tool.V4.Tools import YOLOV4Tools
 class YOLOV4Loss(BaseLoss):
     def __init__(
             self,
-            anchor_pre_wh_dict: dict,
-            grid_number_dict: dict,
+            pre_anchor_w_h_rate: dict,
+            image_shrink_rate: dict,
             each_size_anchor_number: int = 3,
             weight_position: float = 1.0,
             weight_conf_has_obj: float = 1.0,
@@ -17,19 +17,37 @@ class YOLOV4Loss(BaseLoss):
             image_size: tuple = (416, 416),
     ):
         super().__init__()
-        self.anchor_pre_wh_dict = anchor_pre_wh_dict
+        self.pre_anchor_w_h_rate = pre_anchor_w_h_rate
+        self.pre_anchor_w_h = None  # type:dict
+
+        self.image_shrink_rate = image_shrink_rate
+        self.grid_number = None  # type:dict
+
+        self.image_size = None
+        self.change_image_wh(image_size)
+
         self.each_size_anchor_number = each_size_anchor_number
-        self.grid_number_dict = grid_number_dict
+
         self.weight_position = weight_position
         self.weight_conf_has_obj = weight_conf_has_obj
         self.weight_conf_no_obj = weight_conf_no_obj
         self.weight_cls_prob = weight_cls_prob
-        self.image_size = image_size
 
-        self.anchor_keys = list(anchor_pre_wh_dict.keys())
+        self.anchor_keys = list(pre_anchor_w_h_rate.keys())
         self.mse = nn.MSELoss(reduction='none')
         self.ce = nn.CrossEntropyLoss(reduction='none')
         self.bce_l = nn.BCEWithLogitsLoss(reduction='none')
+
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        self.image_size = image_wh
+        self.grid_number, self.pre_anchor_w_h = YOLOV4Tools.get_grid_number_and_pre_anchor_w_h(
+            self.image_size,
+            self.image_shrink_rate,
+            self.pre_anchor_w_h_rate
+        )
 
     def forward(
             self,
@@ -68,8 +86,8 @@ class YOLOV4Loss(BaseLoss):
 
             pre_xyxy = YOLOV4Tools.txtytwth_to_xyxy(
                 pre_txtytwth,
-                self.anchor_pre_wh_dict[anchor_key],
-                self.grid_number_dict[anchor_key]
+                self.pre_anchor_w_h[anchor_key],
+                self.grid_number[anchor_key]
             )
             # scaled in [0, 1]
 
@@ -88,8 +106,8 @@ class YOLOV4Loss(BaseLoss):
 
             gt_txty_s_twth = YOLOV4Tools.xyxy_to_txty_sigmoid_twth(
                 gt_xyxy,
-                self.anchor_pre_wh_dict[anchor_key],
-                self.grid_number_dict[anchor_key]
+                self.pre_anchor_w_h[anchor_key],
+                self.grid_number[anchor_key]
             )
             gt_txty_s = gt_txty_s_twth[..., 0:2]  # (N, H, W, a_n, 2)
             gt_twth = gt_txty_s_twth[..., 2:4]  # (N, H, W, a_n, 2)

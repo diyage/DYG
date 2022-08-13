@@ -27,9 +27,9 @@ class Helper:
 
         self.trainer = YOLOV2Trainer(
             model,
-            self.opt_data_set.pre_anchor_w_h,
+            self.opt_data_set.pre_anchor_w_h_rate,
             self.opt_data_set.image_size,
-            self.opt_data_set.grid_number,
+            self.opt_data_set.image_shrink_rate,
             self.opt_data_set.kinds_name,
             self.opt_trainer.iou_th_for_make_target
         )
@@ -39,10 +39,10 @@ class Helper:
             self.opt_trainer.prob_th_for_show,
             self.opt_trainer.conf_th_for_show,
             self.opt_trainer.score_th_for_show,
-            self.opt_data_set.pre_anchor_w_h,
+            self.opt_data_set.pre_anchor_w_h_rate,
             self.opt_data_set.kinds_name,
             self.opt_data_set.image_size,
-            self.opt_data_set.grid_number
+            self.opt_data_set.image_shrink_rate
         )
 
         self.predictor_for_eval = YOLOV2Predictor(
@@ -50,10 +50,10 @@ class Helper:
             self.opt_trainer.prob_th_for_eval,
             self.opt_trainer.conf_th_for_eval,
             self.opt_trainer.score_th_for_eval,
-            self.opt_data_set.pre_anchor_w_h,
+            self.opt_data_set.pre_anchor_w_h_rate,
             self.opt_data_set.kinds_name,
             self.opt_data_set.image_size,
-            self.opt_data_set.grid_number
+            self.opt_data_set.image_shrink_rate
         )
 
         self.visualizer = YOLOV2Visualizer(
@@ -85,13 +85,13 @@ class Helper:
             data_loader_test: DataLoader,
     ):
         loss_func = YOLOV2Loss(
-            self.opt_data_set.pre_anchor_w_h,
+            self.opt_data_set.pre_anchor_w_h_rate,
             self.opt_trainer.weight_position,
             self.opt_trainer.weight_conf_has_obj,
             self.opt_trainer.weight_conf_no_obj,
             self.opt_trainer.weight_cls_prob,
             self.opt_trainer.weight_iou_loss,
-            self.opt_data_set.grid_number,
+            self.opt_data_set.image_shrink_rate,
             image_size=self.opt_data_set.image_size,
             loss_type=LOSS_TYPE
         )

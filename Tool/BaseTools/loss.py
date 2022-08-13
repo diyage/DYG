@@ -12,6 +12,13 @@ class BaseLoss(nn.Module):
         super().__init__()
 
     @abstractmethod
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        pass
+
+    @abstractmethod
     def forward(
             self,
             *args,

@@ -26,6 +26,17 @@ class YOLOV2Visualizer(BaseVisualizer):
             iou_th_for_make_target
         )
 
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        self.image_size = image_wh
+        self.grid_number, self.pre_anchor_w_h = YOLOV2Tools.get_grid_number_and_pre_anchor_w_h(
+            self.image_size,
+            self.image_shrink_rate,
+            self.pre_anchor_w_h_rate
+        )
+
     def make_targets(
             self,
             labels,

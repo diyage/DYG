@@ -53,19 +53,34 @@ class BaseTrainer:
     def __init__(
             self,
             model: BaseModel,
-            pre_anchor_w_h: Union[tuple, dict],
+            pre_anchor_w_h_rate: Union[tuple, dict],
             image_size: tuple,
-            grid_number: Union[tuple, dict],
+            image_shrink_rate: Union[tuple, dict],
             kinds_name: list,
             iou_th_for_make_target: float
     ):
         self.detector = model  # type: BaseModel
         self.device = next(model.parameters()).device
-        self.image_size = image_size
-        self.grid_number = grid_number
+
+        self.pre_anchor_w_h_rate = pre_anchor_w_h_rate
+        self.pre_anchor_w_h = None
+
+        self.image_shrink_rate = image_shrink_rate
+        self.grid_number = None
+
+        self.image_size = None
+        self.change_image_wh(image_size)
+
         self.kinds_name = kinds_name
-        self.pre_anchor_w_h = pre_anchor_w_h
+
         self.iou_th_for_make_target = iou_th_for_make_target
+
+    @abstractmethod
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        pass
 
     @abstractmethod
     def make_targets(

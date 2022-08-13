@@ -7,6 +7,31 @@ from typing import Union
 class YOLOV4Tools(BaseTools):
 
     @staticmethod
+    def get_grid_number_and_pre_anchor_w_h(
+            image_wh: tuple,
+            image_shrink_rate: dict,
+            pre_anchor_w_h_rate: dict
+    ):
+
+        grid_number = {}
+        pre_anchor_w_h = {}
+
+        for anchor_key, shrink_rate in image_shrink_rate.items():
+            anchor_rate = pre_anchor_w_h_rate.get(anchor_key)
+
+            single_grid_number = (
+                image_wh[0] // shrink_rate[0],
+                image_wh[1] // shrink_rate[1]
+            )
+            single_pre_anchor = tuple([
+                (rate[0] * single_grid_number[0], rate[1] * single_grid_number[1]) for rate in anchor_rate
+            ])
+            grid_number[anchor_key] = single_grid_number
+            pre_anchor_w_h[anchor_key] = single_pre_anchor
+
+        return grid_number, pre_anchor_w_h
+
+    @staticmethod
     def compute_anchor_response_result(
             anchor_pre_wh: dict,
             grid_number_dict: dict,
@@ -15,7 +40,20 @@ class YOLOV4Tools(BaseTools):
             iou_th: float = 0.6,
             multi_gt: bool = False
     ):
-        # flatten
+        '''
+
+        Args:
+            anchor_pre_wh: scaled on grid
+            grid_number_dict: grid number
+            abs_gt_pos:
+            image_wh:
+            iou_th:
+            multi_gt: use one/more ground-truth obj(s)?
+
+        Returns:
+
+        '''
+        # flatten(one pair one element )
         keys = list(anchor_pre_wh.keys())
         values = np.array(list(anchor_pre_wh.values()))
         anchor_pre_wh = values.reshape(-1, 2).tolist()

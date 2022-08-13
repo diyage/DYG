@@ -28,6 +28,17 @@ class YOLOV3Visualizer(BaseVisualizer):
         self.predictor = predictor
         self.anchor_keys = self.predictor.anchor_keys
 
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        self.image_size = image_wh
+        self.grid_number, self.pre_anchor_w_h = YOLOV3Tools.get_grid_number_and_pre_anchor_w_h(
+            self.image_size,
+            self.image_shrink_rate,
+            self.pre_anchor_w_h_rate
+        )
+
     def make_targets(
             self,
             labels,

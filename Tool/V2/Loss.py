@@ -192,37 +192,50 @@ class MSEWithLogitsLoss(nn.Module):
 
 class YOLOV2Loss(BaseLoss):
     def __init__(self,
-                 anchor_pre_wh: tuple,
+                 pre_anchor_w_h_rate: tuple,
                  weight_position: float = 1.0,
                  weight_conf_has_obj: float = 1.0,
                  weight_conf_no_obj: float = 1.0,
                  weight_cls_prob: float = 1.0,
                  weight_iou_loss: float = 1.0,
-                 grid_number: tuple = (13, 13),
+                 image_shrink_rate: tuple = (13, 13),
                  image_size: tuple = (416, 416),
                  loss_type: int = 1,
                  ):
         super().__init__()
-        self.anchor_number = len(anchor_pre_wh)
-        self.anchor_pre_wh = anchor_pre_wh
+        self.anchor_number = len(pre_anchor_w_h_rate)
+
+        self.pre_anchor_w_h_rate = pre_anchor_w_h_rate
+        self.pre_anchor_w_h = None
+
+        self.image_shrink_rate = image_shrink_rate
+        self.grid_number = None  # type: tuple
+
+        self.image_size = None
+        self.change_image_wh(image_size)
+
         self.weight_position = weight_position
         self.weight_conf_has_obj = weight_conf_has_obj
         self.weight_conf_no_obj = weight_conf_no_obj
         self.weight_cls_prob = weight_cls_prob
         self.weight_iou_loss = weight_iou_loss
 
-        self.grid_number = grid_number
-
-        self.image_size = image_size
-
         self.mse = nn.MSELoss(reduction='none')
         self.iou_loss_function = nn.SmoothL1Loss(reduction='none')
 
-        self._grid = YOLOV2Tools.get_grid(grid_number)  # H * W * 2
-        self._pre_wh = torch.tensor(anchor_pre_wh, dtype=torch.float32)  # a_n *2
-
         self.iteration = 0
         self.loss_type = loss_type
+
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        self.image_size = image_wh
+        self.grid_number, self.pre_anchor_w_h = YOLOV2Tools.get_grid_number_and_pre_anchor_w_h(
+            self.image_size,
+            self.image_shrink_rate,
+            self.pre_anchor_w_h_rate
+        )
 
     def txtytwth_xyxy(
             self,
@@ -231,7 +244,7 @@ class YOLOV2Loss(BaseLoss):
         # offset position to abs position
         return YOLOV2Tools.xywh_to_xyxy(
             txtytwth,
-            self.anchor_pre_wh,
+            self.pre_anchor_w_h,
             self.image_size,
             self.grid_number
         )
@@ -243,7 +256,7 @@ class YOLOV2Loss(BaseLoss):
 
         return YOLOV2Tools.xyxy_to_xywh(
             xyxy,
-            self.anchor_pre_wh,
+            self.pre_anchor_w_h,
             self.image_size,
             self.grid_number
         )
@@ -254,7 +267,7 @@ class YOLOV2Loss(BaseLoss):
             gt: torch.Tensor
     ):
         loss_func = RightLoss(
-            self.anchor_pre_wh,
+            self.pre_anchor_w_h,
             device=out.device,
         )
         return loss_func(out, gt)

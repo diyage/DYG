@@ -18,14 +18,28 @@ class BaseVisualizer:
         self.device = next(model.parameters()).device
 
         self.predictor = predictor
-        self.pre_anchor_w_h = self.predictor.pre_anchor_w_h
-        self.image_size = self.predictor.image_size
-        self.grid_number = self.predictor.grid_number
+
+        self.pre_anchor_w_h_rate = self.predictor.pre_anchor_w_h_rate
+        self.pre_anchor_w_h = None
+
+        self.image_shrink_rate = self.predictor.image_shrink_rate
+        self.grid_number = None
+
+        self.image_size = None
+        self.change_image_wh(self.predictor.image_size)
+
         self.kinds_name = self.predictor.kinds_name
         self.iou_th_for_show = self.predictor.iou_th
 
         self.class_colors = class_colors
         self.iou_th_for_make_target = iou_th_for_make_target
+
+    @abstractmethod
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        pass
 
     @abstractmethod
     def make_targets(

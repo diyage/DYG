@@ -24,9 +24,9 @@ class Helper:
 
         self.trainer = YOLOV4Trainer(
             model,
-            self.config.data_config.pre_anchor_w_h,
+            self.config.data_config.pre_anchor_w_h_rate,
             self.config.data_config.image_size,
-            self.config.data_config.grid_number,
+            self.config.data_config.image_shrink_rate,
             self.config.data_config.kinds_name,
             self.config.iou_th_for_make_target,
             multi_gt=self.config.multi_gt
@@ -37,10 +37,10 @@ class Helper:
             self.config.show_config.prob_th_for_show,
             self.config.show_config.conf_th_for_show,
             self.config.show_config.score_th_for_show,
-            self.config.data_config.pre_anchor_w_h,
+            self.config.data_config.pre_anchor_w_h_rate,
             self.config.data_config.kinds_name,
             self.config.data_config.image_size,
-            self.config.data_config.grid_number,
+            self.config.data_config.image_shrink_rate,
             self.config.data_config.single_an
         )
 
@@ -49,10 +49,10 @@ class Helper:
             self.config.eval_config.prob_th_for_eval,
             self.config.eval_config.conf_th_for_eval,
             self.config.eval_config.score_th_for_eval,
-            self.config.data_config.pre_anchor_w_h,
+            self.config.data_config.pre_anchor_w_h_rate,
             self.config.data_config.kinds_name,
             self.config.data_config.image_size,
-            self.config.data_config.grid_number,
+            self.config.data_config.image_shrink_rate,
             self.config.data_config.single_an
         )
 
@@ -86,8 +86,8 @@ class Helper:
             data_loader_test: DataLoader,
     ):
         loss_func = YOLOV4Loss(
-            self.config.data_config.pre_anchor_w_h,
-            self.config.data_config.grid_number,
+            self.config.data_config.pre_anchor_w_h_rate,
+            self.config.data_config.image_shrink_rate,
             self.config.data_config.single_an,
             self.config.train_config.weight_position,
             self.config.train_config.weight_conf_has_obj,

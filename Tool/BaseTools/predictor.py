@@ -24,19 +24,32 @@ class BasePredictor:
             prob_th: float,
             conf_th: float,
             score_th: float,
-            pre_anchor_w_h: Union[tuple, dict],
+            pre_anchor_w_h_rate: Union[tuple, dict],
             kinds_name: list,
             image_size: tuple,
-            grid_number: Union[tuple, dict]
+            image_shrink_rate: Union[tuple, dict]
     ):
         self.iou_th = iou_th
         self.prob_th = prob_th
         self.conf_th = conf_th
         self.score_th = score_th
         self.kinds_name = kinds_name
-        self.image_size = image_size
-        self.grid_number = grid_number
-        self.pre_anchor_w_h = pre_anchor_w_h
+
+        self.pre_anchor_w_h_rate = pre_anchor_w_h_rate
+        self.pre_anchor_w_h = None
+
+        self.image_shrink_rate = image_shrink_rate
+        self.grid_number = None
+
+        self.image_size = None
+        self.change_image_wh(image_size)
+
+    @abstractmethod
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        pass
 
     def nms(
             self,

@@ -5,8 +5,31 @@ from typing import Union
 
 
 class YOLOV3Tools(BaseTools):
-    def __init__(self):
-        super(YOLOV3Tools, self).__init__()
+
+    @staticmethod
+    def get_grid_number_and_pre_anchor_w_h(
+            image_wh: tuple,
+            image_shrink_rate: dict,
+            pre_anchor_w_h_rate: dict
+    ):
+
+        grid_number = {}
+        pre_anchor_w_h = {}
+
+        for anchor_key, shrink_rate in image_shrink_rate.items():
+            anchor_rate = pre_anchor_w_h_rate.get(anchor_key)
+
+            single_grid_number = (
+                image_wh[0] // shrink_rate[0],
+                image_wh[1] // shrink_rate[1]
+            )
+            single_pre_anchor = tuple([
+                (rate[0] * single_grid_number[0], rate[1] * single_grid_number[1]) for rate in anchor_rate
+            ])
+            grid_number[anchor_key] = single_grid_number
+            pre_anchor_w_h[anchor_key] = single_pre_anchor
+
+        return grid_number, pre_anchor_w_h
 
     @staticmethod
     def split_predict(

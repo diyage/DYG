@@ -16,7 +16,8 @@ class YOLOV2DataSetConfig:
     image_net_dir: str = '/home/dell/data/DataSet/imageNet/data/'
     # data set root dir
     image_size: tuple = (416, 416)
-    grid_number: tuple = (13, 13)
+    # grid_number: tuple = (13, 13)
+    image_shrink_rate: tuple = (32, 32)
     kinds_name: list = [
         'aeroplane', 'bicycle', 'bird', 'boat',
         'bottle', 'bus', 'car', 'cat', 'chair',
@@ -29,12 +30,19 @@ class YOLOV2DataSetConfig:
         (np.random.randint(255), np.random.randint(255), np.random.randint(255)) for _ in range(len(kinds_name))
     ]
 
-    pre_anchor_w_h: tuple = (
-        (1.19, 1.98),
-        (2.79, 4.59),
-        (4.53, 8.92),
-        (8.06, 5.29),
-        (10.32, 10.65)
+    # pre_anchor_w_h: tuple = (
+    #     (1.19, 1.98),
+    #     (2.79, 4.59),
+    #     (4.53, 8.92),
+    #     (8.06, 5.29),
+    #     (10.32, 10.65)
+    # )
+    pre_anchor_w_h_rate: tuple = (
+        (0.09153846153846154, 0.1523076923076923),
+        (0.21461538461538462, 0.35307692307692307),
+        (0.3484615384615385, 0.6861538461538461),
+        (0.62, 0.40692307692307694),
+        (0.7938461538461539, 0.8192307692307692)
     )
 
     mean = [0.406, 0.456, 0.485]

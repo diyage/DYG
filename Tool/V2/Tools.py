@@ -10,6 +10,23 @@ class YOLOV2Tools(BaseTools):
         super().__init__()
 
     @staticmethod
+    def get_grid_number_and_pre_anchor_w_h(
+            image_wh: tuple,
+            image_shrink_rate: tuple,
+            pre_anchor_w_h_rate: tuple
+    ):
+
+        grid_number = (
+            image_wh[0] // image_shrink_rate[0],
+            image_wh[1] // image_shrink_rate[1]
+        )
+        pre_anchor_w_h = tuple([
+            (rate[0] * grid_number[0], rate[1] * grid_number[1]) for rate in pre_anchor_w_h_rate
+        ])
+
+        return grid_number, pre_anchor_w_h
+
+    @staticmethod
     def compute_iou_for_build_target(anchor_boxes, gt_box):
         """计算先验框和真实框之间的IoU
         Input: \n

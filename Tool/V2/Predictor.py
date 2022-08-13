@@ -13,20 +13,31 @@ class YOLOV2Predictor(BasePredictor):
             prob_th: float,
             conf_th: float,
             score_th: float,
-            pre_anchor_w_h: tuple,
+            pre_anchor_w_h_rate: tuple,
             kinds_name: list,
             image_size: tuple,
-            grid_number: tuple
+            image_shrink_rate: tuple
     ):
         super().__init__(
             iou_th,
             prob_th,
             conf_th,
             score_th,
-            pre_anchor_w_h,
+            pre_anchor_w_h_rate,
             kinds_name,
             image_size,
-            grid_number
+            image_shrink_rate
+        )
+
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        self.image_size = image_wh
+        self.grid_number, self.pre_anchor_w_h = YOLOV2Tools.get_grid_number_and_pre_anchor_w_h(
+            self.image_size,
+            self.image_shrink_rate,
+            self.pre_anchor_w_h_rate
         )
 
     def decode_one_target(

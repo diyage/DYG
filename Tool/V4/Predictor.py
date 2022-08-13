@@ -11,10 +11,10 @@ class YOLOV4Predictor(BasePredictor):
             prob_th: float,
             conf_th: float,
             score_th: float,
-            pre_anchor_w_h_dict: dict,
+            pre_anchor_w_h_rate: dict,
             kinds_name: list,
             image_size: tuple,
-            grid_number_dict: dict,
+            image_shrink_rate: dict,
             each_size_anchor_number: int = 3
     ):
         super().__init__(
@@ -22,13 +22,24 @@ class YOLOV4Predictor(BasePredictor):
             prob_th,
             conf_th,
             score_th,
-            pre_anchor_w_h_dict,
+            pre_anchor_w_h_rate,
             kinds_name,
             image_size,
-            grid_number_dict
+            image_shrink_rate
         )
-        self.anchor_keys = list(pre_anchor_w_h_dict.keys())
+        self.anchor_keys = list(pre_anchor_w_h_rate.keys())
         self.each_size_anchor_number = each_size_anchor_number
+
+    def change_image_wh(
+            self,
+            image_wh: tuple
+    ):
+        self.image_size = image_wh
+        self.grid_number, self.pre_anchor_w_h = YOLOV4Tools.get_grid_number_and_pre_anchor_w_h(
+            self.image_size,
+            self.image_shrink_rate,
+            self.pre_anchor_w_h_rate
+        )
 
     def decode_one_target(
             self,

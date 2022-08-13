@@ -11,6 +11,14 @@ from abc import abstractmethod
 
 
 class BaseTools:
+    @staticmethod
+    @abstractmethod
+    def get_grid_number_and_pre_anchor_w_h(
+            image_wh: tuple,
+            image_shrink_rate: Union[dict, tuple],
+            pre_anchor_w_h_rate: Union[dict, tuple]
+    ):
+        pass
 
     @staticmethod
     @abstractmethod
