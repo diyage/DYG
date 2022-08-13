@@ -136,7 +136,8 @@ class StrongerVOCDataSet(VOCDataSet):
         if self.use_mosaic and np.random.randint(2):
             img, boxes, classes = self.__get_mosaic(index)
             if self.use_mixup and np.random.randint(2):
-                img2, boxes2, classes2 = self.__get_mosaic(index)
+
+                img2, boxes2, classes2 = self.__get_mosaic(index=np.random.randint(0, len(self.ids)))
                 r = np.random.beta(8.0, 8.0)  # mixup ratio, alpha=beta=8.0
                 img = (img * r + img2 * (1 - r)).astype(np.uint8)
                 boxes = np.concatenate((boxes, boxes2), 0)

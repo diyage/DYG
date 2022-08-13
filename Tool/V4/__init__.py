@@ -7,3 +7,4 @@ from .FormalEvaluator import YOLOV4FormalEvaluator
 from .Visualizer import YOLOV4Visualizer
 from .Trainer import YOLOV4Trainer
 from .Evaluator import YOLOV4Evaluator
+from .DatasetDefine import get_stronger_voc_data_loader
