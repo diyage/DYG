@@ -64,7 +64,7 @@ class YOLOV4DataSetConfig:
 
 class YOLOV4TrainConfig:
     max_epoch_on_detector = 200
-
+    num_workers: int = 4
     device: str = 'cuda:0'
     batch_size = 16
     lr: float = 1e-3
