@@ -199,9 +199,9 @@ class YOLOV3Model(BaseModel):
         pred_1 = self.pred_1(p3)
 
         res = {
-            'C3': pred_1,
-            'C4': pred_2,
-            'C5': pred_3,
+            'for_s': pred_1,
+            'for_m': pred_2,
+            'for_l': pred_3,
         }
         return res
 
