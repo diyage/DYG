@@ -414,22 +414,39 @@ class Process5(nn.Module):
         return y19_a  # (-1, 1024, 19, 19)
 
 
-class YOLOV4Model(BaseModel):
+class Neck(nn.Module):
     def __init__(
             self,
-            backbone: Union[nn.Module, CSPDarkNet53],
-            num_anchors_for_single_size: int = 3,
-            num_classes: int = 20,
     ):
-        # if image size == (608, 608)
-        # actually, you could use other size (e.g. 416, make sure size%32==0)
-        super().__init__(backbone)
+        super().__init__()
         self.process1 = Process1()
         self.process2 = Process2()
         self.process3 = Process3()
         self.process4 = Process4()
         self.process5 = Process5()
 
+    def forward(
+            self,
+            c3: torch.Tensor,
+            c4: torch.Tensor,
+            c5: torch.Tensor,
+    ):
+        y19 = self.process1(c5)
+        y38 = self.process2(c4, y19)
+        y76 = self.process3(c3, y38)
+
+        y38_a = self.process4(y38, y76)
+        y19_a = self.process5(y19, y38_a)
+        return y76, y38_a, y19_a
+
+
+class Head(nn.Module):
+    def __init__(
+            self,
+            num_anchors_for_single_size: int,
+            num_classes: int,
+    ):
+        super().__init__()
         # for y76 (-1, 256, 76, 76)
         self.head1 = nn.Sequential(
             CBL(256, 128, 1, 1, 0),
@@ -438,7 +455,7 @@ class YOLOV4Model(BaseModel):
             CBL(128, 256, 3, 1, 1),
             CBL(256, 128, 1, 1, 0),
             CBL(128, 256, 3, 1, 1),
-            nn.Conv2d(256, num_anchors_for_single_size*(num_classes+5), 1, 1, 0)
+            nn.Conv2d(256, num_anchors_for_single_size * (num_classes + 5), 1, 1, 0)
         )
 
         # for y38_a # (-1, 512, 38, 38)
@@ -465,20 +482,37 @@ class YOLOV4Model(BaseModel):
 
     def forward(
             self,
-            x: torch.Tensor
+            y76: torch.Tensor,
+            y38_a: torch.Tensor,
+            y19_a: torch.Tensor
     ):
-        c3, c4, c5 = self.backbone(x)
-        y19 = self.process1(c5)
-        y38 = self.process2(c4, y19)
-        y76 = self.process3(c3, y38)
-
-        y38_a = self.process4(y38, y76)
-        y19_a = self.process5(y19, y38_a)
-
         y76_o = self.head1(y76)
         y38_o = self.head2(y38_a)
         y19_o = self.head3(y19_a)
+        return y76_o, y38_o, y19_o
 
+
+class YOLOV4Model(BaseModel):
+    def __init__(
+            self,
+            backbone: Union[nn.Module, CSPDarkNet53],
+            num_anchors_for_single_size: int = 3,
+            num_classes: int = 20,
+    ):
+        # if image size == (608, 608)
+        # actually, you could use other size (e.g. 416, make sure size%32==0)
+        super().__init__(backbone)
+
+        self.neck = Neck()
+        self.head = Head(num_anchors_for_single_size, num_classes)
+
+    def forward(
+            self,
+            x: torch.Tensor
+    ):
+        c3, c4, c5 = self.backbone(x)
+        y76, y38_a, y19_a = self.neck(c3, c4, c5)
+        y76_o, y38_o, y19_o = self.head(y76, y38_a, y19_a)
         return {
             'for_s': y76_o,  # s=8
             'for_m': y38_o,  # s=16
