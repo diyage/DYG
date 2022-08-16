@@ -331,7 +331,7 @@ class Process2(nn.Module):
             CBL(256, 512, 3, 1, 1),
             CBL(512, 256, 1, 1, 0),
             CBL(256, 512, 3, 1, 1),
-
+            CBL(512, 256, 1, 1, 0),
         )
 
     def forward(
@@ -342,9 +342,9 @@ class Process2(nn.Module):
 
         tmp0 = self.cbl_s_0(x)  # (-1, 256, 38, 38)
         tmp1 = self.up_sample_1(y19)  # (-1, 256, 38, 38)
-        tmp = torch.cat((tmp1, tmp0), dim=1)    # (-1, 512, 38, 38)
+        tmp = torch.cat((tmp0, tmp1), dim=1)    # (-1, 512, 38, 38)
         y38 = self.cbl_s_2(tmp)
-        return y38  # (-1, 512, 38, 38)
+        return y38  # (-1, 256, 38, 38)
 
 
 class Process3(nn.Module):
@@ -358,7 +358,7 @@ class Process3(nn.Module):
 
         )
         self.up_sample_1 = nn.Sequential(
-            CBL(512, 128, 1, 1, 0),
+            CBL(256, 128, 1, 1, 0),
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         )
 
@@ -369,8 +369,8 @@ class Process3(nn.Module):
     ):
         tmp0 = self.cbl_s_0(x)  # (-1, 128, 76, 76)
         tmp1 = self.up_sample_1(y38)   # (-1, 128, 76, 76)
-        y76 = torch.cat((tmp1, tmp0), dim=1)  # (-1, 256, 76, 76)
-        return y76
+        y76 = torch.cat((tmp0, tmp1), dim=1)  # (-1, 256, 76, 76)
+        return y76  # (-1, 256, 76, 76)
 
 
 class Process4(nn.Module):
@@ -390,8 +390,8 @@ class Process4(nn.Module):
             y76: torch.Tensor,
     ):
         y76_d = self.y76_down(y76)  # (-1, 256, 38, 38)
-        y38_a = torch.cat((y76_d, y38), dim=1)   # (-1, 768, 38, 38)
-        return y38_a
+        y38_a = torch.cat((y76_d, y38), dim=1)   # (-1, 512, 38, 38)
+        return y38_a  # (-1, 512, 38, 38)
 
 
 class Process5(nn.Module):
@@ -401,7 +401,7 @@ class Process5(nn.Module):
         super().__init__()
         self.y38_a_down = nn.Sequential(
             nn.MaxPool2d(2, 2),
-            CBL(768, 512, 3, 1, 1),
+            CBL(512, 512, 3, 1, 1),
         )
 
     def forward(
@@ -411,7 +411,7 @@ class Process5(nn.Module):
     ):
         y38_a_d = self.y38_a_down(y38_a)  # (-1, 512, 19, 19)
         y19_a = torch.cat((y38_a_d, y19), dim=1)   # (-1, 1024, 19, 19)
-        return y19_a
+        return y19_a  # (-1, 1024, 19, 19)
 
 
 class YOLOV4Model(BaseModel):
@@ -438,18 +438,18 @@ class YOLOV4Model(BaseModel):
             CBL(128, 256, 3, 1, 1),
             CBL(256, 128, 1, 1, 0),
             CBL(128, 256, 3, 1, 1),
-            CBL(256, num_anchors_for_single_size*(num_classes+5), 1, 1, 0),
+            nn.Conv2d(256, num_anchors_for_single_size*(num_classes+5), 1, 1, 0)
         )
 
-        # for y38_a # (-1, 768, 38, 38)
+        # for y38_a # (-1, 512, 38, 38)
         self.head2 = nn.Sequential(
-            CBL(768, 256, 1, 1, 0),
-            CBL(256, 512, 3, 1, 1),
             CBL(512, 256, 1, 1, 0),
             CBL(256, 512, 3, 1, 1),
             CBL(512, 256, 1, 1, 0),
             CBL(256, 512, 3, 1, 1),
-            CBL(512, num_anchors_for_single_size * (num_classes + 5), 1, 1, 0),
+            CBL(512, 256, 1, 1, 0),
+            CBL(256, 512, 3, 1, 1),
+            nn.Conv2d(512, num_anchors_for_single_size * (num_classes + 5), 1, 1, 0),
         )
 
         # for y19_a # (-1, 1024, 19, 19)
@@ -460,7 +460,7 @@ class YOLOV4Model(BaseModel):
             CBL(512, 1024, 3, 1, 1),
             CBL(1024, 512, 1, 1, 0),
             CBL(512, 1024, 3, 1, 1),
-            CBL(1024, num_anchors_for_single_size * (num_classes + 5), 1, 1, 0),
+            nn.Conv2d(1024, num_anchors_for_single_size * (num_classes + 5), 1, 1, 0),
         )
 
     def forward(
@@ -489,7 +489,7 @@ class YOLOV4Model(BaseModel):
 if __name__ == '__main__':
     import time
 
-    img = torch.rand(size=(8, 3, 640, 640))
+    img = torch.rand(size=(1, 3, 608, 608))
     backbone_csp_darknet_53 = get_backbone_csp_darknet_53()
     m = YOLOV4Model(
         backbone=backbone_csp_darknet_53,
