@@ -169,7 +169,7 @@ class BaseFormalEvaluator:
         print('Evaluating detections')
         self.evaluate_detections(self.all_boxes)
 
-        print('Mean AP: ', self.map)
+        print('Mean AP: {:.2%}'.format(self.map))
 
     def parse_rec(self, filename):
         """ Parse a PASCAL VOC xml file """
