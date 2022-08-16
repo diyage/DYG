@@ -305,8 +305,8 @@ class YOLOV4Tools(BaseTools):
         a_b = position[..., 0:2]  # -1 * a_n * 2
         m_n = position[..., 2:4]  # -1 * a_n * 2
 
-        # center_x_y = (2 * torch.sigmoid(a_b) - 1 + grid_index) / grid_number[0]  # scaled in [0, 1]
-        center_x_y = (torch.sigmoid(a_b) + grid_index) / grid_number[0]  # scaled in [0, 1]
+        center_x_y = (2 * torch.sigmoid(a_b) - 1 + grid_index) / grid_number[0]  # scaled in [0, 1]
+        # center_x_y = (torch.sigmoid(a_b) + grid_index) / grid_number[0]  # scaled in [0, 1]
         w_h = torch.exp(m_n) * pre_wh.expand_as(m_n) / grid_number[0]  # scaled in [0, 1]
 
         x_y_0 = center_x_y - 0.5 * w_h
@@ -362,8 +362,8 @@ class YOLOV4Tools(BaseTools):
 
         w_h = m_n - a_b  # scaled in [0, 1]
 
-        # txy_sigmoid = (center_x_y * grid_number[0] - grid_index + 1)/2
-        txy_sigmoid = center_x_y * grid_number[0] - grid_index
+        txy_sigmoid = (center_x_y * grid_number[0] - grid_index + 1)/2
+        # txy_sigmoid = center_x_y * grid_number[0] - grid_index
         txy_sigmoid.clamp_(0.0, 1.0)  # be careful!!!, many center_x_y is zero !!!!
 
         twh = torch.log(w_h * grid_number[0] / pre_wh.expand_as(w_h) + 1e-20)
