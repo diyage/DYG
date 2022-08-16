@@ -499,7 +499,7 @@ class YOLOV4Model(BaseModel):
             num_anchors_for_single_size: int = 3,
             num_classes: int = 20,
     ):
-        # if image size == (608, 608)
+        # suggest shape of input: (-1, 3, 608, 608)
         # actually, you could use other size (e.g. 416, make sure size%32==0)
         super().__init__(backbone)
 
@@ -536,6 +536,3 @@ if __name__ == '__main__':
     print(b-a)
     for key, val in y.items():
         print('key:{}, val_shape:{}'.format(key, val.shape))
-
-
-
