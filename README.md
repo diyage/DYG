@@ -7,13 +7,13 @@ diyage_ObjectDetection contains 7 parts.
 1. Tool(s) --> the most important one. It provides almost all 
 functions/methods for your programming.  
 Used: You need inherit from Tool/BaseTools/tools/BaseTools, 
-and overwrite abstract methods (make_target, split_target, 
+and overwrite abstract methods ( make_target, split_target, 
 split_predict, get_grid_number_and_pre_anchor_w_h)  
 
 2. Predictor --> very important one. You could decode the 
-output of model using it(from tensor(s) to bbox(es) of other useful info(s)).  
+output of model using it( from tensor(s) to bbox(es) or other useful info(s)).  
 Used: You need inherit from Tool/BaseTools/predictor/BasePredictor, 
-and overwrite abstract methods (change_image_wh, decode_one_target, 
+and overwrite abstract methods ( change_image_wh, decode_one_target, 
 decode_target, decode_one_predict, decode_predict)  
 
 3. Visualizer --> Used for Visualization.
