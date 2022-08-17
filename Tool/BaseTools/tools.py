@@ -644,6 +644,6 @@ class BaseTools:
         v = (4 / (np.pi ** 2)) * torch.pow((torch.atan(w2 / (h2 + 1e-20)) - torch.atan(w1 / (h1 + 1e-20))), 2)
         alpha = v/(1 - iou + v + 1e-20)  # type: torch.Tensor
 
-        c_iou = iou - (distance_rate + alpha.detach() * v)
-        # c_iou = iou - (distance_rate + alpha * v)
+        # c_iou = iou - (distance_rate + alpha.detach() * v)
+        c_iou = iou - (distance_rate + alpha * v)
         return torch.clamp(c_iou, -1, 1)

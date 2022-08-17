@@ -171,8 +171,13 @@ class YOLOV4Loss(BaseLoss):
             loss_dict['cls_prob_loss'] += torch.sum(
                 temp * positive.contiguous().view(-1,)
             ) / N
-
-        loss_dict['total_loss'] = self.weight_position * loss_dict['position_loss'] + \
+        # before yolo v4, bbox position direct regression(use position_loss)
+        # loss_dict['total_loss'] = self.weight_position * loss_dict['position_loss'] + \
+        #     self.weight_conf_has_obj * loss_dict['has_obj_loss'] + \
+        #     self.weight_conf_no_obj * loss_dict['no_obj_loss'] + \
+        #     self.weight_cls_prob * loss_dict['cls_prob_loss']
+        # in yolo v4, bbox position loss using c_iou
+        loss_dict['total_loss'] = self.weight_position * loss_dict['iou_loss'] + \
             self.weight_conf_has_obj * loss_dict['has_obj_loss'] + \
             self.weight_conf_no_obj * loss_dict['no_obj_loss'] + \
             self.weight_cls_prob * loss_dict['cls_prob_loss']
