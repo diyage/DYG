@@ -22,5 +22,5 @@ decode_target, decode_one_predict, decode_predict)
 6. Model --> Used for building network structure.
 7. Trainer --> Used for training Model.
 
-Please see files under 'Tool/BaseTools/', you will get more detail information in each file.
+Please see files under 'Tool/BaseTools/', you will get more detail descriptions in each file.
 
