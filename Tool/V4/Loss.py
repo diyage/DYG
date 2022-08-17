@@ -145,7 +145,7 @@ class YOLOV4Loss(BaseLoss):
             temp = 1.0 - c_iou
             # temp = 1.0 - iou
             loss_dict['iou_loss'] += torch.sum(
-                temp * positive
+                temp * positive * gt_weight
             )/N
 
             # has obj/positive loss
