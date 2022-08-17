@@ -7,7 +7,7 @@ class YOLOV4DataSetConfig:
     years: list = ['2007', '2012']
     image_net_dir: str = '/home/dell/data/DataSet/imageNet/data/'
     # data set root dir
-    image_size: tuple = (604, 604)
+    image_size: tuple = (608, 608)
     image_shrink_rate: dict = {
         'for_s': (8, 8),
         'for_m': (16, 16),
