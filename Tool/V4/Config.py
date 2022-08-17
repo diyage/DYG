@@ -7,30 +7,12 @@ class YOLOV4DataSetConfig:
     years: list = ['2007', '2012']
     image_net_dir: str = '/home/dell/data/DataSet/imageNet/data/'
     # data set root dir
-    image_size: tuple = (416, 416)
-    # grid_number: dict = {
-    #     'for_s': (52, 52),
-    #     'for_m': (26, 26),
-    #     'for_l': (13, 13),
-    # }
+    image_size: tuple = (604, 604)
     image_shrink_rate: dict = {
         'for_s': (8, 8),
         'for_m': (16, 16),
         'for_l': (32, 32),
     }
-    # pre_anchor_w_h: dict = {
-    #     'for_s': ((32.64/416*52, 47.68/416*52),
-    #               (50.24/416*52, 108.16/416*52),
-    #               (126.72/416*52, 96.32/416*52)),
-    #
-    #     'for_m': ((78.40/416*26, 201.92/416*26),
-    #               (178.24/416*26, 178.56/416*26),
-    #               (129.60/416*26, 294.72/416*26)),
-    #
-    #     'for_l': ((331.84/416*13, 194.56/416*13),
-    #               (227.84/416*13, 325.76/416*13),
-    #               (365.44/416*13, 358.72/416*13)),
-    # }
     pre_anchor_w_h_rate: dict = {
         'for_s': ((0.07846153846153846, 0.11461538461538462),
                   (0.12076923076923077, 0.26),
@@ -76,7 +58,6 @@ class YOLOV4TrainConfig:
     weight_conf_has_obj: float = 5.0
     weight_conf_no_obj: float = 1.0
     weight_cls_prob: float = 1.0
-    weight_iou_loss: float = 0.0
 
 
 class YOLOV4EvalConfig:
