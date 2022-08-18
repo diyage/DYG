@@ -205,11 +205,31 @@ class YOLOV4Tools(BaseTools):
                         int((abs_pos[0] + abs_pos[2]) * 0.5 // grid_size[0]),  # w -- on x-axis
                         int((abs_pos[1] + abs_pos[3]) * 0.5 // grid_size[1])  # h -- on y-axis
                     )
+                    # this grid_index in top-left index
+                    # in yolo v4, we use top-left, top-right, down-left, down-right, four grid_index(s)
+                    grid_index_vec = [grid_index]
+
+                    if grid_index[0] + 1 < grid_number[anchor_key][0]:
+                        grid_index_vec.append(
+                            (grid_index[0] + 1, grid_index[1])
+                        )
+
+                    if grid_index[1] + 1 < grid_number[anchor_key][1]:
+                        grid_index_vec.append(
+                            (grid_index[0], grid_index[1] + 1)
+                        )
+
+                    if grid_index[0] + 1 < grid_number[anchor_key][0] and grid_index[1] + 1 < grid_number[anchor_key][1]:
+                        grid_index_vec.append(
+                            (grid_index[0] + 1, grid_index[1] + 1)
+                        )
+
                     for weight_index, weight_value in enumerate(weight_vec):
-                        res[anchor_key][batch_index, weight_index, 4, grid_index[1], grid_index[0]] = weight_value
-                        if weight_value != -1 and weight_value != 0:
-                            res[anchor_key][batch_index, weight_index, 0:4, grid_index[1], grid_index[0]] = torch.tensor(pos)
-                            res[anchor_key][batch_index, weight_index, int(5 + kind_int), grid_index[1], grid_index[0]] = 1.0
+                        for grid_index_x, grid_index_y in grid_index_vec:
+                            res[anchor_key][batch_index, weight_index, 4, grid_index_y, grid_index_x] = weight_value
+                            if weight_value != -1 and weight_value != 0:
+                                res[anchor_key][batch_index, weight_index, 0:4, grid_index_y, grid_index_x] = torch.tensor(pos)
+                                res[anchor_key][batch_index, weight_index, int(5 + kind_int), grid_index_y, grid_index_x] = 1.0
 
         for anchor_key, val in grid_number.items():
             H, W = val[1], val[0]
