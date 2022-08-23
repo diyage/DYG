@@ -10,8 +10,7 @@ class YOLOV4ToolsIS(YOLOV4Tools):
 
     @staticmethod
     def make_target(
-            objects_vec: List[List[List]],
-            masks_vec: List[List[np.ndarray]],
+            labels: list,
             anchor_pre_wh: dict,
             image_wh: tuple,
             grid_number: dict,
@@ -19,10 +18,23 @@ class YOLOV4ToolsIS(YOLOV4Tools):
             iou_th: float = 0.5,
             multi_gt: bool = False
     ):
+        objects_vec,  masks_vec = labels[0], labels[1]
+        """
+        objects_vec = [objects, objects , ...]
+            objects = [object, object, ...]
+            object  = [x0, y0, x1, y1, kind_name]
+        
+        masks_vec   = [masks, maks, ...]
+            masks   = [mask, maks, ...]
+        """
 
         kinds_number = len(kinds_name)
         N = len(objects_vec)
-        res = {}
+
+        res = {
+            'mask': torch.tensor(masks_vec, dtype=torch.float32)
+        }
+
         for anchor_key, val in grid_number.items():
             a_n, H, W = len(anchor_pre_wh[anchor_key]), val[1], val[0]
             res[anchor_key] = torch.zeros(size=(N, a_n, 5 + kinds_number, H, W))
@@ -89,7 +101,6 @@ class YOLOV4ToolsIS(YOLOV4Tools):
             H, W = val[1], val[0]
             res[anchor_key] = res[anchor_key].view(N, -1, H, W)
 
-        res['mask'] = torch.tensor(masks_vec, dtype=torch.float32)
         return res
 
     @staticmethod
