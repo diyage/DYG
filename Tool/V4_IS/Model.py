@@ -139,7 +139,6 @@ class SemanticSegmentationHead(nn.Module):
             CBL(64, 32, 1, 1, 0),
             CBL(32, 64, 3, 1, 1),
             nn.Conv2d(64, num_classes + 1, 1, 1, 0),
-            nn.Sigmoid(),
         )
 
     def forward(
