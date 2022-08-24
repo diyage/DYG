@@ -67,7 +67,6 @@ class YOLOV4LossIS(BaseLoss):
         loss_dict = {
             'total_loss': 0.0,
             # for object detection
-            'position_loss': 0.0,
             'has_obj_loss': 0.0,
             'no_obj_loss': 0.0,
             'cls_prob_loss': 0.0,
@@ -83,9 +82,9 @@ class YOLOV4LossIS(BaseLoss):
             gt_mask
         )
 
-        loss_dict['mask_loss'] += torch.sum(
+        loss_dict['mask_loss'] += torch.mean(
             temp
-        )/temp.shape[0]
+        )
 
         for anchor_key in self.anchor_keys:
             pre_res_dict = res_out[anchor_key]
@@ -95,10 +94,6 @@ class YOLOV4LossIS(BaseLoss):
             # -------------------------------------------------------------------
             # split output
             pre_txtytwth = pre_res_dict.get('position')[0]  # (N, H, W, a_n, 4)
-
-            pre_txty = pre_txtytwth[..., 0:2]  # (N, H, W, a_n, 2)
-            # be careful, not use sigmoid on pre_txty
-            pre_twth = pre_txtytwth[..., 2:4]  # (N, H, W, a_n, 2)
 
             pre_xyxy = YOLOV4ToolsIS.txtytwth_to_xyxy(
                 pre_txtytwth,
@@ -119,15 +114,6 @@ class YOLOV4LossIS(BaseLoss):
 
             gt_xyxy = gt_res_dict.get('position')[1]
             # (N, H, W, a_n, 4) scaled in [0, 1]
-
-            gt_txty_s_twth = YOLOV4ToolsIS.xyxy_to_txty_sigmoid_twth(
-                gt_xyxy,
-                self.pre_anchor_w_h[anchor_key],
-                self.grid_number[anchor_key]
-            )
-            gt_txty_s = gt_txty_s_twth[..., 0:2]  # (N, H, W, a_n, 2)
-            gt_twth = gt_txty_s_twth[..., 2:4]  # (N, H, W, a_n, 2)
-
             gt_conf_and_weight = gt_res_dict.get('conf')  # (N, H, W, a_n)
             # gt_conf = (gt_conf_and_weight > 0).float()
             gt_weight = gt_conf_and_weight
@@ -145,12 +131,6 @@ class YOLOV4LossIS(BaseLoss):
 
             # -------------------------------------------------------------------
             # compute loss
-
-            # position loss
-            temp = (self.bce_l(pre_txty, gt_txty_s) + self.mse(pre_twth, gt_twth)).sum(dim=-1)
-            loss_dict['position_loss'] += torch.sum(
-                temp * positive * gt_weight
-            ) / N
 
             # conf loss
             # compute iou
@@ -193,6 +173,11 @@ class YOLOV4LossIS(BaseLoss):
             self.weight_conf_no_obj * loss_dict['no_obj_loss'] + \
             self.weight_cls_prob * loss_dict['cls_prob_loss'] + \
             self.weight_mask_loss * loss_dict['mask_loss']
+
+        # loss_dict['total_loss'] = self.weight_position * loss_dict['iou_loss'] + \
+        #     self.weight_conf_has_obj * loss_dict['has_obj_loss'] + \
+        #     self.weight_conf_no_obj * loss_dict['no_obj_loss'] + \
+        #     self.weight_cls_prob * loss_dict['cls_prob_loss']
 
         return loss_dict
 

@@ -32,7 +32,7 @@ class YOLOV4ToolsIS(YOLOV4Tools):
         N = len(objects_vec)
 
         res = {
-            'mask': torch.tensor(masks_vec, dtype=torch.float32)
+            'mask': torch.from_numpy(np.array(masks_vec))
         }
 
         for anchor_key, val in grid_number.items():

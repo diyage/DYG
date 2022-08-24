@@ -1,9 +1,9 @@
-# ObjectDetection
-This packet is a framework used for developing object detection.
+# DYG - everything is in your control!
+This packet is a framework used for developing object detection/image segmentation(semantic or instance).
 
 ![image](frame.png)
 
-diyage_ObjectDetection contains 7 parts.  
+# DYG contains 7 parts.  
 1. Tool(s) --> the most important one. It provides almost all 
 functions/methods for your programming.  
 Used: You need inherit from Tool/BaseTools/tools/BaseTools, 

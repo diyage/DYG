@@ -8,7 +8,7 @@ import torch
 from typing import Union
 
 
-class YOLOV4Trainer(BaseTrainer):
+class YOLOV4TrainerIS(BaseTrainer):
     def __init__(
             self,
             model: YOLOV4ForISModel,

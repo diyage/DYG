@@ -74,7 +74,13 @@ class YOLOV4EvaluatorIS(YOLOV4Evaluator):
 
             for image_index in range(images.shape[0]):
                 pre_mask_vec = pre_decode[image_index][1]  # type: np.ndarray
+                pre_mask_vec = pre_mask_vec[:, :, 1:]
+                """
+                    we do not compute accuracy of background
+                """
                 gt_mask_vec = gt_decode[image_index][1]  # type: np.ndarray
+                gt_mask_vec = gt_mask_vec[:, :, 1:]
+
                 acc = np.mean((pre_mask_vec == gt_mask_vec).astype(np.float32))
                 acc_vec.append(acc)
 
