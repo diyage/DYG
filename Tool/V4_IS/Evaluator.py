@@ -73,15 +73,17 @@ class YOLOV4EvaluatorIS(YOLOV4Evaluator):
             pre_decode = self.predictor.decode_predict(output)  # [kps_vec, masks_vec]_s
 
             for image_index in range(images.shape[0]):
-                pre_mask_vec = pre_decode[image_index][1]  # type: np.ndarray
-                pre_mask_vec = pre_mask_vec[:, :, 1:]
-                """
-                    we do not compute accuracy of background
-                """
-                gt_mask_vec = gt_decode[image_index][1]  # type: np.ndarray
-                gt_mask_vec = gt_mask_vec[:, :, 1:]
 
-                acc = np.mean((pre_mask_vec == gt_mask_vec).astype(np.float32))
+                pre_mask_vec = pre_decode[image_index][1]  # type: np.ndarray
+                gt_mask_vec = gt_decode[image_index][1]  # type: np.ndarray
+                pre_mask_vec = pre_mask_vec.argmax(axis=-1)
+                gt_mask_vec = gt_mask_vec.argmax(axis=-1)
+
+                """
+                    do not consider background, it will cause very high accuracy !!
+                """
+                except_background = gt_mask_vec != 0
+                acc = np.mean((pre_mask_vec[except_background] == gt_mask_vec[except_background]).astype(np.float32))
                 acc_vec.append(acc)
 
         print('\nsemantic segmentation accuracy:{:.2%}'.format(np.mean(acc_vec)))

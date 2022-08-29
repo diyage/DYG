@@ -9,6 +9,8 @@ from Tool.V4_IS.Model import YOLOV4ForISModel
 from Tool.BaseTools import CV2, BaseVisualizer
 import os
 from typing import List
+from Tool.V4_IS.DatasetDefine import KIND_NAME_TO_COLOR
+import matplotlib.pyplot as plt
 
 
 class YOLOV4VisualizerIs(BaseVisualizer):
@@ -138,6 +140,58 @@ class YOLOV4VisualizerIs(BaseVisualizer):
 
         CV2.imwrite(saved_file_name, image)
 
+    @staticmethod
+    def mix_mask(
+            mask: np.ndarray
+    ):
+
+        h, w, c = mask.shape[0], mask.shape[1], 3
+
+        mix_mask = np.zeros(shape=(h, w, c), dtype=np.float32)
+
+        for i, kind_name in enumerate(KIND_NAME_TO_COLOR.keys()):
+            kind_color = KIND_NAME_TO_COLOR.get(kind_name)  # (3, )
+
+            kind_mask = mask[:, :, i]  # (H, W)
+            kind_mask = np.expand_dims(kind_mask, axis=-1).repeat(c, axis=-1)  # (H, W, c)
+
+            kind_mask = kind_mask * np.array(kind_color, dtype=np.float32)
+            mix_mask += kind_mask
+
+        return mix_mask.astype(np.uint8)
+
+    def show_(
+            self,
+            image: np.ndarray,
+            pre_mask_vec: np.ndarray,
+            gt_mask_vec: np.ndarray,
+            saved_file_name: str
+
+    ):
+        image = image.copy().astype(np.float32)
+        pre_mask_vec = pre_mask_vec.copy().astype(np.float32)
+        gt_mask_vec = gt_mask_vec.copy().astype(np.float32)
+
+        image = CV2.cvtColorToRGB(image.astype(np.uint8))
+        pre_mask_vec = self.mix_mask(pre_mask_vec)
+        gt_mask_vec = self.mix_mask(gt_mask_vec)
+
+        ax1 = plt.subplot(1, 3, 1)  # type: plt.Axes
+        plt.imshow(image)
+        ax1.set_title('image')
+
+        ax2 = plt.subplot(1, 3, 2)  # type: plt.Axes
+        plt.imshow(gt_mask_vec)
+        ax2.set_title('target')
+
+        ax3 = plt.subplot(1, 3, 3)  # type: plt.Axes
+        plt.imshow(pre_mask_vec)
+        ax3.set_title('predict')
+
+        # ax.legend()
+        plt.savefig(saved_file_name, bbox_inches='tight', pad_inches=0.0)
+        plt.close()
+
     def show_detect_results(
             self,
             data_loader_test: DataLoader,
@@ -184,8 +238,11 @@ class YOLOV4VisualizerIs(BaseVisualizer):
                     gt_decode_mask,
                     saved_file_name='{}/{}_{}_gt.png'.format(saved_dir, batch_ind, image_ind)
                 )
-
-
-
+                self.show_(
+                    image_i,
+                    pre_decode_mask,
+                    gt_decode_mask,
+                    saved_file_name='{}/{}_{}_segmentation.png'.format(saved_dir, batch_ind, image_ind)
+                )
 
 

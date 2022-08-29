@@ -125,19 +125,20 @@ class SemanticSegmentationHead(nn.Module):
     def __init__(
             self,
             num_classes: int,
+            base_channel: int = 128,
     ):
         super().__init__()
         self.num_classes = num_classes
 
         self.head = nn.Sequential(
 
-            CBL(64, 32, 1, 1, 0),  # y76 (-1, 64, 304, 304)
+            CBL(64, base_channel, 1, 1, 0),  # y76 (-1, 64, 304, 304)
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-            CBL(32, 64, 3, 1, 1),
-            CBL(64, 32, 1, 1, 0),
-            CBL(32, 64, 3, 1, 1),
-            CBL(64, 32, 1, 1, 0),
-            CBL(32, 64, 3, 1, 1),
+            CBL(base_channel, 64, 3, 1, 1),
+            CBL(64, base_channel, 1, 1, 0),
+            CBL(base_channel, 64, 3, 1, 1),
+            CBL(64, base_channel, 1, 1, 0),
+            CBL(base_channel, 64, 3, 1, 1),
             nn.Conv2d(64, num_classes + 1, 1, 1, 0),
         )
 
@@ -162,18 +163,18 @@ class YOLOV4ForISModel(YOLOV4Model):
             num_classes
         )
         self.mask_neck = SemanticSegmentationNeck()
-        self.mask_head = SemanticSegmentationHead(num_classes)
+        self.mask_head = SemanticSegmentationHead(num_classes, base_channel=128)
 
     def forward(
             self,
             x: torch.Tensor
     ):
         c1, c2, c3, c4, c5 = self.backbone(x)
+
         y76, y38_a, y19_a = self.neck(c3, c4, c5)
+        y76_o, y38_o, y19_o = self.head(y76, y38_a, y19_a)
 
         y304 = self.mask_neck(c1, c2, y76)
-
-        y76_o, y38_o, y19_o = self.head(y76, y38_a, y19_a)
         mask = self.mask_head(y304)
 
         return {

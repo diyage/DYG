@@ -51,6 +51,22 @@ class YOLOV4LossIS(BaseLoss):
             self.pre_anchor_w_h_rate
         )
 
+    def focal_loss(
+            self,
+            pred: torch.Tensor,
+            gt: torch.Tensor,
+            gama: int = 2,
+    ) -> torch.Tensor:
+
+        pred_softmax = torch.softmax(pred, dim=-1)
+
+        weight = (1 - pred_softmax) ** gama
+
+        loss = -1.0 * weight * gt * torch.log_softmax(pred, dim=-1)
+        # loss = -1.0 * weight * gt * torch.log(pred_softmax)
+
+        return loss.mean()
+
     def forward(
             self,
             out_put: dict,
@@ -77,14 +93,8 @@ class YOLOV4LossIS(BaseLoss):
         pre_mask = res_out['mask']
         gt_mask = res_target['mask']
         # you could try cross entropy loss, I think bce will be better
-        temp = self.bce_l(
-            pre_mask,
-            gt_mask
-        )
 
-        loss_dict['mask_loss'] += torch.mean(
-            temp
-        )
+        loss_dict['mask_loss'] += self.focal_loss(pre_mask, gt_mask)
 
         for anchor_key in self.anchor_keys:
             pre_res_dict = res_out[anchor_key]

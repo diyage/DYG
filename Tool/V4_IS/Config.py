@@ -49,7 +49,7 @@ class YOLOV4TrainConfigIS:
     num_workers: int = 4
     device: str = 'cuda:0'
     batch_size = 4
-    lr: float = 1e-3
+    lr: float = 1e-4
     warm_up_end_epoch: int = 5
     use_mosaic: bool = True
     use_mixup: bool = True

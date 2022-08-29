@@ -3,6 +3,7 @@ from Tool.V4_IS.Tools import YOLOV4ToolsIS
 from Tool.V4 import YOLOV4Predictor
 from typing import List
 import numpy as np
+import torch.nn.functional as F
 
 
 class YOLOV4PredictorIS(YOLOV4Predictor):
@@ -187,8 +188,11 @@ class YOLOV4PredictorIS(YOLOV4Predictor):
             torch.cat(masked_score_max_value_vec, dim=0),
             torch.cat(masked_score_max_index_vec, dim=0)
         )
-        pre_mask_vec = torch.sigmoid(res_out['mask']).squeeze(0).cpu().detach().numpy().copy()
-        pre_mask_vec = np.where(pre_mask_vec > self.segmentation_mask_threshold, 1.0, 0.0)
+
+        pre_mask_vec = res_out['mask']  # type: torch.Tensor
+        pre_mask_vec = F.one_hot(pre_mask_vec.argmax(dim=-1), num_classes=pre_mask_vec.shape[-1])
+        pre_mask_vec = pre_mask_vec.squeeze(0).cpu().detach().numpy().copy()
+
         return [kps_vec, pre_mask_vec]
 
     def decode_predict(
