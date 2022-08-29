@@ -1,7 +1,7 @@
 # DYG - everything is in your control!
 This packet is a framework used for developing object detection/image segmentation(semantic or instance).
 
-![image](https://raw.githubusercontent.com/diyage/DYG/master/frame.jpg)
+![image](./frame.png)
 
 # DYG contains 7 parts.  
 1. Tool(s) --> the most important one. It provides almost all 
