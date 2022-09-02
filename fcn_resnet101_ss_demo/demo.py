@@ -187,7 +187,7 @@ if __name__ == '__main__':
     """
     config = SSConfig()
     config.train_config.device = 'cuda:{}'.format(GPU_ID)
-    config.train_config.lr = 1e-4
+    config.train_config.lr = 1e-3
     """
         build net
     """
@@ -253,7 +253,6 @@ if __name__ == '__main__':
         config,
         restore_epoch=-1
     )
-    helper.restore(50)
     # helper.eval_map()
     # helper.show_detect_results(voc_test_loader, 0)
     # helper.eval_semantic_segmentation_accuracy(voc_test_loader)
